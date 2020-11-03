@@ -1,4 +1,4 @@
-import { Subscription, concat, Observable, of } from 'rxjs';
+import { Subscription, concat, Observable, of, from } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { AbstractControl, IControlEventOptions } from './abstract-control';
 import {
@@ -6,9 +6,39 @@ import {
   ControlsValue,
   ControlsEnabledValue,
   IControlContainerStateChangeEvent,
+  IControlContainerStateChange,
+  IChildControlStateChangeEvent,
 } from './control-container';
-import { ControlBase } from './control-base';
+import {
+  ControlBase,
+  IControlStateChangeEvent,
+  IProcessStateChangeFnArgs,
+} from './control-base';
 import { capitalize } from './util';
+
+export interface IProcessContainerStateChangeFnArgs<Value> {
+  event: IControlContainerStateChangeEvent<Value>;
+  changes?: {
+    change: IControlContainerStateChange<Value>;
+    sideEffects?: string[];
+  };
+}
+
+export interface IProcessChildStateChangeFnArgs<
+  Controls extends
+    | {
+        readonly [key: string]: AbstractControl;
+      }
+    | {
+        readonly [key: number]: AbstractControl;
+      }
+> extends IChildControlStateChangeEvent<Controls> {
+  changeType: string;
+  changes?: {
+    change: IControlContainerStateChange<ControlsValue<Controls>>;
+    sideEffects: string[];
+  };
+}
 
 export abstract class ControlContainerBase<
     Controls extends
@@ -70,29 +100,34 @@ export abstract class ControlContainerBase<
   abstract removeControl(...args: any[]): void;
 
   replayState(
-    options: IControlEventOptions = {},
-  ): Observable<IControlContainerStateChangeEvent> {
+    options: IControlEventOptions = {}
+  ): Observable<IControlContainerStateChangeEvent<this['value']>> {
+    const controlsStore = this.controlsStore;
+
+    const changes: Array<IControlContainerStateChange<this['value']>> = [
+      {
+        controlsStore: () => controlsStore,
+      },
+    ];
+
+    let eventId: number;
+
     return concat(
-      of({
-        eventId: '',
-        sourceControlId: options.source || this.id,
-        type: 'StateChange',
-        changes: {
-          controlsStore: { value: new Map(this.controlsStore) },
-          parent: { value: this.parent },
-        },
-        noEmit: options.noEmit,
-        meta: options.meta || {},
-      }).pipe(
-        map((event) => {
-          // we reset the applied array so that this saved
-          // state change can be applied to the same control
-          // multiple times
-          event.eventId = AbstractControl.eventId();
-          return event as IControlContainerStateChangeEvent;
-        }),
+      from(
+        changes.map<IControlContainerStateChangeEvent<this['value']>>(
+          (change) => ({
+            eventId: eventId = AbstractControl.eventId(),
+            idOfOriginatingEvent: eventId,
+            source: options.source || this.id,
+            type: 'StateChange',
+            change,
+            sideEffects: [],
+            noEmit: options.noEmit,
+            meta: options.meta || {},
+          })
+        )
       ),
-      super.replayState(options),
+      super.replayState(options)
     );
   }
 
@@ -218,92 +253,94 @@ export abstract class ControlContainerBase<
   //   return null;
   // }
 
-  // protected processChildStateChange(args: {
-  //   control: AbstractControl;
-  //   key: any;
-  //   event: StateChange;
-  //   prop: string;
-  //   value: any;
-  //   changes: Map<string, any>;
-  // }): boolean {
-  //   const { control, prop, changes } = args;
+  //   protected processChildStateChange(args: {
+  //     control: AbstractControl;
+  //     key: keyof ControlsValue<Controls>;
+  //     event: IControlStateChangeEvent<ControlsValue<Controls>>;
+  //     prop: string;
+  //     change: IStateChange;
+  //     changes: IControlContainerStateChanges;
+  //   }): boolean {
+  //     const { control, prop, changes } = args;
 
-  //   switch (prop) {
-  //     case "disabled": {
-  //       let asArray = Array.from(this.controlsStore);
+  //     switch (
+  //       prop
+  //       // case 'disabled': {
+  //       //   let asArray = Array.from(this.controlsStore);
 
-  //       calcChildrenProps(this as any, "disabled", asArray, changes);
+  //       //   calcChildrenProps(this as any, 'disabled', asArray, changes);
 
-  //       asArray = asArray.filter(([, c]) => c.enabled);
+  //       //   asArray = asArray.filter(([, c]) => c.enabled);
 
-  //       calcChildrenProps(this as any, "touched", asArray, changes);
-  //       calcChildrenProps(this as any, "readonly", asArray, changes);
-  //       calcChildrenProps(this as any, "changed", asArray, changes);
-  //       calcChildrenProps(this as any, "submitted", asArray, changes);
-  //       calcChildrenProps(this as any, "pending", asArray, changes);
-  //       calcChildrenProps(this as any, "invalid", asArray, changes);
+  //       //   calcChildrenProps(this as any, 'touched', asArray, changes);
+  //       //   calcChildrenProps(this as any, 'readonly', asArray, changes);
+  //       //   calcChildrenProps(this as any, 'changed', asArray, changes);
+  //       //   calcChildrenProps(this as any, 'submitted', asArray, changes);
+  //       //   calcChildrenProps(this as any, 'pending', asArray, changes);
+  //       //   calcChildrenProps(this as any, 'invalid', asArray, changes);
 
-  //       return true;
+  //       //   return true;
+  //       // }
+  //       // case 'touched': {
+  //       //   if (control.disabled) return true;
+
+  //       //   const asArray = Array.from(this.controlsStore).filter(
+  //       //     ([, c]) => c.enabled
+  //       //   );
+
+  //       //   calcChildrenProps(this, 'touched', asArray, changes);
+
+  //       //   return true;
+  //       // }
+  //       // case 'changed': {
+  //       //   if (control.disabled) return true;
+
+  //       //   const asArray = Array.from(this.controlsStore).filter(
+  //       //     ([, c]) => c.enabled
+  //       //   );
+
+  //       //   calcChildrenProps(this, 'changed', asArray, changes);
+
+  //       //   return true;
+  //       // }
+  //       // case 'readonly': {
+  //       //   if (control.disabled) return true;
+
+  //       //   const asArray = Array.from(this.controlsStore).filter(
+  //       //     ([, c]) => c.enabled
+  //       //   );
+
+  //       //   calcChildrenProps(this, 'readonly', asArray, changes);
+
+  //       //   return true;
+  //       // }
+  //       // case 'invalid': {
+  //       //   if (control.disabled) return true;
+
+  //       //   const asArray = Array.from(this.controlsStore).filter(
+  //       //     ([, c]) => c.enabled
+  //       //   );
+
+  //       //   calcChildrenProps(this, 'invalid', asArray, changes);
+
+  //       //   return true;
+  //       // }
+  //       // case 'pending': {
+  //       //   if (control.disabled) return true;
+
+  //       //   const asArray = Array.from(this.controlsStore).filter(
+  //       //     ([, c]) => c.enabled
+  //       //   );
+
+  //       //   calcChildrenProps(this, 'pending', asArray, changes);
+
+  //       //   return true;
+  //       // }
+  //     ) {
   //     }
-  //     case "touched": {
-  //       if (control.disabled) return true;
 
-  //       const asArray = Array.from(this.controlsStore).filter(
-  //         ([, c]) => c.enabled
-  //       );
-
-  //       calcChildrenProps(this, "touched", asArray, changes);
-
-  //       return true;
-  //     }
-  //     case "changed": {
-  //       if (control.disabled) return true;
-
-  //       const asArray = Array.from(this.controlsStore).filter(
-  //         ([, c]) => c.enabled
-  //       );
-
-  //       calcChildrenProps(this, "changed", asArray, changes);
-
-  //       return true;
-  //     }
-  //     case "readonly": {
-  //       if (control.disabled) return true;
-
-  //       const asArray = Array.from(this.controlsStore).filter(
-  //         ([, c]) => c.enabled
-  //       );
-
-  //       calcChildrenProps(this, "readonly", asArray, changes);
-
-  //       return true;
-  //     }
-  //     case "invalid": {
-  //       if (control.disabled) return true;
-
-  //       const asArray = Array.from(this.controlsStore).filter(
-  //         ([, c]) => c.enabled
-  //       );
-
-  //       calcChildrenProps(this, "invalid", asArray, changes);
-
-  //       return true;
-  //     }
-  //     case "pending": {
-  //       if (control.disabled) return true;
-
-  //       const asArray = Array.from(this.controlsStore).filter(
-  //         ([, c]) => c.enabled
-  //       );
-
-  //       calcChildrenProps(this, "pending", asArray, changes);
-
-  //       return true;
-  //     }
+  //     return false;
   //   }
-
-  //   return false;
-  // }
 }
 
 // const asArray = Array.from(this.controlsStore).filter(
@@ -328,49 +365,64 @@ export abstract class ControlContainerBase<
 //     }
 //   });
 
-export function calcChildrenProps(
-  parent: ControlContainer,
-  prop:
-    | 'pending'
-    | 'disabled'
-    | 'touched'
-    | 'submitted'
-    | 'changed'
-    | 'invalid'
-    | 'readonly',
-  controls: [any, AbstractControl][],
-  changes: Map<any, any>,
-) {
-  const cprop = capitalize(prop);
-  const childProp: string & keyof typeof parent = `child${cprop}` as any;
-  const childrenProp: string & keyof typeof parent = `children${cprop}` as any;
+// export function calcChildrenProps(
+//   parent: ControlContainer,
+//   prop: // | 'pending'
+//   // | 'readonly'
+//   // | 'touched'
+//   // | 'submitted'
+//   // | 'changed'
+//   // | 'invalid'
+//   'enabled',
+//   controls: [any, AbstractControl][],
+//   changes: IControlContainerStateChanges
+// ) {
+//   const cprop = capitalize(prop);
+//   const childProp: // | 'pending'
+//   // | 'readonly'
+//   // | 'touched'
+//   // | 'submitted'
+//   // | 'changed'
+//   // | 'invalid'
+//   'enabled' = `child${cprop}` as any;
+//   const childrenProp: // | 'pending'
+//   // | 'readonly'
+//   // | 'touched'
+//   // | 'submitted'
+//   // | 'changed'
+//   // | 'invalid'
+//   'enabled' = `children${cprop}` as any;
 
-  const child = parent[childProp];
-  const children = parent[childrenProp];
+//   const child = parent[childProp];
+//   const children = parent[childrenProp];
 
-  (parent as any)[`_${childProp}`] = controls.some(([, c]) => {
-    if (ControlContainer.isControlContainer(c)) {
-      return (c as any)[childProp];
-    } else {
-      return (c as any)[prop];
-    }
-  });
+//   (parent as any)[`_${childProp}`] = controls.some(([, c]) => {
+//     if (ControlContainer.isControlContainer(c)) {
+//       return (c as any)[childProp];
+//     } else {
+//       return (c as any)[prop];
+//     }
+//   });
 
-  (parent as any)[`_${childrenProp}`] =
-    controls.length > 0 &&
-    controls.every(([, c]) => {
-      if (ControlContainer.isControlContainer(c)) {
-        return (c as any)[childrenProp];
-      } else {
-        return (c as any)[prop];
-      }
-    });
+//   (parent as any)[`_${childrenProp}`] =
+//     controls.length > 0 &&
+//     controls.every(([, c]) => {
+//       if (ControlContainer.isControlContainer(c)) {
+//         return (c as any)[childrenProp];
+//       } else {
+//         return (c as any)[prop];
+//       }
+//     });
 
-  if (child !== parent[childProp]) {
-    changes.set(childProp, parent[childProp]);
-  }
+//   if (child !== parent[childProp]) {
+//     changes[childProp] = {
+//       value: parent[childProp],
+//     };
+//   }
 
-  if (children !== parent[childrenProp]) {
-    changes.set(childrenProp, parent[childrenProp]);
-  }
-}
+//   if (children !== parent[childrenProp]) {
+//     changes[childrenProp] = {
+//       value: parent[childrenProp],
+//     };
+//   }
+// }

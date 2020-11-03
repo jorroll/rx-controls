@@ -1,24 +1,54 @@
-import { AbstractControl, IControlEventOptions } from './abstract-control';
-import { IControlStateChangeEvent, IControlStateChanges } from './control-base';
+import {
+  AbstractControl,
+  IControlEvent,
+  IControlEventOptions,
+  IStateChange,
+} from './abstract-control';
+import { IControlStateChange, IControlStateChangeEvent } from './control-base';
 
-// export type ControlContainerControls<T> = T extends ControlContainer<infer C>
-//   ? C
-//   : never;
-
-export interface IStateChange<V = unknown> {
-  value: V;
-  // changes: Array<{ type: 'SET' | 'PATCH' | 'ADD' | 'REMOVE'; value: unknown }>;
+export interface IControlContainerStateChange<V>
+  extends IControlStateChange<V> {
+  controlsStore?: IStateChange<ReadonlyMap<unknown, AbstractControl>>;
 }
 
-export interface IControlContainerStateChanges extends IControlStateChanges {
-  controlsStore?: IStateChange<ReadonlyMap<any, AbstractControl>>;
+export interface IControlContainerStateChangeEvent<V>
+  extends IControlStateChangeEvent<V> {
+  change: IControlContainerStateChange<V>;
 }
 
-export interface IControlContainerStateChangeEvent
-  extends IControlStateChangeEvent {
-  type: 'StateChange';
-  changes: IControlContainerStateChanges;
+export interface IChildControlEvent extends IControlEvent {
+  type: 'ChildControlEvent';
+  key: string | number;
+  control: AbstractControl;
+  event: IControlEvent;
 }
+
+export interface IChildControlStateChangeEvent<
+  Controls extends
+    | {
+        readonly [key: string]: AbstractControl;
+      }
+    | {
+        readonly [key: number]: AbstractControl;
+      }
+> extends IChildControlEvent {
+  event: IControlStateChangeEvent<ControlsValue<Controls>[keyof Controls]>;
+}
+
+// export interface IControlContainerStateChanges<V>
+//   extends IControlStateChanges<V> {
+//   controlsStore?: IStateChange<ReadonlyMap<unknown, AbstractControl>>;
+//   unknownChildStateChanges?: {
+//     key: string | number;
+//     control: AbstractControl;
+//     event: IControlStateChangeEvent<unknown>;
+//   };
+// }
+
+// export interface IControlContainerStateChangeEvent<V>
+//   extends IControlStateChangeEvent<V> {
+//   changes: IControlContainerStateChanges<V>;
+// }
 
 export type ControlsValue<
   Controls extends

@@ -9,7 +9,7 @@ export class FormControl<V = any, D = any> extends ControlBase<V, D> {
     super(
       options.id || Symbol(`FormControl-${FormControl.id++}`),
       value,
-      options,
+      options
     );
   }
 
