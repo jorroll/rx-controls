@@ -6,11 +6,15 @@ export class FormControl<V = any, D = any> extends ControlBase<V, D> {
   static id = 0;
 
   constructor(value: V = null as any, options: IFormControlArgs<D> = {}) {
-    super(
-      options.id || Symbol(`FormControl-${FormControl.id++}`),
-      value,
-      options
-    );
+    super(options.id || Symbol(`FormControl-${FormControl.id++}`));
+
+    this.data = options.data!;
+
+    this.setValue(value);
+
+    if (options.errors) {
+      this.setErrors(options.errors);
+    }
   }
 
   clone() {

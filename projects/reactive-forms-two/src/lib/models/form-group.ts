@@ -45,9 +45,9 @@ export class FormGroup<
     return this._controlsStore;
   }
 
-  protected _controls: Controls;
+  protected _controls!: Controls;
 
-  protected _enabledValue: ControlsEnabledValue<Controls>;
+  protected _enabledValue!: ControlsEnabledValue<Controls>;
   get enabledValue() {
     return this._enabledValue;
   }
@@ -56,21 +56,15 @@ export class FormGroup<
     controls: Controls = {} as Controls,
     options: IFormGroupArgs<Data> = {}
   ) {
-    super(
-      options.id || Symbol(`FormGroup-${FormGroup.id++}`),
-      extractValue<Controls>(controls),
-      options
-    );
+    super(options.id || Symbol(`FormGroup-${FormGroup.id++}`));
 
-    this._controls = { ...controls };
-    this._controlsStore = new Map<keyof Controls, Controls[keyof Controls]>(
-      Object.entries(this._controls) as any
-    );
-    this._enabledValue = extractEnabledValue(controls);
+    this.data = options.data!;
 
-    this._controlsStore.forEach((control, key) => {
-      this.registerControl(key, control);
-    });
+    this.setControls(controls);
+
+    if (options.errors) {
+      this.setErrors(options.errors);
+    }
   }
 
   get<A extends keyof Controls>(a: A): Controls[A];
@@ -120,6 +114,10 @@ export class FormGroup<
     control: Controls[N] | null,
     options?: IControlEventOptions
   ) {
+    if (control?.parent) {
+      throw new Error('AbstractControl can only have one parent');
+    }
+
     this.emitEvent<IControlContainerStateChangeEvent<this['value']>>({
       ...pluckOptions(options),
       type: 'StateChange',
@@ -145,6 +143,10 @@ export class FormGroup<
     control: Controls[N],
     options?: IControlEventOptions
   ) {
+    if (control?.parent) {
+      throw new Error('AbstractControl can only have one parent');
+    }
+
     this.emitEvent<IControlContainerStateChangeEvent<this['value']>>({
       ...pluckOptions(options),
       type: 'StateChange',
@@ -178,21 +180,25 @@ export class FormGroup<
 
   protected registerControl(
     key: keyof Controls,
-    control: AbstractControl,
+    control: Controls[keyof Controls],
     options: IControlEventOptions = {}
   ) {
     if (control.parent) {
-      throw new Error('AbstractControl can only have one parent');
+      control = control.clone() as Controls[keyof Controls];
+      // throw new Error('AbstractControl can only have one parent');
     }
+
+    control.setParent(this, options);
 
     const sub = control.events
       .pipe(
         map<IControlEvent, IChildControlEvent>((event) => {
           return {
-            source: this.id,
             type: 'ChildControlEvent',
             eventId: AbstractControl.eventId(),
             idOfOriginatingEvent: event.idOfOriginatingEvent,
+            source: this.id,
+            processed: [],
             key: key as string | number,
             control,
             event,
@@ -205,7 +211,7 @@ export class FormGroup<
 
     this._controlsSubscriptions.set(control, sub);
 
-    control.setParent(this, options);
+    return control;
   }
 
   protected unregisterControl(
@@ -365,6 +371,7 @@ export class FormGroup<
     >;
 
     const controlsStore = change(this._controlsStore) as this['controlsStore'];
+    const controls = (Object.fromEntries(controlsStore) as unknown) as Controls;
     const newValue = { ...this._value } as Mutable<this['value']>;
     const newEnabledValue = { ...this._enabledValue } as Mutable<
       this['enabledValue']
@@ -374,6 +381,7 @@ export class FormGroup<
     for (const [key, control] of this._controlsStore) {
       if (controlsStore.get(key) === control) continue;
       this.unregisterControl(control);
+      delete controls[key];
       delete newValue[key];
       delete newEnabledValue[key as keyof this['enabledValue']];
     }
@@ -381,7 +389,7 @@ export class FormGroup<
     // controls that need to be added
     for (const [key, control] of controlsStore) {
       if (this._controlsStore.get(key) === control) continue;
-      this.registerControl(key as string, control);
+      controls[key] = this.registerControl(key, control);
       newValue[key] = control.value;
 
       if (control.enabled) {
@@ -393,7 +401,12 @@ export class FormGroup<
       }
     }
 
-    this._controlsStore = controlsStore;
+    this._controls = controls;
+    this._controlsStore = new Map(Object.entries(controls)) as Map<
+      keyof Controls,
+      Controls[keyof Controls]
+    >;
+
     this._value = newValue as this['value'];
     this._enabledValue = newEnabledValue as this['enabledValue'];
 
@@ -407,6 +420,12 @@ export class FormGroup<
   protected processChildEvent(
     args: IChildControlEvent
   ): IControlEvent | null | undefined {
+    if (args.event.processed.includes(this.id)) {
+      return null;
+    } else {
+      args.event.processed.push(this.id);
+    }
+
     switch (args.event.type) {
       case 'StateChange': {
         return this.processChildEvent_StateChange(

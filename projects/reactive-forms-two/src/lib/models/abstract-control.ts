@@ -1,4 +1,4 @@
-import { Observable, Subject, queueScheduler } from 'rxjs';
+import { Observable, Subject, queueScheduler, Subscription } from 'rxjs';
 
 export interface ValidationErrors {
   [key: string]: any;
@@ -14,6 +14,7 @@ export interface IControlEventArgs {
   eventId?: number;
   idOfOriginatingEvent?: number;
   source: ControlId;
+  processed?: ControlId[];
   type: string;
   meta?: { [key: string]: unknown };
   noEmit?: boolean;
@@ -26,6 +27,7 @@ export interface IControlEventArgs {
 
 export interface IControlEvent extends IControlEventArgs {
   eventId: number;
+  processed: ControlId[];
   idOfOriginatingEvent: number;
   meta: { [key: string]: unknown };
 }
@@ -61,8 +63,14 @@ export namespace AbstractControl {
   export const INTERFACE = Symbol('@@AbstractControlInterface');
 
   let _eventId = 0;
-  export function eventId() {
-    return _eventId++;
+  export function eventId(
+    /**
+     * A passed value will reset the "current" eventId number.
+     * Only intended for use in tests.
+     */
+    reset?: number
+  ) {
+    return (_eventId = reset ?? _eventId + 1);
   }
 
   export function isAbstractControl(
@@ -70,7 +78,8 @@ export namespace AbstractControl {
   ): object is AbstractControl {
     return (
       typeof object === 'object' &&
-      (object as any)?.[AbstractControl.INTERFACE]?.() === object
+      typeof (object as any)?.[AbstractControl.INTERFACE] === 'function' &&
+      (object as any)[AbstractControl.INTERFACE]() === object
     );
   }
 }
@@ -163,11 +172,24 @@ export interface AbstractControl<Value = any, Data = any> {
     T extends IControlEventArgs = IControlEventArgs & { [key: string]: any }
   >(
     event: Partial<
-      Pick<T, 'eventId' | 'source' | 'idOfOriginatingEvent' | 'noEmit' | 'meta'>
+      Pick<
+        T,
+        | 'eventId'
+        | 'source'
+        | 'idOfOriginatingEvent'
+        | 'processed'
+        | 'noEmit'
+        | 'meta'
+      >
     > &
       Omit<
         T,
-        'eventId' | 'source' | 'idOfOriginatingEvent' | 'noEmit' | 'meta'
+        | 'eventId'
+        | 'source'
+        | 'idOfOriginatingEvent'
+        | 'processed'
+        | 'noEmit'
+        | 'meta'
       > & {
         type: string;
       }

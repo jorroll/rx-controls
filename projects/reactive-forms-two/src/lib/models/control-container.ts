@@ -96,7 +96,8 @@ export namespace ControlContainer {
   export function isControlContainer(object?: any): object is ControlContainer {
     return (
       AbstractControl.isAbstractControl(object) &&
-      (object as any)[ControlContainer.INTERFACE]?.() === object
+      typeof (object as any)[ControlContainer.INTERFACE] === 'function' &&
+      (object as any)[ControlContainer.INTERFACE]() === object
     );
   }
 }

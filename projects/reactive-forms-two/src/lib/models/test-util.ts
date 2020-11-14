@@ -1,7 +1,3 @@
-import { AbstractControl } from './abstract-control';
-
-export const mockEventId = { val: 0 };
-
-AbstractControl.eventId = function eventId() {
-  return mockEventId.val++;
-};
+export function wait(ms: number) {
+  return new Promise((res) => setTimeout(res, ms));
+}

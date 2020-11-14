@@ -14,7 +14,7 @@ import {
   IControlStateChangeEvent,
   IProcessStateChangeFnArgs,
 } from './control-base';
-import { capitalize } from './util';
+import { capitalize, pluckOptions } from './util';
 
 export interface IProcessContainerStateChangeFnArgs<Value> {
   event: IControlContainerStateChangeEvent<Value>;
@@ -100,7 +100,7 @@ export abstract class ControlContainerBase<
   abstract removeControl(...args: any[]): void;
 
   replayState(
-    options: IControlEventOptions = {}
+    options: Omit<IControlEventOptions, 'idOfOriginatingEvent'> = {}
   ): Observable<IControlContainerStateChangeEvent<this['value']>> {
     const controlsStore = this.controlsStore;
 
@@ -116,17 +116,20 @@ export abstract class ControlContainerBase<
       from(
         changes.map<IControlContainerStateChangeEvent<this['value']>>(
           (change) => ({
+            source: this.id,
+            meta: {},
+            ...pluckOptions(options),
+            type: 'StateChange',
             eventId: eventId = AbstractControl.eventId(),
             idOfOriginatingEvent: eventId,
-            source: options.source || this.id,
-            type: 'StateChange',
+            processed: [],
             change,
             sideEffects: [],
-            noEmit: options.noEmit,
-            meta: options.meta || {},
           })
         )
-      ),
+        // we recent the processed array so that the same state can be
+        // replayed on a control multiple times
+      ).pipe(map((event) => ({ ...event, processed: [] }))),
       super.replayState(options)
     );
   }

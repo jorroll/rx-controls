@@ -1,9 +1,15 @@
 import { merge } from 'rxjs';
 import { skip, take } from 'rxjs/operators';
+import { AbstractControl } from './abstract-control';
 import { FormControl } from './form-control';
 import { FormGroup } from './form-group';
+import { wait } from './test-util';
 
 describe('FormGroup', () => {
+  beforeEach(() => {
+    AbstractControl.eventId(0);
+  });
+
   describe('initialization', () => {
     describe('defaults', () => {
       it('value', () => {
@@ -148,18 +154,18 @@ describe('FormGroup', () => {
         testAllDefaultsExcept(c, 'data');
       });
 
-      it('disabled', () => {
-        const c = new FormGroup(
-          {},
-          {
-            disabled: true,
-          }
-        );
+      // it('disabled', () => {
+      //   const c = new FormGroup(
+      //     {},
+      //     {
+      //       disabled: true,
+      //     }
+      //   );
 
-        expect(c.enabled).toEqual(false);
-        expect(c.disabled).toEqual(true);
-        testAllDefaultsExcept(c, 'enabled', 'disabled');
-      });
+      //   expect(c.enabled).toEqual(false);
+      //   expect(c.disabled).toEqual(true);
+      //   testAllDefaultsExcept(c, 'enabled', 'disabled');
+      // });
     });
   });
 
@@ -210,10 +216,11 @@ describe('FormGroup', () => {
 
       const promise1 = a.events.pipe(take(1)).forEach((event) => {
         expect(event).toEqual({
-          source: a.id,
           type: 'StateChange',
           eventId: expect.any(Number),
           idOfOriginatingEvent: expect.any(Number),
+          source: a.id,
+          processed: [a.id],
           change: {
             value: expect.any(Function),
           },
@@ -224,10 +231,11 @@ describe('FormGroup', () => {
 
       const promise2 = a.events.pipe(skip(1), take(1)).forEach((event) => {
         expect(event).toEqual({
-          source: a.id,
           type: 'ValidationComplete',
           eventId: expect.any(Number),
           idOfOriginatingEvent: expect.any(Number),
+          source: a.id,
+          processed: [a.id],
           value: newValue,
           meta: {},
         });
@@ -292,6 +300,208 @@ describe('FormGroup', () => {
       expect(a.value).toEqual(newValue);
       expect(a.controls.one.value).toEqual(newValue.one);
       expect(a.controls.two.value).toEqual(newValue.two);
+    });
+  });
+
+  describe(`replayState`, () => {
+    let a: FormGroup<{
+      one: FormControl<string>;
+      two: FormControl<number>;
+    }>;
+
+    let b: FormGroup;
+
+    beforeEach(() => {
+      a = new FormGroup({
+        one: new FormControl('one'),
+        two: new FormControl(2),
+      });
+
+      b = new FormGroup();
+    });
+
+    it('', () => {
+      const state = a.replayState();
+
+      const promise1 = state.pipe(take(1)).forEach((event) => {
+        expect(event).toEqual({
+          type: 'StateChange',
+          eventId: expect.any(Number),
+          idOfOriginatingEvent: expect.any(Number),
+          source: a.id,
+          processed: [],
+          change: {
+            controlsStore: expect.any(Function),
+          },
+          sideEffects: [],
+          meta: {},
+        });
+      });
+
+      const promise2 = state.pipe(skip(1), take(1)).forEach((event) => {
+        expect(event).toEqual({
+          type: 'StateChange',
+          eventId: expect.any(Number),
+          idOfOriginatingEvent: expect.any(Number),
+          source: a.id,
+          processed: [],
+          change: {
+            value: expect.any(Function),
+          },
+          sideEffects: [],
+          meta: {},
+        });
+      });
+
+      const promise3 = state.pipe(skip(2), take(1)).forEach((event) => {
+        expect(event).toEqual({
+          type: 'StateChange',
+          eventId: expect.any(Number),
+          idOfOriginatingEvent: expect.any(Number),
+          source: a.id,
+          processed: [],
+          change: {
+            errorsStore: expect.any(Function),
+          },
+          sideEffects: [],
+          meta: {},
+        });
+      });
+
+      const promise4 = state.pipe(skip(3), take(1)).forEach((event) => {
+        expect(event).toEqual({
+          type: 'StateChange',
+          eventId: expect.any(Number),
+          idOfOriginatingEvent: expect.any(Number),
+          source: a.id,
+          processed: [],
+          change: {
+            parent: expect.any(Function),
+          },
+          sideEffects: [],
+          meta: {},
+        });
+      });
+
+      const promise5 = state.pipe(skip(4), take(1)).forEach((event) => {
+        expect(event).toEqual({
+          type: 'StateChange',
+          eventId: expect.any(Number),
+          idOfOriginatingEvent: expect.any(Number),
+          source: a.id,
+          processed: [],
+          change: {
+            validatorStore: expect.any(Function),
+          },
+          sideEffects: [],
+          meta: {},
+        });
+      });
+
+      return Promise.all([promise1, promise2, promise3, promise4, promise5]);
+    });
+
+    it('can be subscribed to multiple times', async () => {
+      const state = a.replayState();
+
+      expect(b.value).toEqual({});
+
+      state.subscribe(b.source);
+
+      // Errors in the queueSchedular are suppressed unless you await
+      // a promise like below. If this test is failing, uncomment the
+      // line below to see if there's a hidden error:
+      // await wait(0);
+
+      expect(b.value).toEqual(a.value);
+
+      b.setControls({ threvinty: new FormControl('sleven') });
+
+      expect(b.value).not.toEqual(a.value);
+      expect(b.value).toEqual({ threvinty: 'sleven' });
+
+      state.subscribe(b.source);
+
+      expect(b.value).toEqual(a.value);
+    });
+  });
+
+  describe(`link`, () => {
+    let a: FormGroup<{
+      one: FormControl<string>;
+      two: FormControl<number>;
+    }>;
+
+    let b: FormGroup;
+
+    let c: FormGroup<{
+      three: FormControl<string[]>;
+      four: typeof a;
+    }>;
+
+    beforeEach(() => {
+      a = new FormGroup({
+        one: new FormControl('one'),
+        two: new FormControl(2),
+      });
+
+      b = new FormGroup();
+
+      c = new FormGroup({
+        three: new FormControl(['one']),
+        four: a,
+      });
+    });
+
+    it(`a to b`, () => {
+      expect(a.value).toEqual({ one: 'one', two: 2 });
+      expect(b.value).toEqual({});
+      expect(c.value).toEqual({ three: ['one'], four: { one: 'one', two: 2 } });
+
+      a.replayState().subscribe(b.source);
+
+      expect(b.value).toEqual(a.value);
+
+      a.events.subscribe(b.source);
+
+      const newValue = {
+        one: 'two',
+        two: 3,
+      };
+
+      a.setValue(newValue);
+      expect(a.value).toEqual(newValue);
+      expect(b.value).toEqual(newValue);
+      expect(c.value).toEqual({ three: ['one'], four: newValue });
+    });
+
+    it(`a & b`, async () => {
+      a.replayState().subscribe(b.source);
+
+      a.events.subscribe(b.source);
+      b.events.subscribe(a.source);
+
+      const value1 = {
+        one: 'two',
+        two: 3,
+      };
+
+      a.setValue(value1);
+
+      expect(a.value).toEqual(value1);
+      expect(b.value).toEqual(value1);
+      expect(c.value).toEqual({ three: ['one'], four: value1 });
+
+      const value2 = {
+        one: 'three',
+        two: 4,
+      };
+
+      b.setValue(value2);
+
+      expect(b.value).toEqual(value2);
+      expect(a.value).toEqual(value2);
+      expect(c.value).toEqual({ three: ['one'], four: value2 });
     });
   });
 });

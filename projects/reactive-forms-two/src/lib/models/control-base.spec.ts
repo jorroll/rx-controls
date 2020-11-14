@@ -1,32 +1,33 @@
 import { ValidationErrors } from '@angular/forms';
 import { skip, take, toArray } from 'rxjs/operators';
-import { ControlId } from './abstract-control';
+import { AbstractControl, ControlId } from './abstract-control';
 import { ControlBase, IControlBaseArgs } from './control-base';
-import { mockEventId } from './test-util';
+// import { resetCurrentEventId } from './test-util';
+import { FormControl as TestControlBase } from './form-control';
 
-export type ITestControlArgs<D> = IControlBaseArgs<D>;
+// export type ITestControlArgs<D> = IControlBaseArgs<D>;
 
-export class TestControlBase<V = any, D = any> extends ControlBase<V, D> {
-  static id = 0;
+// export class TestControlBase<V = any, D = any> extends ControlBase<V, D> {
+//   static id = 0;
 
-  constructor(value: V = null as any, options: ITestControlArgs<D> = {}) {
-    super(
-      options.id || Symbol(`TestControlBase-${TestControlBase.id++}`),
-      value,
-      options
-    );
-  }
+//   constructor(value: V = null as any, options: ITestControlArgs<D> = {}) {
+//     super(
+//       options.id || Symbol(`TestControlBase-${TestControlBase.id++}`),
+//       value,
+//       options
+//     );
+//   }
 
-  clone() {
-    const control = new TestControlBase<V, D>();
-    // this.replayState().subscribe(control.source);
-    return control;
-  }
-}
+//   clone() {
+//     const c = new TestControlBase<V, D>();
+//     this.replayState().subscribe(c.source);
+//     return c;
+//   }
+// }
 
 describe('ControlBase', () => {
   beforeEach(() => {
-    mockEventId.val = 0;
+    AbstractControl.eventId(0);
   });
 
   describe('initialization', () => {
@@ -113,15 +114,15 @@ describe('ControlBase', () => {
         testAllDefaultsExcept(c, 'data');
       });
 
-      it('disabled', () => {
-        const c = new TestControlBase(null, {
-          disabled: true,
-        });
+      // it('disabled', () => {
+      //   const c = new TestControlBase(null, {
+      //     disabled: true,
+      //   });
 
-        expect(c.enabled).toEqual(false);
-        expect(c.disabled).toEqual(true);
-        testAllDefaultsExcept(c, 'enabled', 'disabled');
-      });
+      //   expect(c.enabled).toEqual(false);
+      //   expect(c.disabled).toEqual(true);
+      //   testAllDefaultsExcept(c, 'enabled', 'disabled');
+      // });
     });
   });
 
@@ -151,9 +152,10 @@ describe('ControlBase', () => {
       const promise1 = c.events.pipe(take(1)).forEach((event) => {
         expect(event).toEqual({
           type: 'StateChange',
-          source: c.id,
           eventId: expect.any(Number),
           idOfOriginatingEvent: expect.any(Number),
+          source: c.id,
+          processed: [c.id],
           meta: {},
           change: {
             value: expect.any(Function),
@@ -168,6 +170,7 @@ describe('ControlBase', () => {
           eventId: expect.any(Number),
           idOfOriginatingEvent: expect.any(Number),
           source: c.id,
+          processed: [c.id],
           value: 'newValue',
           meta: {},
         });
@@ -220,6 +223,7 @@ describe('ControlBase', () => {
           eventId: expect.any(Number),
           idOfOriginatingEvent: expect.any(Number),
           source: c.id,
+          processed: [c.id],
           meta: {},
           change: {
             parent: expect.any(Function),
@@ -259,6 +263,7 @@ describe('ControlBase', () => {
             eventId: expect.any(Number),
             idOfOriginatingEvent: expect.any(Number),
             source: c.id,
+            processed: [c.id],
             meta: {},
             change: {
               errorsStore: expect.any(Function),
@@ -293,6 +298,7 @@ describe('ControlBase', () => {
             eventId: expect.any(Number),
             idOfOriginatingEvent: expect.any(Number),
             source: c.id,
+            processed: [c.id],
             meta: {},
             change: {
               errorsStore: expect.any(Function),
@@ -326,6 +332,7 @@ describe('ControlBase', () => {
             eventId: expect.any(Number),
             idOfOriginatingEvent: expect.any(Number),
             source: c.id,
+            processed: [c.id],
             meta: {},
             change: {
               errorsStore: expect.any(Function),
@@ -359,6 +366,7 @@ describe('ControlBase', () => {
             eventId: expect.any(Number),
             idOfOriginatingEvent: expect.any(Number),
             source: c.id,
+            processed: [c.id],
             meta: {},
             change: {
               errorsStore: expect.any(Function),
@@ -426,6 +434,7 @@ describe('ControlBase', () => {
         eventId: expect.any(Number),
         idOfOriginatingEvent: expect.any(Number),
         source: c.id,
+        processed: [c.id],
         meta: {},
         change: {
           value: expect.any(Function),
@@ -439,6 +448,7 @@ describe('ControlBase', () => {
         eventId: expect.any(Number),
         idOfOriginatingEvent: expect.any(Number),
         source: c.id,
+        processed: [c.id],
         value: 'invalidValue',
         meta: {},
       });
@@ -448,6 +458,7 @@ describe('ControlBase', () => {
         eventId: expect.any(Number),
         idOfOriginatingEvent: expect.any(Number),
         source: 'myValidationService',
+        processed: [c.id],
         meta: {},
         change: {
           errorsStore: expect.any(Function),
@@ -482,11 +493,148 @@ describe('ControlBase', () => {
         eventId: expect.any(Number),
         idOfOriginatingEvent: expect.any(Number),
         source: c.id,
+        processed: [c.id],
         value: 'invalidValue',
         meta: {},
       });
 
       return validatorPromise;
+    });
+  });
+
+  describe(`replayState`, () => {
+    let a: TestControlBase<string>;
+    let b: TestControlBase<number>;
+    beforeEach(() => {
+      a = new TestControlBase('one');
+      b = new TestControlBase(2);
+    });
+
+    it('', () => {
+      AbstractControl.eventId(0);
+
+      const state = a.replayState();
+
+      const promise1 = state.pipe(take(1)).forEach((event) => {
+        expect(event).toEqual({
+          type: 'StateChange',
+          eventId: 1,
+          idOfOriginatingEvent: 1,
+          source: a.id,
+          processed: [],
+          change: {
+            value: expect.any(Function),
+          },
+          sideEffects: [],
+          meta: {},
+        });
+      });
+
+      const promise2 = state.pipe(skip(1), take(1)).forEach((event) => {
+        expect(event).toEqual({
+          type: 'StateChange',
+          eventId: 2,
+          idOfOriginatingEvent: 2,
+          source: a.id,
+          processed: [],
+          change: {
+            errorsStore: expect.any(Function),
+          },
+          sideEffects: [],
+          meta: {},
+        });
+      });
+
+      const promise3 = state.pipe(skip(2), take(1)).forEach((event) => {
+        expect(event).toEqual({
+          type: 'StateChange',
+          eventId: 3,
+          idOfOriginatingEvent: 3,
+          source: a.id,
+          processed: [],
+          change: {
+            parent: expect.any(Function),
+          },
+          sideEffects: [],
+          meta: {},
+        });
+      });
+
+      const promise4 = state.pipe(skip(3), take(1)).forEach((event) => {
+        expect(event).toEqual({
+          type: 'StateChange',
+          eventId: 4,
+          idOfOriginatingEvent: 4,
+          source: a.id,
+          processed: [],
+          change: {
+            validatorStore: expect.any(Function),
+          },
+          sideEffects: [],
+          meta: {},
+        });
+      });
+
+      return Promise.all([promise1, promise2, promise3, promise4]);
+    });
+
+    it('can be subscribed to multiple times', () => {
+      AbstractControl.eventId(0);
+
+      const state = a.replayState();
+
+      expect(b.value).toEqual(2);
+
+      state.subscribe(b.source);
+
+      expect(b.value).toEqual(a.value);
+
+      b.setValue(3);
+
+      expect(b.value).not.toEqual(a.value);
+      expect(b.value).toEqual(3);
+
+      state.subscribe(b.source);
+
+      expect(b.value).toEqual(a.value);
+    });
+  });
+
+  describe(`link`, () => {
+    let a: TestControlBase;
+    let b: TestControlBase;
+    beforeEach(() => {
+      a = new TestControlBase('one');
+      b = new TestControlBase(2);
+    });
+
+    it(`a to b`, () => {
+      a.events.subscribe(b.source);
+
+      a.setValue('two');
+
+      expect(a.value).toEqual('two');
+      expect(b.value).toEqual('two');
+
+      b.setValue(3);
+
+      expect(b.value).toEqual(3);
+      expect(a.value).toEqual('two');
+    });
+
+    it(`a & b`, () => {
+      a.events.subscribe(b.source);
+      b.events.subscribe(a.source);
+
+      a.setValue('two');
+
+      expect(a.value).toEqual('two');
+      expect(b.value).toEqual('two');
+
+      b.setValue(3);
+
+      expect(b.value).toEqual(3);
+      expect(a.value).toEqual(3);
     });
   });
 });

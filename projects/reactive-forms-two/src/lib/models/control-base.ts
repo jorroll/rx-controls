@@ -55,7 +55,10 @@ export interface IControlValidationEvent<V> extends IControlEvent {
 export interface IControlBaseArgs<Data = any> {
   data?: Data;
   id?: ControlId;
-  disabled?: boolean;
+  // disabled?: boolean;
+  errors?: null | ValidationErrors | ReadonlyMap<ControlId, ValidationErrors>;
+  // parent?: null | AbstractControl;
+  // validator?: null | ValidatorFn | ReadonlyMap<ControlId, ValidatorFn>;
 }
 
 export interface IProcessStateChangeFnArgs<Value> {
@@ -76,13 +79,15 @@ export abstract class ControlBase<Value = any, Data = any>
   implements AbstractControl<Value, Data> {
   id: ControlId;
 
-  data: Data;
+  data!: Data;
 
   source = new ControlSource<
     IControlEvent | (IControlEvent & { [key: string]: unknown })
   >();
 
-  events = this.source.pipe(
+  events: Observable<
+    IControlEvent | (IControlEvent & { [key: string]: unknown })
+  > = this.source.pipe(
     map((event) => {
       if (Number.isInteger(event.delay)) {
         if (event.delay! > 0) {
@@ -91,6 +96,10 @@ export abstract class ControlBase<Value = any, Data = any>
         }
 
         delete event.delay;
+      } else if (event.processed.includes(this.id)) {
+        return null;
+      } else {
+        event.processed.push(this.id);
       }
 
       return this.processEvent(event);
@@ -104,7 +113,7 @@ export abstract class ControlBase<Value = any, Data = any>
     return this._parent;
   }
 
-  protected _value: Value;
+  protected _value!: Value;
   get value() {
     return this._value as Value;
   }
@@ -167,20 +176,24 @@ export abstract class ControlBase<Value = any, Data = any>
     return !this._enabled;
   }
 
-  constructor(
-    controlId: ControlId,
-    value?: Value,
-    options: IControlBaseArgs<Data> = {}
-  ) {
+  constructor(controlId: ControlId) {
     // need to maintain one subscription for the events to process
     this.events.subscribe();
 
     // need to provide ControlId in constructor otherwise
     // initial errors will have incorrect source ID
     this.id = controlId;
-    this.data = options.data as Data;
-    this._value = value!;
-    this._enabled = !options.disabled;
+    // this.data = options.data as Data;
+
+    // this.setValue(value!);
+
+    // if (options.errors) {
+    //   this.setErrors(options.errors);
+    // }
+
+    // if (options.parent) {
+    //   this.setParent(options.parent);
+    // }
   }
 
   setParent(value: AbstractControl | null, options?: IControlEventOptions) {
@@ -414,7 +427,7 @@ export abstract class ControlBase<Value = any, Data = any>
   }
 
   replayState(
-    options: Omit<IControlEventOptions, 'eventId'> = {}
+    options: Omit<IControlEventOptions, 'idOfOriginatingEvent'> = {}
   ): Observable<IControlStateChangeEvent<Value>> {
     const value = this._value;
     const errorsStore = this._errorsStore;
@@ -440,16 +453,19 @@ export abstract class ControlBase<Value = any, Data = any>
 
     return from(
       changes.map<IControlStateChangeEvent<Value>>((change) => ({
+        source: this.id,
+        meta: {},
+        ...pluckOptions(options),
         eventId: eventId = AbstractControl.eventId(),
         idOfOriginatingEvent: eventId,
-        source: options.source || this.id,
+        processed: [],
         type: 'StateChange',
         change,
         sideEffects: [],
-        noEmit: options.noEmit,
-        meta: options.meta || {},
       }))
-    );
+      // we recent the processed array so that the same state can be
+      // replayed on a control multiple times
+    ).pipe(map((event) => ({ ...event, processed: [] })));
   }
 
   abstract clone(): ControlBase<Value, Data>;
@@ -461,11 +477,24 @@ export abstract class ControlBase<Value = any, Data = any>
     T extends IControlEventArgs = IControlEventArgs & { [key: string]: unknown }
   >(
     args: Partial<
-      Pick<T, 'eventId' | 'source' | 'idOfOriginatingEvent' | 'noEmit' | 'meta'>
+      Pick<
+        T,
+        | 'eventId'
+        | 'source'
+        | 'idOfOriginatingEvent'
+        | 'processed'
+        | 'noEmit'
+        | 'meta'
+      >
     > &
       Omit<
         T,
-        'eventId' | 'source' | 'idOfOriginatingEvent' | 'noEmit' | 'meta'
+        | 'eventId'
+        | 'source'
+        | 'idOfOriginatingEvent'
+        | 'processed'
+        | 'noEmit'
+        | 'meta'
       > & {
         type: string;
       }
@@ -478,6 +507,7 @@ export abstract class ControlBase<Value = any, Data = any>
     if (!event.idOfOriginatingEvent) {
       event.idOfOriginatingEvent = event.eventId;
     }
+    if (!event.processed) event.processed = [];
 
     this.source.next(event as IControlEvent);
   }
