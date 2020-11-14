@@ -1,29 +1,9 @@
 import { ValidationErrors } from '@angular/forms';
-import { skip, take, toArray } from 'rxjs/operators';
+import { Subject } from 'rxjs';
+import { skip, take, takeUntil, toArray } from 'rxjs/operators';
 import { AbstractControl, ControlId } from './abstract-control';
-import { ControlBase, IControlBaseArgs } from './control-base';
-// import { resetCurrentEventId } from './test-util';
 import { FormControl as TestControlBase } from './form-control';
-
-// export type ITestControlArgs<D> = IControlBaseArgs<D>;
-
-// export class TestControlBase<V = any, D = any> extends ControlBase<V, D> {
-//   static id = 0;
-
-//   constructor(value: V = null as any, options: ITestControlArgs<D> = {}) {
-//     super(
-//       options.id || Symbol(`TestControlBase-${TestControlBase.id++}`),
-//       value,
-//       options
-//     );
-//   }
-
-//   clone() {
-//     const c = new TestControlBase<V, D>();
-//     this.replayState().subscribe(c.source);
-//     return c;
-//   }
-// }
+import { wait } from './test-util';
 
 describe('ControlBase', () => {
   beforeEach(() => {
@@ -147,7 +127,7 @@ describe('ControlBase', () => {
     });
 
     it('should fire a StateChange event', () => {
-      expect.assertions(3);
+      expect.assertions(4);
 
       const promise1 = c.events.pipe(take(1)).forEach((event) => {
         expect(event).toEqual({
@@ -166,6 +146,18 @@ describe('ControlBase', () => {
 
       const promise2 = c.events.pipe(skip(1), take(1)).forEach((event) => {
         expect(event).toEqual({
+          type: 'AsyncValidationStart',
+          eventId: expect.any(Number),
+          idOfOriginatingEvent: expect.any(Number),
+          source: c.id,
+          processed: [c.id],
+          value: 'newValue',
+          meta: {},
+        });
+      });
+
+      const promise3 = c.events.pipe(skip(2), take(1)).forEach((event) => {
+        expect(event).toEqual({
           type: 'ValidationComplete',
           eventId: expect.any(Number),
           idOfOriginatingEvent: expect.any(Number),
@@ -180,7 +172,7 @@ describe('ControlBase', () => {
 
       expect(c.value).toEqual('newValue');
 
-      return Promise.all([promise1, promise2]);
+      return Promise.all([promise1, promise2, promise3]);
     });
 
     // describe('when linked', () => {
@@ -391,15 +383,16 @@ describe('ControlBase', () => {
     });
 
     it('with one service', async () => {
-      expect.assertions(5);
+      expect.assertions(6);
 
-      const promise = c.events.pipe(take(4), toArray()).toPromise();
+      const promise = c.events.pipe(take(5), toArray()).toPromise();
 
       const validatorPromise = c
         .validationService('myValidationService')
         .pipe(take(1))
         .forEach((e) => {
           if (e.value === 'validValue') {
+            c.setErrors(null, { source: 'myValidationService' });
             c.markValidationComplete('myValidationService');
             return;
           }
@@ -413,13 +406,13 @@ describe('ControlBase', () => {
 
       c.setValue('invalidValue');
 
-      const [one, two, three, four] = await promise;
+      const [one, two, three, four, five] = await promise;
 
       expect(c.value).toEqual('invalidValue');
 
       // expect(one).toEqual({
       //   type: 'StateChange',
-      //   eventId: '0',
+      //   eventId: expect.any(Number),
       //   source: c.id,
       //   meta: {},
       //   changes: {
@@ -430,7 +423,6 @@ describe('ControlBase', () => {
       expect(one).toEqual({
         type: 'StateChange',
         // the "registeredValidators" StateChange is still firing behind the scenes
-        // which is assigned `eventId: '0'`
         eventId: expect.any(Number),
         idOfOriginatingEvent: expect.any(Number),
         source: c.id,
@@ -438,7 +430,6 @@ describe('ControlBase', () => {
         meta: {},
         change: {
           value: expect.any(Function),
-          // runningValidation: expect.any(Function),
         },
         sideEffects: [],
       });
@@ -468,7 +459,7 @@ describe('ControlBase', () => {
 
       // expect(five).toEqual({
       //   type: 'StateChange',
-      //   eventId: '4',
+      //   eventId: expect.any(Number),
       //   source: c.id,
       //   meta: {},
       //   changes: {
@@ -478,7 +469,7 @@ describe('ControlBase', () => {
 
       // expect(six).toEqual({
       //   type: 'StateChange',
-      //   eventId: '5',
+      //   eventId: expect.any(Number),
       //   source: c.id,
       //   meta: {},
       //   changes: {
@@ -487,9 +478,17 @@ describe('ControlBase', () => {
       // });
 
       expect(four).toEqual({
+        type: 'AsyncValidationStart',
+        eventId: expect.any(Number),
+        idOfOriginatingEvent: expect.any(Number),
+        source: c.id,
+        processed: [c.id],
+        value: 'invalidValue',
+        meta: {},
+      });
+
+      expect(five).toEqual({
         type: 'ValidationComplete',
-        // the "runningValidation" and "registeredValidators" StateChanges are
-        // still firing behind the scenes which are assigned `eventId` '4' and '5'
         eventId: expect.any(Number),
         idOfOriginatingEvent: expect.any(Number),
         source: c.id,
@@ -597,6 +596,292 @@ describe('ControlBase', () => {
       state.subscribe(b.source);
 
       expect(b.value).toEqual(a.value);
+    });
+  });
+
+  describe(`observe`, () => {
+    let a: TestControlBase;
+    beforeEach(() => {
+      a = new TestControlBase();
+    });
+
+    describe('value', () => {
+      it('', () => {
+        const promise1 = a
+          .observe('value')
+          .pipe(take(1))
+          .forEach((value) => {
+            expect(value).toEqual(null);
+          });
+
+        const promise2 = a
+          .observe('value')
+          .pipe(skip(1), take(1))
+          .forEach((value) => {
+            expect(value).toEqual('one');
+          });
+
+        a.setValue('one');
+
+        return Promise.all([promise1, promise2]);
+      });
+
+      it('waits for sync validation complete', () => {
+        const testCompleteSignal = new Subject();
+
+        const validatorPromise = a
+          .validationService('myValidationService')
+          .pipe(takeUntil(testCompleteSignal))
+          .forEach((e) => {
+            if (e.value === 'validValue') {
+              a.setErrors(null, { source: 'myValidationService' });
+              a.markValidationComplete('myValidationService');
+              return;
+            }
+
+            a.setErrors(
+              { invalidValue: true },
+              { source: 'myValidationService' }
+            );
+
+            a.markValidationComplete('myValidationService');
+          });
+
+        const promise1 = a
+          .observe('value')
+          .pipe(take(1))
+          .forEach((value) => {
+            expect(a.errors).toEqual(null);
+            expect(value).toEqual(null);
+          });
+
+        const promise2 = a
+          .observe('value')
+          .pipe(skip(1), take(1))
+          .forEach((value) => {
+            expect(a.errors).toEqual({ invalidValue: true });
+            expect(value).toEqual('invalidValue');
+          });
+
+        const promise3 = a
+          .observe('value')
+          .pipe(skip(2), take(1))
+          .forEach((value) => {
+            expect(a.errors).toEqual(null);
+            expect(value).toEqual('validValue');
+          });
+
+        a.setValue('invalidValue');
+
+        expect(a.errors).toEqual({ invalidValue: true });
+        expect(a.value).toEqual('invalidValue');
+
+        a.setValue('validValue');
+
+        expect(a.errors).toEqual(null);
+        expect(a.value).toEqual('validValue');
+
+        testCompleteSignal.next();
+        testCompleteSignal.complete();
+
+        return Promise.all([promise1, promise2, promise3, validatorPromise]);
+      });
+    });
+
+    it('parent', () => {
+      const promise1 = a
+        .observe('parent')
+        .pipe(take(1))
+        .forEach((p) => {
+          expect(p).toEqual(null);
+        });
+
+      const parent = new TestControlBase();
+
+      const promise2 = a
+        .observe('parent')
+        .pipe(skip(1), take(1))
+        .forEach((p) => {
+          expect(p).toEqual(parent);
+        });
+
+      a.setParent(parent);
+
+      return Promise.all([promise1, promise2]);
+    });
+
+    describe('options', () => {
+      it('noEmit', async () => {
+        const promise1 = a
+          .observe('value')
+          .pipe(take(1))
+          .forEach((value) => {
+            expect(value).toEqual(null);
+          });
+
+        const completeSignal = new Subject();
+
+        const promise2 = a
+          .observe('value')
+          .pipe(takeUntil(completeSignal), skip(1))
+          .forEach(() => {
+            throw new Error('This should never be called');
+          });
+
+        a.setValue('one', { noEmit: true });
+
+        await wait(0);
+
+        completeSignal.next();
+        completeSignal.complete();
+
+        return Promise.all([promise1, promise2]);
+      });
+
+      it('ignoreNoEmit', async () => {
+        const promise1 = a
+          .observe('value', { ignoreNoEmit: true })
+          .pipe(take(1))
+          .forEach((value) => {
+            expect(value).toEqual(null);
+          });
+
+        const promise2 = a
+          .observe('value', { ignoreNoEmit: true })
+          .pipe(skip(1), take(1))
+          .forEach((value) => {
+            expect(value).toEqual('one');
+          });
+
+        a.setValue('one', { noEmit: true });
+
+        return Promise.all([promise1, promise2]);
+      });
+    });
+  });
+
+  describe(`observeChanges`, () => {
+    let a: TestControlBase;
+    beforeEach(() => {
+      a = new TestControlBase();
+    });
+
+    describe('value', () => {
+      it('', () => {
+        const promise1 = a
+          .observeChanges('value')
+          .pipe(take(1))
+          .forEach((value) => {
+            expect(value).toEqual('one');
+          });
+
+        a.setValue('one');
+
+        return promise1;
+      });
+
+      it('waits for sync validation complete', () => {
+        const testCompleteSignal = new Subject();
+
+        const validatorPromise = a
+          .validationService('myValidationService')
+          .pipe(takeUntil(testCompleteSignal))
+          .forEach((e) => {
+            if (e.value === 'validValue') {
+              a.setErrors(null, { source: 'myValidationService' });
+              a.markValidationComplete('myValidationService');
+              return;
+            }
+
+            a.setErrors(
+              { invalidValue: true },
+              { source: 'myValidationService' }
+            );
+
+            a.markValidationComplete('myValidationService');
+          });
+
+        const promise1 = a
+          .observeChanges('value')
+          .pipe(take(1))
+          .forEach((value) => {
+            expect(a.errors).toEqual({ invalidValue: true });
+            expect(value).toEqual('invalidValue');
+          });
+
+        const promise2 = a
+          .observeChanges('value')
+          .pipe(skip(1), take(1))
+          .forEach((value) => {
+            expect(a.errors).toEqual(null);
+            expect(value).toEqual('validValue');
+          });
+
+        a.setValue('invalidValue');
+
+        expect(a.errors).toEqual({ invalidValue: true });
+        expect(a.value).toEqual('invalidValue');
+
+        a.setValue('validValue');
+
+        expect(a.errors).toEqual(null);
+        expect(a.value).toEqual('validValue');
+
+        testCompleteSignal.next();
+        testCompleteSignal.complete();
+
+        return Promise.all([promise1, promise2, validatorPromise]);
+      });
+    });
+
+    it('parent', () => {
+      const parent = new TestControlBase();
+
+      const promise1 = a
+        .observeChanges('parent')
+        .pipe(take(1))
+        .forEach((p) => {
+          expect(p).toEqual(parent);
+        });
+
+      a.setParent(parent);
+
+      return Promise.all([promise1]);
+    });
+
+    describe('options', () => {
+      it('noEmit', async () => {
+        const completeSignal = new Subject();
+
+        const promise1 = a
+          .observeChanges('value')
+          .pipe(takeUntil(completeSignal))
+          .forEach(() => {
+            throw new Error('This should never be called');
+          });
+
+        a.setValue('one', { noEmit: true });
+
+        await wait(0);
+
+        completeSignal.next();
+        completeSignal.complete();
+
+        return promise1;
+      });
+
+      it('ignoreNoEmit', async () => {
+        const promise1 = a
+          .observeChanges('value', { ignoreNoEmit: true })
+          .pipe(take(1))
+          .forEach((value) => {
+            expect(value).toEqual('one');
+          });
+
+        a.setValue('one', { noEmit: true });
+
+        return promise1;
+      });
     });
   });
 

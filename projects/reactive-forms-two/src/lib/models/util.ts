@@ -42,9 +42,9 @@ export function isProcessed(
   return !!(options && options.processed && options.processed.includes(id));
 }
 
-export function isStateChange(
+export function isStateChange<T = unknown>(
   event: IControlEventArgs
-): event is IControlStateChangeEvent<unknown> {
+): event is IControlStateChangeEvent<T> {
   return event.type === 'StateChange';
 }
 

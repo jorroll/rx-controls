@@ -9,8 +9,18 @@ import {
   IStateChange,
 } from './abstract-control';
 import { defer, from, merge, Observable, of, queueScheduler } from 'rxjs';
-import { pluckOptions, isTruthy, isMapEqual } from './util';
-import { map, take, filter, share, finalize } from 'rxjs/operators';
+import { pluckOptions, isTruthy, isMapEqual, isStateChange } from './util';
+import {
+  map,
+  take,
+  filter,
+  share,
+  finalize,
+  startWith,
+  distinctUntilChanged,
+  skip,
+  shareReplay,
+} from 'rxjs/operators';
 import { ValidationErrors } from '@angular/forms';
 
 // export type ControlBaseValue<T> = T extends ControlBase<infer V, any> ? V : any;
@@ -194,6 +204,419 @@ export abstract class ControlBase<Value = any, Data = any>
     // if (options.parent) {
     //   this.setParent(options.parent);
     // }
+  }
+
+  observe<
+    A extends keyof this,
+    B extends keyof this[A],
+    C extends keyof this[A][B],
+    D extends keyof this[A][B][C],
+    E extends keyof this[A][B][C][D],
+    F extends keyof this[A][B][C][D][E],
+    G extends keyof this[A][B][C][D][E][F],
+    H extends keyof this[A][B][C][D][E][F][G],
+    I extends keyof this[A][B][C][D][E][F][G][H],
+    J extends keyof this[A][B][C][D][E][F][G][H][I],
+    K extends keyof this[A][B][C][D][E][F][G][H][I][J]
+  >(
+    a: A,
+    b: B,
+    c: C,
+    d: D,
+    e: E,
+    f: F,
+    g: G,
+    h: H,
+    i: I,
+    j: J,
+    k: K,
+    options?: { ignoreNoEmit?: boolean }
+  ): Observable<this[A][B][C][D][E][F][G][H][I][J][K] | undefined>;
+  observe<
+    A extends keyof this,
+    B extends keyof this[A],
+    C extends keyof this[A][B],
+    D extends keyof this[A][B][C],
+    E extends keyof this[A][B][C][D],
+    F extends keyof this[A][B][C][D][E],
+    G extends keyof this[A][B][C][D][E][F],
+    H extends keyof this[A][B][C][D][E][F][G],
+    I extends keyof this[A][B][C][D][E][F][G][H],
+    J extends keyof this[A][B][C][D][E][F][G][H][I]
+  >(
+    a: A,
+    b: B,
+    c: C,
+    d: D,
+    e: E,
+    f: F,
+    g: G,
+    h: H,
+    i: I,
+    j: J,
+    options?: { ignoreNoEmit?: boolean }
+  ): Observable<this[A][B][C][D][E][F][G][H][I][J] | undefined>;
+  observe<
+    A extends keyof this,
+    B extends keyof this[A],
+    C extends keyof this[A][B],
+    D extends keyof this[A][B][C],
+    E extends keyof this[A][B][C][D],
+    F extends keyof this[A][B][C][D][E],
+    G extends keyof this[A][B][C][D][E][F],
+    H extends keyof this[A][B][C][D][E][F][G],
+    I extends keyof this[A][B][C][D][E][F][G][H]
+  >(
+    a: A,
+    b: B,
+    c: C,
+    d: D,
+    e: E,
+    f: F,
+    g: G,
+    h: H,
+    i: I,
+    options?: { ignoreNoEmit?: boolean }
+  ): Observable<this[A][B][C][D][E][F][G][H][I] | undefined>;
+  observe<
+    A extends keyof this,
+    B extends keyof this[A],
+    C extends keyof this[A][B],
+    D extends keyof this[A][B][C],
+    E extends keyof this[A][B][C][D],
+    F extends keyof this[A][B][C][D][E],
+    G extends keyof this[A][B][C][D][E][F],
+    H extends keyof this[A][B][C][D][E][F][G]
+  >(
+    a: A,
+    b: B,
+    c: C,
+    d: D,
+    e: E,
+    f: F,
+    g: G,
+    h: H,
+    options?: { ignoreNoEmit?: boolean }
+  ): Observable<this[A][B][C][D][E][F][G][H] | undefined>;
+  observe<
+    A extends keyof this,
+    B extends keyof this[A],
+    C extends keyof this[A][B],
+    D extends keyof this[A][B][C],
+    E extends keyof this[A][B][C][D],
+    F extends keyof this[A][B][C][D][E],
+    G extends keyof this[A][B][C][D][E][F]
+  >(
+    a: A,
+    b: B,
+    c: C,
+    d: D,
+    e: E,
+    f: F,
+    g: G,
+    options?: { ignoreNoEmit?: boolean }
+  ): Observable<this[A][B][C][D][E][F][G] | undefined>;
+  observe<
+    A extends keyof this,
+    B extends keyof this[A],
+    C extends keyof this[A][B],
+    D extends keyof this[A][B][C],
+    E extends keyof this[A][B][C][D],
+    F extends keyof this[A][B][C][D][E]
+  >(
+    a: A,
+    b: B,
+    c: C,
+    d: D,
+    e: E,
+    f: F,
+    options?: { ignoreNoEmit?: boolean }
+  ): Observable<this[A][B][C][D][E][F] | undefined>;
+  observe<
+    A extends keyof this,
+    B extends keyof this[A],
+    C extends keyof this[A][B],
+    D extends keyof this[A][B][C],
+    E extends keyof this[A][B][C][D]
+  >(
+    a: A,
+    b: B,
+    c: C,
+    d: D,
+    e: E,
+    options?: { ignoreNoEmit?: boolean }
+  ): Observable<this[A][B][C][D][E] | undefined>;
+  observe<
+    A extends keyof this,
+    B extends keyof this[A],
+    C extends keyof this[A][B],
+    D extends keyof this[A][B][C]
+  >(
+    a: A,
+    b: B,
+    c: C,
+    d: D,
+    options?: { ignoreNoEmit?: boolean }
+  ): Observable<this[A][B][C][D] | undefined>;
+  observe<
+    A extends keyof this,
+    B extends keyof this[A],
+    C extends keyof this[A][B]
+  >(
+    a: A,
+    b: B,
+    c: C,
+    options?: { ignoreNoEmit?: boolean }
+  ): Observable<this[A][B][C] | undefined>;
+  observe<A extends keyof this, B extends keyof this[A]>(
+    a: A,
+    b: B,
+    options?: { ignoreNoEmit?: boolean }
+  ): Observable<this[A][B] | undefined>;
+  observe<A extends keyof this>(
+    a: A,
+    options?: { ignoreNoEmit?: boolean }
+  ): Observable<this[A]>;
+  observe<T = any>(
+    props: string[],
+    options?: { ignoreNoEmit?: boolean }
+  ): Observable<T>;
+  observe(
+    a: string | string[],
+    b?: string | { ignoreNoEmit?: boolean },
+    c?: string | { ignoreNoEmit?: boolean },
+    d?: string | { ignoreNoEmit?: boolean },
+    e?: string | { ignoreNoEmit?: boolean },
+    f?: string | { ignoreNoEmit?: boolean },
+    g?: string | { ignoreNoEmit?: boolean },
+    h?: string | { ignoreNoEmit?: boolean },
+    i?: string | { ignoreNoEmit?: boolean },
+    j?: string | { ignoreNoEmit?: boolean },
+    k?: string | { ignoreNoEmit?: boolean },
+    o?: { ignoreNoEmit?: boolean }
+  ) {
+    const props: string[] = [];
+
+    if (Array.isArray(a)) {
+      props.push(...a);
+    } else {
+      props.push(a);
+    }
+
+    const args = [b, c, d, e, f, g, h, i, j, k, o].filter((v) => !!v);
+
+    const options =
+      typeof args[args.length - 1] === 'object'
+        ? (args.pop() as { ignoreNoEmit?: boolean })
+        : {};
+
+    props.push(...(args as string[]));
+
+    // if we're subscribing to the "value" prop, we want to
+    // wait until after synchronous validation has completed
+    const eventFilterFn =
+      props[props.length - 1] === 'value'
+        ? (event: IControlEvent) =>
+            event.type === 'AsyncValidationStart' &&
+            (options.ignoreNoEmit || !event.noEmit)
+        : (event: IControlEvent) =>
+            event.type === 'StateChange' &&
+            (options.ignoreNoEmit || !event.noEmit);
+
+    return this.events.pipe(
+      filter(eventFilterFn),
+      startWith({}),
+      map(() =>
+        props.reduce((prev, curr) => {
+          if (typeof prev === 'object' && curr in prev) {
+            return prev[curr];
+          }
+
+          return undefined;
+        }, this as any)
+      ),
+      distinctUntilChanged(),
+      shareReplay(1)
+    );
+  }
+
+  observeChanges<
+    A extends keyof this,
+    B extends keyof this[A],
+    C extends keyof this[A][B],
+    D extends keyof this[A][B][C],
+    E extends keyof this[A][B][C][D],
+    F extends keyof this[A][B][C][D][E],
+    G extends keyof this[A][B][C][D][E][F],
+    H extends keyof this[A][B][C][D][E][F][G],
+    I extends keyof this[A][B][C][D][E][F][G][H],
+    J extends keyof this[A][B][C][D][E][F][G][H][I],
+    K extends keyof this[A][B][C][D][E][F][G][H][I][J]
+  >(
+    a: A,
+    b: B,
+    c: C,
+    d: D,
+    e: E,
+    f: F,
+    g: G,
+    h: H,
+    i: I,
+    j: J,
+    k: K,
+    options?: { ignoreNoEmit?: boolean }
+  ): Observable<this[A][B][C][D][E][F][G][H][I][J][K] | undefined>;
+  observeChanges<
+    A extends keyof this,
+    B extends keyof this[A],
+    C extends keyof this[A][B],
+    D extends keyof this[A][B][C],
+    E extends keyof this[A][B][C][D],
+    F extends keyof this[A][B][C][D][E],
+    G extends keyof this[A][B][C][D][E][F],
+    H extends keyof this[A][B][C][D][E][F][G],
+    I extends keyof this[A][B][C][D][E][F][G][H],
+    J extends keyof this[A][B][C][D][E][F][G][H][I]
+  >(
+    a: A,
+    b: B,
+    c: C,
+    d: D,
+    e: E,
+    f: F,
+    g: G,
+    h: H,
+    i: I,
+    j: J,
+    options?: { ignoreNoEmit?: boolean }
+  ): Observable<this[A][B][C][D][E][F][G][H][I][J] | undefined>;
+  observeChanges<
+    A extends keyof this,
+    B extends keyof this[A],
+    C extends keyof this[A][B],
+    D extends keyof this[A][B][C],
+    E extends keyof this[A][B][C][D],
+    F extends keyof this[A][B][C][D][E],
+    G extends keyof this[A][B][C][D][E][F],
+    H extends keyof this[A][B][C][D][E][F][G],
+    I extends keyof this[A][B][C][D][E][F][G][H]
+  >(
+    a: A,
+    b: B,
+    c: C,
+    d: D,
+    e: E,
+    f: F,
+    g: G,
+    h: H,
+    i: I,
+    options?: { ignoreNoEmit?: boolean }
+  ): Observable<this[A][B][C][D][E][F][G][H][I] | undefined>;
+  observeChanges<
+    A extends keyof this,
+    B extends keyof this[A],
+    C extends keyof this[A][B],
+    D extends keyof this[A][B][C],
+    E extends keyof this[A][B][C][D],
+    F extends keyof this[A][B][C][D][E],
+    G extends keyof this[A][B][C][D][E][F],
+    H extends keyof this[A][B][C][D][E][F][G]
+  >(
+    a: A,
+    b: B,
+    c: C,
+    d: D,
+    e: E,
+    f: F,
+    g: G,
+    h: H,
+    options?: { ignoreNoEmit?: boolean }
+  ): Observable<this[A][B][C][D][E][F][G][H] | undefined>;
+  observeChanges<
+    A extends keyof this,
+    B extends keyof this[A],
+    C extends keyof this[A][B],
+    D extends keyof this[A][B][C],
+    E extends keyof this[A][B][C][D],
+    F extends keyof this[A][B][C][D][E],
+    G extends keyof this[A][B][C][D][E][F]
+  >(
+    a: A,
+    b: B,
+    c: C,
+    d: D,
+    e: E,
+    f: F,
+    g: G,
+    options?: { ignoreNoEmit?: boolean }
+  ): Observable<this[A][B][C][D][E][F][G] | undefined>;
+  observeChanges<
+    A extends keyof this,
+    B extends keyof this[A],
+    C extends keyof this[A][B],
+    D extends keyof this[A][B][C],
+    E extends keyof this[A][B][C][D],
+    F extends keyof this[A][B][C][D][E]
+  >(
+    a: A,
+    b: B,
+    c: C,
+    d: D,
+    e: E,
+    f: F,
+    options?: { ignoreNoEmit?: boolean }
+  ): Observable<this[A][B][C][D][E][F] | undefined>;
+  observeChanges<
+    A extends keyof this,
+    B extends keyof this[A],
+    C extends keyof this[A][B],
+    D extends keyof this[A][B][C],
+    E extends keyof this[A][B][C][D]
+  >(
+    a: A,
+    b: B,
+    c: C,
+    d: D,
+    e: E,
+    options?: { ignoreNoEmit?: boolean }
+  ): Observable<this[A][B][C][D][E] | undefined>;
+  observeChanges<
+    A extends keyof this,
+    B extends keyof this[A],
+    C extends keyof this[A][B],
+    D extends keyof this[A][B][C]
+  >(
+    a: A,
+    b: B,
+    c: C,
+    d: D,
+    options?: { ignoreNoEmit?: boolean }
+  ): Observable<this[A][B][C][D] | undefined>;
+  observeChanges<
+    A extends keyof this,
+    B extends keyof this[A],
+    C extends keyof this[A][B]
+  >(
+    a: A,
+    b: B,
+    c: C,
+    options?: { ignoreNoEmit?: boolean }
+  ): Observable<this[A][B][C] | undefined>;
+  observeChanges<A extends keyof this, B extends keyof this[A]>(
+    a: A,
+    b: B,
+    options?: { ignoreNoEmit?: boolean }
+  ): Observable<this[A][B] | undefined>;
+  observeChanges<A extends keyof this>(
+    a: A,
+    options?: { ignoreNoEmit?: boolean }
+  ): Observable<this[A]>;
+  observeChanges<T = any>(
+    props: string[],
+    options?: { ignoreNoEmit?: boolean }
+  ): Observable<T>;
+  observeChanges(...args: [any, ...any[]]) {
+    return this.observe(...args).pipe(skip(1));
   }
 
   setParent(value: AbstractControl | null, options?: IControlEventOptions) {
@@ -552,6 +975,14 @@ export abstract class ControlBase<Value = any, Data = any>
         value: this.value,
       });
     } else {
+      // This is needed so that subscribers can consistently detect when
+      // synchronous validation is complete
+      this.emitEvent({
+        ...pluckOptions(options),
+        type: 'AsyncValidationStart',
+        value: this.value,
+      });
+
       this.emitEvent({
         ...pluckOptions(options),
         type: 'ValidationComplete',
@@ -813,6 +1244,14 @@ export abstract class ControlBase<Value = any, Data = any>
           idOfOriginatingEvent: args.event.idOfOriginatingEvent,
         });
       } else {
+        // This is needed so that subscribers can always tell
+        // when synchronous validation is complete
+        this.emitEvent({
+          type: 'AsyncValidationStart',
+          value: this.value,
+          idOfOriginatingEvent: args.event.idOfOriginatingEvent,
+        });
+
         this.emitEvent({
           type: 'ValidationComplete',
           value: this.value,
