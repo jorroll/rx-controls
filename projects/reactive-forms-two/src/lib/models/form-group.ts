@@ -25,9 +25,13 @@ import {
   IControlContainerStateChange,
   IControlContainerStateChangeEvent,
 } from './control-container';
-import { pluckOptions, isTruthy, Mutable } from './util';
+import { pluckOptions, isTruthy, Mutable, removeElFromArray } from './util';
 
 export type IFormGroupArgs<D> = IControlBaseArgs<D>;
+
+export type DeepPartial<T> = {
+  [P in keyof T]?: DeepPartial<T[P]>;
+};
 
 export class FormGroup<
   Controls extends { readonly [key: string]: AbstractControl } = {
@@ -79,9 +83,20 @@ export class FormGroup<
     return control;
   }
 
+  equalValue(value: this['value']) {
+    const newEntries = Object.entries(value);
+
+    if (newEntries.length !== this.controlsStore.size) return false;
+
+    for (const [key, control] of this.controlsStore) {
+      if (ControlContainer.isControlContainer(control)) {
+      }
+    }
+  }
+
   patchValue(
-    value: Partial<ControlsValue<Controls>>,
-    options: IControlEventOptions = {}
+    value: DeepPartial<ControlsValue<Controls>>,
+    options?: IControlEventOptions
   ) {
     Object.entries(value).forEach(([key, val]) => {
       const c = this.controls[key];
@@ -99,14 +114,16 @@ export class FormGroup<
   setControls(controls: Controls, options?: IControlEventOptions) {
     const controlsStore = new Map(Object.entries(controls));
 
-    this.emitEvent<IControlContainerStateChangeEvent<this['value']>>({
-      ...pluckOptions(options),
-      type: 'StateChange',
-      change: {
-        controlsStore: () => controlsStore,
+    this.emitEvent<IControlContainerStateChangeEvent<this['value']>>(
+      {
+        type: 'StateChange',
+        change: {
+          controlsStore: () => controlsStore,
+        },
+        sideEffects: [],
       },
-      sideEffects: [],
-    });
+      options
+    );
   }
 
   setControl<N extends keyof Controls>(
@@ -118,24 +135,26 @@ export class FormGroup<
       throw new Error('AbstractControl can only have one parent');
     }
 
-    this.emitEvent<IControlContainerStateChangeEvent<this['value']>>({
-      ...pluckOptions(options),
-      type: 'StateChange',
-      change: {
-        controlsStore: (old) => {
-          const controls = new Map(old);
+    this.emitEvent<IControlContainerStateChangeEvent<this['value']>>(
+      {
+        type: 'StateChange',
+        change: {
+          controlsStore: (old) => {
+            const controls = new Map(old);
 
-          if (control) {
-            controls.set(name, control);
-          } else {
-            controls.delete(name);
-          }
+            if (control) {
+              controls.set(name, control);
+            } else {
+              controls.delete(name);
+            }
 
-          return controls;
+            return controls;
+          },
         },
+        sideEffects: [],
       },
-      sideEffects: [],
-    });
+      options
+    );
   }
 
   addControl<N extends keyof Controls>(
@@ -147,41 +166,45 @@ export class FormGroup<
       throw new Error('AbstractControl can only have one parent');
     }
 
-    this.emitEvent<IControlContainerStateChangeEvent<this['value']>>({
-      ...pluckOptions(options),
-      type: 'StateChange',
-      change: {
-        controlsStore: (old) => {
-          if (old.has(name)) return old;
+    this.emitEvent<IControlContainerStateChangeEvent<this['value']>>(
+      {
+        type: 'StateChange',
+        change: {
+          controlsStore: (old) => {
+            if (old.has(name)) return old;
 
-          return new Map(old).set(name, control);
+            return new Map(old).set(name, control);
+          },
         },
+        sideEffects: [],
       },
-      sideEffects: [],
-    });
+      options
+    );
   }
 
   removeControl(name: keyof Controls, options?: IControlEventOptions) {
-    this.emitEvent<IControlContainerStateChangeEvent<this['value']>>({
-      ...pluckOptions(options),
-      type: 'StateChange',
-      change: {
-        controlsStore: (old) => {
-          if (!old.has(name)) return old;
+    this.emitEvent<IControlContainerStateChangeEvent<this['value']>>(
+      {
+        type: 'StateChange',
+        change: {
+          controlsStore: (old) => {
+            if (!old.has(name)) return old;
 
-          const controls = new Map(old);
-          controls.delete(name);
-          return controls;
+            const controls = new Map(old);
+            controls.delete(name);
+            return controls;
+          },
         },
+        sideEffects: [],
       },
-      sideEffects: [],
-    });
+      options
+    );
   }
 
   protected registerControl(
     key: keyof Controls,
     control: Controls[keyof Controls],
-    options: IControlEventOptions = {}
+    options?: IControlEventOptions
   ) {
     if (control.parent) {
       control = control.clone() as Controls[keyof Controls];
@@ -292,14 +315,12 @@ export class FormGroup<
       event: { controlContainerId?: ControlId };
     }
   ): IControlContainerStateChangeEvent<this['value']> | null {
-    const options = pluckOptions(args.event);
-
     if (args.event.controlContainerId === this.id) {
       const newEvent = {
         ...args.event,
         sideEffects: [
           ...args.event.sideEffects,
-          ...this.runValidation(options),
+          ...this.runValidation(pluckOptions(args.event)),
         ],
       };
 
@@ -311,6 +332,14 @@ export class FormGroup<
     const change = args.event.change.value as NonNullable<
       IControlContainerStateChange<this['value']>['value']
     >;
+
+    /**
+     * The FormGroup doesn't actually process this state change itself,
+     * but rather delegates processing to the children. Because of this,
+     * we need to remove this control's id from the processed array
+     * because this event hasn't really been processed by this control yet
+     */
+    // removeElFromArray(this.id, args.event.processed);
 
     for (const [key, value] of Object.entries(change(this._value))) {
       const control = this._controls[key];
@@ -347,15 +376,34 @@ export class FormGroup<
         IControlStateChangeEvent<this['value'][typeof key]> & {
           controlContainerId: ControlId;
         }
-      >({
-        ...options,
-        type: 'StateChange',
-        change: {
-          value: () => value,
+      >(
+        {
+          /**
+           * When setvalue is called, the change hits the FormGroup first
+           * When patchValue is called, the change hits the child control first
+           */
+
+          /**
+           * We can't have all the child controls share the same "processed" array
+           * instance. If we do, then the moment one of the child events is
+           * processed by this parent, all the other child events will be ignored
+           * (because this parent's ID will then be in the processed array).
+           *
+           * This being said, I'm very worried that slicing the processed array
+           * will break some complex scenerio where multiple form groups are being
+           * updated with the same event?
+           */
+
+          processed: args.event.processed, // <-- this is causing problems with setValue
+          type: 'StateChange',
+          change: {
+            value: () => value,
+          },
+          sideEffects: [],
+          controlContainerId: this.id,
         },
-        sideEffects: [],
-        controlContainerId: this.id,
-      });
+        args.event
+      );
     }
 
     this.emitEvent({ ...args.event, controlContainerId: this.id, delay: 1 });
@@ -547,23 +595,23 @@ export class FormGroup<
   // }
 }
 
-function extractEnabledValue<T extends { [key: string]: AbstractControl }>(
-  obj: T
-) {
-  return Object.fromEntries(
-    Object.entries(obj)
-      .filter(([_, ctrl]) => ctrl.enabled)
-      .map(([key, ctrl]) => [
-        key,
-        ControlContainer.isControlContainer(ctrl)
-          ? ctrl.enabledValue
-          : ctrl.value,
-      ])
-  ) as ControlsEnabledValue<T>;
-}
+// function extractEnabledValue<T extends { [key: string]: AbstractControl }>(
+//   obj: T
+// ) {
+//   return Object.fromEntries(
+//     Object.entries(obj)
+//       .filter(([_, ctrl]) => ctrl.enabled)
+//       .map(([key, ctrl]) => [
+//         key,
+//         ControlContainer.isControlContainer(ctrl)
+//           ? ctrl.enabledValue
+//           : ctrl.value,
+//       ])
+//   ) as ControlsEnabledValue<T>;
+// }
 
-function extractValue<T extends { [key: string]: AbstractControl }>(obj: T) {
-  return Object.fromEntries(
-    Object.entries(obj).map(([key, ctrl]) => [key, ctrl.value])
-  ) as ControlsValue<T>;
-}
+// function extractValue<T extends { [key: string]: AbstractControl }>(obj: T) {
+//   return Object.fromEntries(
+//     Object.entries(obj).map(([key, ctrl]) => [key, ctrl.value])
+//   ) as ControlsValue<T>;
+// }

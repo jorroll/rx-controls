@@ -7,9 +7,25 @@ import {
   IControlEvent,
   ValidatorFn,
   IStateChange,
+  IControlValidationEvent,
 } from './abstract-control';
-import { defer, from, merge, Observable, of, queueScheduler } from 'rxjs';
-import { pluckOptions, isTruthy, isMapEqual, isStateChange } from './util';
+import {
+  defer,
+  from,
+  merge,
+  Observable,
+  of,
+  queueScheduler,
+  Subscriber,
+  Subscription,
+} from 'rxjs';
+import {
+  pluckOptions,
+  isTruthy,
+  isMapEqual,
+  isStateChange,
+  isEqual,
+} from './util';
 import {
   map,
   take,
@@ -20,23 +36,9 @@ import {
   distinctUntilChanged,
   skip,
   shareReplay,
+  tap,
 } from 'rxjs/operators';
 import { ValidationErrors } from '@angular/forms';
-
-// export type ControlBaseValue<T> = T extends ControlBase<infer V, any> ? V : any;
-// export type ControlBaseData<T> = T extends ControlBase<any, infer D> ? D : any;
-
-// export interface IControlStateChanges<V> {
-//   value?: IStateChange<V>;
-//   errorsStore?: IStateChange<ReadonlyMap<ControlId, ValidationErrors>>;
-//   parent?: IStateChange<AbstractControl | null>;
-//   // enabled?: IStateChange<boolean>;
-//   validatorStore?: IStateChange<ReadonlyMap<ControlId, ValidatorFn>>;
-//   registeredValidators?: IStateChange<ReadonlySet<ControlId>>;
-//   registeredAsyncValidators?: IStateChange<ReadonlySet<ControlId>>;
-//   runningValidation?: IStateChange<ReadonlySet<ControlId>>;
-//   runningAsyncValidation?: IStateChange<ReadonlySet<ControlId>>;
-// }
 
 export interface IControlStateChange<V> {
   value?: IStateChange<V>;
@@ -55,11 +57,6 @@ export interface IControlStateChangeEvent<V> extends IControlEvent {
   type: 'StateChange';
   change: IControlStateChange<V>;
   sideEffects: string[]; // array of other props that have changed;
-}
-
-export interface IControlValidationEvent<V> extends IControlEvent {
-  type: 'ValidationStart' | 'AsyncValidationStart' | 'ValidationComplete';
-  value: V;
 }
 
 export interface IControlBaseArgs<Data = any> {
@@ -85,6 +82,26 @@ export type IProcessStateChangeFnReturn<Value> =
   | null // returned when the function
   | undefined;
 
+function replacer(key: string, value: unknown) {
+  if (
+    value instanceof Subscriber ||
+    value instanceof Subscription ||
+    value instanceof Observable
+  ) {
+    return value.constructor.name;
+  } else if (key === '_parent' && AbstractControl.isAbstractControl(value)) {
+    return value.constructor.name;
+  } else if (typeof value === 'symbol') {
+    return value.toString();
+  } else if (typeof value === 'function') {
+    return value.toString();
+  }
+
+  return value;
+}
+
+let errorEventLog: IControlEvent[] = [];
+
 export abstract class ControlBase<Value = any, Data = any>
   implements AbstractControl<Value, Data> {
   id: ControlId;
@@ -99,6 +116,23 @@ export abstract class ControlBase<Value = any, Data = any>
     IControlEvent | (IControlEvent & { [key: string]: unknown })
   > = this.source.pipe(
     map((event) => {
+      // Here we provide the user with an error message in case of an
+      // infinite loop
+      if (event.eventId - event.idOfOriginatingEvent > 990) {
+        errorEventLog.push(event);
+
+        if (event.eventId - event.idOfOriginatingEvent > 1000) {
+          const message =
+            `AbstractControl "${this.id.toString()}" appears to be caught ` +
+            `in an infinite event loop. Most recent 10 events: ` +
+            JSON.stringify(errorEventLog, replacer, 4);
+
+          errorEventLog = [];
+
+          throw new Error(message);
+        }
+      }
+
       if (Number.isInteger(event.delay)) {
         if (event.delay! > 0) {
           this.emitEvent({ ...event, delay: event.delay! - 1 });
@@ -106,10 +140,10 @@ export abstract class ControlBase<Value = any, Data = any>
         }
 
         delete event.delay;
-      } else if (event.processed.includes(this.id)) {
-        return null;
-      } else {
-        event.processed.push(this.id);
+        // } else if (event.processed.includes(this.id)) {
+        //   return null;
+        // } else {
+        //   event.processed.push(this.id);
       }
 
       return this.processEvent(event);
@@ -620,32 +654,36 @@ export abstract class ControlBase<Value = any, Data = any>
   }
 
   setParent(value: AbstractControl | null, options?: IControlEventOptions) {
-    this.emitEvent<IControlStateChangeEvent<Value>>({
-      ...pluckOptions(options),
-      type: 'StateChange',
-      change: {
-        parent: () => value,
+    this.emitEvent<IControlStateChangeEvent<Value>>(
+      {
+        type: 'StateChange',
+        change: {
+          parent: () => value,
+        },
+        sideEffects: [],
       },
-      sideEffects: [],
-    });
+      options
+    );
   }
 
   setValue(value: Value, options?: IControlEventOptions) {
-    this.emitEvent<IControlStateChangeEvent<Value>>({
-      ...pluckOptions(options),
-      type: 'StateChange',
-      change: {
-        value: () => value,
+    this.emitEvent<IControlStateChangeEvent<Value>>(
+      {
+        type: 'StateChange',
+        change: {
+          value: () => value,
+        },
+        sideEffects: [],
       },
-      sideEffects: [],
-    });
+      options
+    );
   }
 
   setErrors(
     value: ValidationErrors | null | ReadonlyMap<ControlId, ValidationErrors>,
-    options: IControlEventOptions = {}
+    options?: IControlEventOptions
   ) {
-    const source = options.source || this.id;
+    const source = options?.source || this.id;
 
     let changeFn: IControlStateChange<Value>['errorsStore'];
 
@@ -664,21 +702,23 @@ export abstract class ControlBase<Value = any, Data = any>
       };
     }
 
-    this.emitEvent<IControlStateChangeEvent<Value>>({
-      ...pluckOptions(options),
-      type: 'StateChange',
-      change: {
-        errorsStore: changeFn,
+    this.emitEvent<IControlStateChangeEvent<Value>>(
+      {
+        type: 'StateChange',
+        change: {
+          errorsStore: changeFn,
+        },
+        sideEffects: [],
       },
-      sideEffects: [],
-    });
+      options
+    );
   }
 
   patchErrors(
     value: ValidationErrors | ReadonlyMap<ControlId, ValidationErrors>,
-    options: IControlEventOptions = {}
+    options?: IControlEventOptions
   ) {
-    const source = options.source || this.id;
+    const source = options?.source || this.id;
 
     let changeFn: IControlStateChange<Value>['errorsStore'];
 
@@ -712,28 +752,39 @@ export abstract class ControlBase<Value = any, Data = any>
       };
     }
 
-    this.emitEvent<IControlStateChangeEvent<Value>>({
-      ...pluckOptions(options),
-      type: 'StateChange',
-      change: {
-        errorsStore: changeFn,
-      },
-      sideEffects: [],
-    });
-  }
-
-  validationService(source: ControlId, options: IControlEventOptions = {}) {
-    return defer(() => {
-      this.emitEvent<IControlStateChangeEvent<Value>>({
-        ...pluckOptions(options),
+    this.emitEvent<IControlStateChangeEvent<Value>>(
+      {
         type: 'StateChange',
         change: {
-          registeredValidators: (old) => {
-            return new Set(old).add(source);
-          },
+          errorsStore: changeFn,
         },
         sideEffects: [],
-      });
+      },
+      options
+    );
+  }
+
+  validationService(
+    source: ControlId,
+    options?: IControlEventOptions
+  ): Observable<
+    IControlValidationEvent<Value> & {
+      type: 'ValidationStart';
+    }
+  > {
+    return defer(() => {
+      this.emitEvent<IControlStateChangeEvent<Value>>(
+        {
+          type: 'StateChange',
+          change: {
+            registeredValidators: (old) => {
+              return new Set(old).add(source);
+            },
+          },
+          sideEffects: [],
+        },
+        options
+      );
 
       return this.events;
     }).pipe(
@@ -745,18 +796,20 @@ export abstract class ControlBase<Value = any, Data = any>
         }
       ),
       finalize(() => {
-        this.emitEvent<IControlStateChangeEvent<Value>>({
-          ...pluckOptions(options),
-          type: 'StateChange',
-          change: {
-            registeredValidators: (old) => {
-              const newValue = new Set(old);
-              newValue.delete(source);
-              return newValue;
+        this.emitEvent<IControlStateChangeEvent<Value>>(
+          {
+            type: 'StateChange',
+            change: {
+              registeredValidators: (old) => {
+                const newValue = new Set(old);
+                newValue.delete(source);
+                return newValue;
+              },
             },
+            sideEffects: [],
           },
-          sideEffects: [],
-        });
+          options
+        );
       }),
       share()
     );
@@ -764,37 +817,45 @@ export abstract class ControlBase<Value = any, Data = any>
 
   markValidationComplete(
     source: ControlId,
-    options: IControlEventOptions = {}
-  ) {
-    this.emitEvent<IControlStateChangeEvent<Value>>({
-      ...pluckOptions(options),
-      type: 'StateChange',
-      change: {
-        runningValidation: (old) => {
-          const newValue = new Set(old);
-          newValue.delete(source);
-          return newValue;
+    options?: IControlEventOptions
+  ): void {
+    this.emitEvent<IControlStateChangeEvent<Value>>(
+      {
+        type: 'StateChange',
+        change: {
+          runningValidation: (old) => {
+            const newValue = new Set(old);
+            newValue.delete(source);
+            return newValue;
+          },
         },
+        sideEffects: [],
       },
-      sideEffects: [],
-    });
+      options
+    );
   }
 
   asyncValidationService(
     source: ControlId,
-    options: IControlEventOptions = {}
-  ) {
+    options?: IControlEventOptions
+  ): Observable<
+    IControlValidationEvent<Value> & {
+      type: 'AsyncValidationStart';
+    }
+  > {
     return defer(() => {
-      this.emitEvent<IControlStateChangeEvent<Value>>({
-        ...pluckOptions(options),
-        type: 'StateChange',
-        change: {
-          registeredAsyncValidators: (old) => {
-            return new Set(old).add(source);
+      this.emitEvent<IControlStateChangeEvent<Value>>(
+        {
+          type: 'StateChange',
+          change: {
+            registeredAsyncValidators: (old) => {
+              return new Set(old).add(source);
+            },
           },
+          sideEffects: [],
         },
-        sideEffects: [],
-      });
+        options
+      );
 
       return this.events;
     }).pipe(
@@ -806,18 +867,20 @@ export abstract class ControlBase<Value = any, Data = any>
         }
       ),
       finalize(() => {
-        this.emitEvent<IControlStateChangeEvent<Value>>({
-          ...pluckOptions(options),
-          type: 'StateChange',
-          change: {
-            registeredAsyncValidators: (old: ReadonlySet<ControlId>) => {
-              const newValue = new Set(old);
-              newValue.delete(source);
-              return newValue;
+        this.emitEvent<IControlStateChangeEvent<Value>>(
+          {
+            type: 'StateChange',
+            change: {
+              registeredAsyncValidators: (old: ReadonlySet<ControlId>) => {
+                const newValue = new Set(old);
+                newValue.delete(source);
+                return newValue;
+              },
             },
+            sideEffects: [],
           },
-          sideEffects: [],
-        });
+          options
+        );
       }),
       share()
     );
@@ -825,20 +888,22 @@ export abstract class ControlBase<Value = any, Data = any>
 
   markAsyncValidationComplete(
     source: ControlId,
-    options: IControlEventOptions = {}
-  ) {
-    this.emitEvent<IControlStateChangeEvent<Value>>({
-      ...pluckOptions(options),
-      type: 'StateChange',
-      change: {
-        runningAsyncValidation: (old: ReadonlySet<ControlId>) => {
-          const newValue = new Set(old);
-          newValue.delete(source);
-          return newValue;
+    options?: IControlEventOptions
+  ): void {
+    this.emitEvent<IControlStateChangeEvent<Value>>(
+      {
+        type: 'StateChange',
+        change: {
+          runningAsyncValidation: (old: ReadonlySet<ControlId>) => {
+            const newValue = new Set(old);
+            newValue.delete(source);
+            return newValue;
+          },
         },
+        sideEffects: [],
       },
-      sideEffects: [],
-    });
+      options
+    );
   }
 
   // equalValue(value: Value): value is Value {
@@ -899,7 +964,7 @@ export abstract class ControlBase<Value = any, Data = any>
   emitEvent<
     T extends IControlEventArgs = IControlEventArgs & { [key: string]: unknown }
   >(
-    args: Partial<
+    event: Partial<
       Pick<
         T,
         | 'eventId'
@@ -920,22 +985,23 @@ export abstract class ControlBase<Value = any, Data = any>
         | 'meta'
       > & {
         type: string;
-      }
+      },
+    options?: IControlEventOptions
   ): void {
-    const event = { ...args };
+    const normEvent = { ...pluckOptions(options), ...event };
 
-    if (!event.source) event.source = this.id;
-    if (!event.meta) event.meta = {};
-    if (!event.eventId) event.eventId = AbstractControl.eventId();
-    if (!event.idOfOriginatingEvent) {
-      event.idOfOriginatingEvent = event.eventId;
+    if (!normEvent.source) normEvent.source = this.id;
+    if (!normEvent.meta) normEvent.meta = {};
+    if (!normEvent.eventId) normEvent.eventId = AbstractControl.eventId();
+    if (!normEvent.idOfOriginatingEvent) {
+      normEvent.idOfOriginatingEvent = normEvent.eventId;
     }
-    if (!event.processed) event.processed = [];
+    if (!normEvent.processed) normEvent.processed = [];
 
-    this.source.next(event as IControlEvent);
+    this.source.next(normEvent as IControlEvent);
   }
 
-  protected runValidation(options: IControlEventOptions = {}): string[] {
+  protected runValidation(options?: IControlEventOptions): string[] {
     const sideEffects: string[] = [];
 
     if (this._validator) {
@@ -958,36 +1024,44 @@ export abstract class ControlBase<Value = any, Data = any>
         ...this._registeredValidators,
       ]);
 
-      this.emitEvent({
-        ...pluckOptions(options),
-        type: 'ValidationStart',
-        value: this.value,
-      });
+      this.emitEvent(
+        {
+          type: 'ValidationStart',
+          value: this.value,
+        },
+        options
+      );
     } else if (this._registeredAsyncValidators.size > 0) {
       this._runningAsyncValidation = new Set([
         ...this._runningAsyncValidation,
         ...this._registeredAsyncValidators,
       ]);
 
-      this.emitEvent({
-        ...pluckOptions(options),
-        type: 'AsyncValidationStart',
-        value: this.value,
-      });
+      this.emitEvent(
+        {
+          type: 'AsyncValidationStart',
+          value: this.value,
+        },
+        options
+      );
     } else {
       // This is needed so that subscribers can consistently detect when
       // synchronous validation is complete
-      this.emitEvent({
-        ...pluckOptions(options),
-        type: 'AsyncValidationStart',
-        value: this.value,
-      });
+      this.emitEvent(
+        {
+          type: 'AsyncValidationStart',
+          value: this.value,
+        },
+        options
+      );
 
-      this.emitEvent({
-        ...pluckOptions(options),
-        type: 'ValidationComplete',
-        value: this.value,
-      });
+      this.emitEvent(
+        {
+          type: 'ValidationComplete',
+          value: this.value,
+        },
+        options
+      );
     }
 
     return sideEffects;
@@ -1079,7 +1153,9 @@ export abstract class ControlBase<Value = any, Data = any>
       IControlStateChange<Value>['value']
     >;
 
-    this._value = change(this._value);
+    const newValue = change(this._value);
+
+    this._value = newValue;
 
     return {
       ...args.event,

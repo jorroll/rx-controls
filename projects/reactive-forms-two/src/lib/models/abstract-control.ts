@@ -40,6 +40,11 @@ export interface IControlEventOptions {
   source?: ControlId;
 }
 
+export interface IControlValidationEvent<V> extends IControlEvent {
+  type: 'ValidationStart' | 'AsyncValidationStart' | 'ValidationComplete';
+  value: V;
+}
+
 /**
  * ControlSource is a special rxjs Subject which never
  * completes.
@@ -507,6 +512,34 @@ export interface AbstractControl<Value = any, Data = any> {
     options?: IControlEventOptions
   ): void;
 
+  validationService(
+    source: ControlId,
+    options?: IControlEventOptions
+  ): Observable<
+    IControlValidationEvent<Value> & {
+      type: 'ValidationStart';
+    }
+  >;
+
+  markValidationComplete(
+    source: ControlId,
+    options?: IControlEventOptions
+  ): void;
+
+  asyncValidationService(
+    source: ControlId,
+    options?: IControlEventOptions
+  ): Observable<
+    IControlValidationEvent<Value> & {
+      type: 'AsyncValidationStart';
+    }
+  >;
+
+  markAsyncValidationComplete(
+    source: ControlId,
+    options?: IControlEventOptions
+  ): void;
+
   /**
    * Returns an observable of this control's state in the form of
    * StateChange objects which can be used to make another control
@@ -544,7 +577,8 @@ export interface AbstractControl<Value = any, Data = any> {
         | 'meta'
       > & {
         type: string;
-      }
+      },
+    options?: IControlEventOptions
   ): void;
 }
 

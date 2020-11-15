@@ -1,4 +1,5 @@
-import { isMapEqual } from './util';
+import { IControlEvent, IControlEventOptions } from './abstract-control';
+import { isMapEqual, pluckOptions, removeElFromArray } from './util';
 
 describe('isMapEqual', () => {
   test('true', () => {
@@ -15,6 +16,65 @@ describe('isMapEqual', () => {
 
     expect(isMapEqual(one, two)).toBe(false);
     expect(isMapEqual(one, three)).toBe(false);
+  });
+});
+
+describe(`pluckOptions`, () => {
+  it('', () => {
+    const options: Partial<IControlEvent> = {
+      type: 'TestEvent',
+      eventId: 1,
+      idOfOriginatingEvent: 1,
+      meta: {
+        one: 1,
+      },
+      processed: ['two'],
+      source: 'one',
+      delay: 1,
+      noEmit: true,
+    };
+
+    const pluckedOptions: Partial<IControlEventOptions> = {
+      source: 'one',
+      idOfOriginatingEvent: 1,
+      meta: { one: 1 },
+      noEmit: true,
+    };
+
+    expect(pluckOptions(options)).toEqual(pluckedOptions);
+
+    delete options.idOfOriginatingEvent;
+    delete pluckedOptions.idOfOriginatingEvent;
+
+    expect(pluckOptions(options)).toEqual(pluckedOptions);
+
+    delete options.source;
+    delete pluckedOptions.source;
+
+    expect(pluckOptions(options)).toEqual(pluckedOptions);
+
+    delete options.meta;
+    delete pluckedOptions.meta;
+
+    expect(pluckOptions(options)).toEqual(pluckedOptions);
+
+    delete options.noEmit;
+    delete pluckedOptions.noEmit;
+
+    expect(pluckOptions(options)).toEqual(pluckedOptions);
+  });
+});
+
+describe(`removeElFromArray`, () => {
+  it('', () => {
+    const id1 = Symbol('TestId-1');
+    const id2 = Symbol('TestId-2');
+    const id3 = Symbol('TestId-3');
+    const array = [id1, id2, id3];
+
+    removeElFromArray(id2, array);
+
+    expect(array).toEqual([id1, id3]);
   });
 });
 
