@@ -14,7 +14,6 @@ export interface IControlEventArgs {
   eventId?: number;
   idOfOriginatingEvent?: number;
   source: ControlId;
-  processed?: ControlId[];
   type: string;
   meta?: { [key: string]: unknown };
   noEmit?: boolean;
@@ -27,7 +26,6 @@ export interface IControlEventArgs {
 
 export interface IControlEvent extends IControlEventArgs {
   eventId: number;
-  processed: ControlId[];
   idOfOriginatingEvent: number;
   meta: { [key: string]: unknown };
 }
@@ -557,24 +555,11 @@ export interface AbstractControl<Value = any, Data = any> {
     T extends IControlEventArgs = IControlEventArgs & { [key: string]: any }
   >(
     event: Partial<
-      Pick<
-        T,
-        | 'eventId'
-        | 'source'
-        | 'idOfOriginatingEvent'
-        | 'processed'
-        | 'noEmit'
-        | 'meta'
-      >
+      Pick<T, 'source' | 'idOfOriginatingEvent' | 'noEmit' | 'meta'>
     > &
       Omit<
         T,
-        | 'eventId'
-        | 'source'
-        | 'idOfOriginatingEvent'
-        | 'processed'
-        | 'noEmit'
-        | 'meta'
+        'eventId' | 'source' | 'idOfOriginatingEvent' | 'noEmit' | 'meta'
       > & {
         type: string;
       },

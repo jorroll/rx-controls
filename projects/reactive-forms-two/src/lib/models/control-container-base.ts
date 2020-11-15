@@ -14,7 +14,7 @@ import {
   IControlStateChangeEvent,
   IProcessStateChangeFnArgs,
 } from './control-base';
-import { capitalize, pluckOptions } from './util';
+import { pluckOptions } from './util';
 
 export interface IProcessContainerStateChangeFnArgs<Value> {
   event: IControlContainerStateChangeEvent<Value>;
@@ -84,11 +84,6 @@ export abstract class ControlContainerBase<
     }, this as AbstractControl | null);
   }
 
-  // abstract equalValue(
-  //   value: any,
-  //   options?: { assertShape?: boolean },
-  // ): value is Value;
-
   abstract patchValue(value: unknown, options?: IControlEventOptions): void;
 
   abstract setControls(...args: any[]): void;
@@ -122,14 +117,11 @@ export abstract class ControlContainerBase<
             type: 'StateChange',
             eventId: eventId = AbstractControl.eventId(),
             idOfOriginatingEvent: eventId,
-            processed: [],
             change,
             sideEffects: [],
           })
         )
-        // we recent the processed array so that the same state can be
-        // replayed on a control multiple times
-      ).pipe(map((event) => ({ ...event, processed: [] }))),
+      ),
       super.replayState(options)
     );
   }

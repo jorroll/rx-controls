@@ -25,7 +25,7 @@ import {
   IControlContainerStateChange,
   IControlContainerStateChangeEvent,
 } from './control-container';
-import { pluckOptions, isTruthy, Mutable, removeElFromArray } from './util';
+import { pluckOptions, isTruthy, Mutable, isEqual } from './util';
 
 export type IFormGroupArgs<D> = IControlBaseArgs<D>;
 
@@ -49,9 +49,11 @@ export class FormGroup<
     return this._controlsStore;
   }
 
-  protected _controls!: Controls;
+  protected _controls = {} as Controls;
 
-  protected _enabledValue!: ControlsEnabledValue<Controls>;
+  protected _value = {} as ControlsValue<Controls>;
+
+  protected _enabledValue = {} as ControlsEnabledValue<Controls>;
   get enabledValue() {
     return this._enabledValue;
   }
@@ -81,17 +83,6 @@ export class FormGroup<
     const control = new FormGroup<Controls, Data>();
     this.replayState().subscribe(control.source);
     return control;
-  }
-
-  equalValue(value: this['value']) {
-    const newEntries = Object.entries(value);
-
-    if (newEntries.length !== this.controlsStore.size) return false;
-
-    for (const [key, control] of this.controlsStore) {
-      if (ControlContainer.isControlContainer(control)) {
-      }
-    }
   }
 
   patchValue(
@@ -221,7 +212,6 @@ export class FormGroup<
             eventId: AbstractControl.eventId(),
             idOfOriginatingEvent: event.idOfOriginatingEvent,
             source: this.id,
-            processed: [],
             key: key as string | number,
             control,
             event,
@@ -333,15 +323,11 @@ export class FormGroup<
       IControlContainerStateChange<this['value']>['value']
     >;
 
-    /**
-     * The FormGroup doesn't actually process this state change itself,
-     * but rather delegates processing to the children. Because of this,
-     * we need to remove this control's id from the processed array
-     * because this event hasn't really been processed by this control yet
-     */
-    // removeElFromArray(this.id, args.event.processed);
+    const newValue = change(this._value);
 
-    for (const [key, value] of Object.entries(change(this._value))) {
+    if (isEqual(this._value, newValue)) return null;
+
+    for (const [key, value] of Object.entries(newValue)) {
       const control = this._controls[key];
 
       if (!control) {
@@ -378,23 +364,6 @@ export class FormGroup<
         }
       >(
         {
-          /**
-           * When setvalue is called, the change hits the FormGroup first
-           * When patchValue is called, the change hits the child control first
-           */
-
-          /**
-           * We can't have all the child controls share the same "processed" array
-           * instance. If we do, then the moment one of the child events is
-           * processed by this parent, all the other child events will be ignored
-           * (because this parent's ID will then be in the processed array).
-           *
-           * This being said, I'm very worried that slicing the processed array
-           * will break some complex scenerio where multiple form groups are being
-           * updated with the same event?
-           */
-
-          processed: args.event.processed, // <-- this is causing problems with setValue
           type: 'StateChange',
           change: {
             value: () => value,
@@ -419,6 +388,9 @@ export class FormGroup<
     >;
 
     const controlsStore = change(this._controlsStore) as this['controlsStore'];
+
+    if (isEqual(this._controlsStore, controlsStore)) return null;
+
     const controls = (Object.fromEntries(controlsStore) as unknown) as Controls;
     const newValue = { ...this._value } as Mutable<this['value']>;
     const newEnabledValue = { ...this._enabledValue } as Mutable<
@@ -468,12 +440,6 @@ export class FormGroup<
   protected processChildEvent(
     args: IChildControlEvent
   ): IControlEvent | null | undefined {
-    if (args.event.processed.includes(this.id)) {
-      return null;
-    } else {
-      args.event.processed.push(this.id);
-    }
-
     switch (args.event.type) {
       case 'StateChange': {
         return this.processChildEvent_StateChange(
@@ -543,7 +509,11 @@ export class FormGroup<
       IControlStateChange<this['value'][typeof key]>['value']
     >;
 
-    this._value = { ...this._value, [key]: control.value };
+    const newValue = { ...this._value, [key]: control.value };
+
+    if (isEqual(this._value, newValue)) return null;
+
+    this._value = newValue;
 
     if (control.enabled) {
       const childEnabledValue = ControlContainer.isControlContainer(control)

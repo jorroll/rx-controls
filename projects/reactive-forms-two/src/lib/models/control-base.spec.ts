@@ -135,7 +135,6 @@ describe('ControlBase', () => {
           eventId: expect.any(Number),
           idOfOriginatingEvent: expect.any(Number),
           source: c.id,
-          processed: [c.id],
           meta: {},
           change: {
             value: expect.any(Function),
@@ -150,7 +149,6 @@ describe('ControlBase', () => {
           eventId: expect.any(Number),
           idOfOriginatingEvent: expect.any(Number),
           source: c.id,
-          processed: [c.id],
           value: 'newValue',
           meta: {},
         });
@@ -162,7 +160,6 @@ describe('ControlBase', () => {
           eventId: expect.any(Number),
           idOfOriginatingEvent: expect.any(Number),
           source: c.id,
-          processed: [c.id],
           value: 'newValue',
           meta: {},
         });
@@ -215,7 +212,6 @@ describe('ControlBase', () => {
           eventId: expect.any(Number),
           idOfOriginatingEvent: expect.any(Number),
           source: c.id,
-          processed: [c.id],
           meta: {},
           change: {
             parent: expect.any(Function),
@@ -255,7 +251,6 @@ describe('ControlBase', () => {
             eventId: expect.any(Number),
             idOfOriginatingEvent: expect.any(Number),
             source: c.id,
-            processed: [c.id],
             meta: {},
             change: {
               errorsStore: expect.any(Function),
@@ -290,7 +285,6 @@ describe('ControlBase', () => {
             eventId: expect.any(Number),
             idOfOriginatingEvent: expect.any(Number),
             source: c.id,
-            processed: [c.id],
             meta: {},
             change: {
               errorsStore: expect.any(Function),
@@ -324,7 +318,6 @@ describe('ControlBase', () => {
             eventId: expect.any(Number),
             idOfOriginatingEvent: expect.any(Number),
             source: c.id,
-            processed: [c.id],
             meta: {},
             change: {
               errorsStore: expect.any(Function),
@@ -358,7 +351,6 @@ describe('ControlBase', () => {
             eventId: expect.any(Number),
             idOfOriginatingEvent: expect.any(Number),
             source: c.id,
-            processed: [c.id],
             meta: {},
             change: {
               errorsStore: expect.any(Function),
@@ -426,7 +418,6 @@ describe('ControlBase', () => {
         eventId: expect.any(Number),
         idOfOriginatingEvent: expect.any(Number),
         source: c.id,
-        processed: [c.id],
         meta: {},
         change: {
           value: expect.any(Function),
@@ -439,7 +430,6 @@ describe('ControlBase', () => {
         eventId: expect.any(Number),
         idOfOriginatingEvent: expect.any(Number),
         source: c.id,
-        processed: [c.id],
         value: 'invalidValue',
         meta: {},
       });
@@ -449,7 +439,6 @@ describe('ControlBase', () => {
         eventId: expect.any(Number),
         idOfOriginatingEvent: expect.any(Number),
         source: 'myValidationService',
-        processed: [c.id],
         meta: {},
         change: {
           errorsStore: expect.any(Function),
@@ -482,7 +471,6 @@ describe('ControlBase', () => {
         eventId: expect.any(Number),
         idOfOriginatingEvent: expect.any(Number),
         source: c.id,
-        processed: [c.id],
         value: 'invalidValue',
         meta: {},
       });
@@ -492,7 +480,6 @@ describe('ControlBase', () => {
         eventId: expect.any(Number),
         idOfOriginatingEvent: expect.any(Number),
         source: c.id,
-        processed: [c.id],
         value: 'invalidValue',
         meta: {},
       });
@@ -520,7 +507,6 @@ describe('ControlBase', () => {
           eventId: 1,
           idOfOriginatingEvent: 1,
           source: a.id,
-          processed: [],
           change: {
             value: expect.any(Function),
           },
@@ -535,7 +521,6 @@ describe('ControlBase', () => {
           eventId: 2,
           idOfOriginatingEvent: 2,
           source: a.id,
-          processed: [],
           change: {
             errorsStore: expect.any(Function),
           },
@@ -550,7 +535,6 @@ describe('ControlBase', () => {
           eventId: 3,
           idOfOriginatingEvent: 3,
           source: a.id,
-          processed: [],
           change: {
             parent: expect.any(Function),
           },
@@ -565,7 +549,6 @@ describe('ControlBase', () => {
           eventId: 4,
           idOfOriginatingEvent: 4,
           source: a.id,
-          processed: [],
           change: {
             validatorStore: expect.any(Function),
           },

@@ -18,29 +18,22 @@ export type Mutable<T> = {
 //   return t[0].toUpperCase() + t.slice(1);
 // }
 
-export function isMapEqual(
-  cononical: ReadonlyMap<any, any>,
-  other: ReadonlyMap<any, any>
-): boolean {
-  if (cononical.size !== other.size) return false;
+// export function isMapEqual(
+//   cononical: ReadonlyMap<any, any>,
+//   other: ReadonlyMap<any, any>
+// ): boolean {
+//   if (cononical.size !== other.size) return false;
 
-  for (const [k, v] of cononical) {
-    if (v !== other.get(k)) return false;
-  }
+//   for (const [k, v] of cononical) {
+//     if (v !== other.get(k)) return false;
+//   }
 
-  return true;
-}
+//   return true;
+// }
 
 export function isTruthy<T>(value: T): value is NonNullable<T> {
   return !!value;
 }
-
-// export function isProcessed(
-//   id: symbol | string,
-//   options?: { processed?: Array<symbol | string> }
-// ) {
-//   return !!(options && options.processed && options.processed.includes(id));
-// }
 
 export function isStateChange<T = unknown>(
   event: IControlEventArgs
@@ -66,16 +59,16 @@ export function pluckOptions({
   return options;
 }
 
-export function removeElFromArray<T>(el: T, array: T[]) {
-  const i = array.indexOf(el);
+// export function removeElFromArray<T>(el: T, array: T[]) {
+//   const i = array.indexOf(el);
 
-  if (!Number.isInteger(i)) {
-    throw new Error('Provided element not found in array');
-  }
+//   if (!Number.isInteger(i)) {
+//     throw new Error('Provided element not found in array');
+//   }
 
-  array.splice(i, 1);
-  return array;
-}
+//   array.splice(i, 1);
+//   return array;
+// }
 
 export const isEqual: <T>(a: T, b: T) => boolean = _isEqual;
 

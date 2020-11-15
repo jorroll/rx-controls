@@ -19,13 +19,7 @@ import {
   Subscriber,
   Subscription,
 } from 'rxjs';
-import {
-  pluckOptions,
-  isTruthy,
-  isMapEqual,
-  isStateChange,
-  isEqual,
-} from './util';
+import { pluckOptions, isTruthy, isEqual } from './util';
 import {
   map,
   take,
@@ -118,10 +112,10 @@ export abstract class ControlBase<Value = any, Data = any>
     map((event) => {
       // Here we provide the user with an error message in case of an
       // infinite loop
-      if (event.eventId - event.idOfOriginatingEvent > 990) {
+      if (event.eventId - event.idOfOriginatingEvent > 90) {
         errorEventLog.push(event);
 
-        if (event.eventId - event.idOfOriginatingEvent > 1000) {
+        if (event.eventId - event.idOfOriginatingEvent > 100) {
           const message =
             `AbstractControl "${this.id.toString()}" appears to be caught ` +
             `in an infinite event loop. Most recent 10 events: ` +
@@ -140,10 +134,6 @@ export abstract class ControlBase<Value = any, Data = any>
         }
 
         delete event.delay;
-        // } else if (event.processed.includes(this.id)) {
-        //   return null;
-        // } else {
-        //   event.processed.push(this.id);
       }
 
       return this.processEvent(event);
@@ -906,10 +896,6 @@ export abstract class ControlBase<Value = any, Data = any>
     );
   }
 
-  // equalValue(value: Value): value is Value {
-  //   return this._value === value;
-  // }
-
   [AbstractControl.INTERFACE]() {
     return this;
   }
@@ -946,14 +932,11 @@ export abstract class ControlBase<Value = any, Data = any>
         ...pluckOptions(options),
         eventId: eventId = AbstractControl.eventId(),
         idOfOriginatingEvent: eventId,
-        processed: [],
         type: 'StateChange',
         change,
         sideEffects: [],
       }))
-      // we recent the processed array so that the same state can be
-      // replayed on a control multiple times
-    ).pipe(map((event) => ({ ...event, processed: [] })));
+    );
   }
 
   abstract clone(): ControlBase<Value, Data>;
@@ -965,38 +948,27 @@ export abstract class ControlBase<Value = any, Data = any>
     T extends IControlEventArgs = IControlEventArgs & { [key: string]: unknown }
   >(
     event: Partial<
-      Pick<
-        T,
-        | 'eventId'
-        | 'source'
-        | 'idOfOriginatingEvent'
-        | 'processed'
-        | 'noEmit'
-        | 'meta'
-      >
+      Pick<T, 'source' | 'idOfOriginatingEvent' | 'noEmit' | 'meta'>
     > &
       Omit<
         T,
-        | 'eventId'
-        | 'source'
-        | 'idOfOriginatingEvent'
-        | 'processed'
-        | 'noEmit'
-        | 'meta'
+        'eventId' | 'source' | 'idOfOriginatingEvent' | 'noEmit' | 'meta'
       > & {
         type: string;
       },
     options?: IControlEventOptions
   ): void {
-    const normEvent = { ...pluckOptions(options), ...event };
+    const normEvent = {
+      ...pluckOptions(options),
+      ...event,
+      eventId: AbstractControl.eventId(),
+    };
 
     if (!normEvent.source) normEvent.source = this.id;
     if (!normEvent.meta) normEvent.meta = {};
-    if (!normEvent.eventId) normEvent.eventId = AbstractControl.eventId();
     if (!normEvent.idOfOriginatingEvent) {
       normEvent.idOfOriginatingEvent = normEvent.eventId;
     }
-    if (!normEvent.processed) normEvent.processed = [];
 
     this.source.next(normEvent as IControlEvent);
   }
@@ -1079,6 +1051,7 @@ export abstract class ControlBase<Value = any, Data = any>
       case 'ValidationStart':
       case 'AsyncValidationStart':
       case 'ValidationComplete': {
+        if (event.source !== this.id) return null;
         return event;
       }
       default: {
@@ -1155,6 +1128,8 @@ export abstract class ControlBase<Value = any, Data = any>
 
     const newValue = change(this._value);
 
+    if (isEqual(this._value, newValue)) return null;
+
     this._value = newValue;
 
     return {
@@ -1174,7 +1149,11 @@ export abstract class ControlBase<Value = any, Data = any>
       IControlStateChange<Value>['parent']
     >;
 
-    this._parent = change(this._parent);
+    const newParent = change(this._parent);
+
+    if (isEqual(this._parent, newParent)) return null;
+
+    this._parent = newParent;
 
     return {
       ...args.event,
@@ -1190,7 +1169,11 @@ export abstract class ControlBase<Value = any, Data = any>
       IControlStateChange<Value>['errorsStore']
     >;
 
-    this._errorsStore = change(this._errorsStore);
+    const newErrorsStore = change(this._errorsStore);
+
+    if (isEqual(this._errorsStore, newErrorsStore)) return null;
+
+    this._errorsStore = newErrorsStore;
 
     if (this._errorsStore.size === 0) {
       this._errors = null;
@@ -1218,7 +1201,11 @@ export abstract class ControlBase<Value = any, Data = any>
       IControlStateChange<Value>['validatorStore']
     >;
 
-    this._validatorStore = change(this._validatorStore);
+    const newValidatorStore = change(this._validatorStore);
+
+    if (isEqual(this._validatorStore, newValidatorStore)) return null;
+
+    this._validatorStore = newValidatorStore;
 
     const oldErrorsStore = this._errorsStore;
     const sideEffects = ['validator', 'errorsStore'];
@@ -1282,7 +1269,13 @@ export abstract class ControlBase<Value = any, Data = any>
       IControlStateChange<Value>['registeredValidators']
     >;
 
-    this._registeredValidators = change(this._registeredValidators);
+    const newRegisteredValidators = change(this._registeredValidators);
+
+    if (isEqual(this._registeredValidators, newRegisteredValidators)) {
+      return null;
+    }
+
+    this._registeredValidators = newRegisteredValidators;
     return null;
   }
 
@@ -1293,7 +1286,17 @@ export abstract class ControlBase<Value = any, Data = any>
       IControlStateChange<Value>['registeredAsyncValidators']
     >;
 
-    this._registeredAsyncValidators = change(this._registeredAsyncValidators);
+    const newRegisteredAsyncValidators = change(
+      this._registeredAsyncValidators
+    );
+
+    if (
+      isEqual(this._registeredAsyncValidators, newRegisteredAsyncValidators)
+    ) {
+      return null;
+    }
+
+    this._registeredAsyncValidators = newRegisteredAsyncValidators;
     return null;
   }
 
@@ -1304,9 +1307,13 @@ export abstract class ControlBase<Value = any, Data = any>
       IControlStateChange<Value>['runningValidation']
     >;
 
+    const newRunningValidation = change(this._runningValidation);
+
+    if (isEqual(this._runningValidation, newRunningValidation)) return null;
+
     const prevSize = this._runningValidation.size;
 
-    this._runningValidation = change(this._runningValidation);
+    this._runningValidation = newRunningValidation;
 
     const size = this._runningValidation.size;
 
@@ -1346,9 +1353,15 @@ export abstract class ControlBase<Value = any, Data = any>
       IControlStateChange<Value>['runningAsyncValidation']
     >;
 
+    const newRunningAsyncValidation = change(this._runningAsyncValidation);
+
+    if (isEqual(this._runningAsyncValidation, newRunningAsyncValidation)) {
+      return null;
+    }
+
     const prevSize = this._runningAsyncValidation.size;
 
-    this._runningAsyncValidation = change(this._runningAsyncValidation);
+    this._runningAsyncValidation = newRunningAsyncValidation;
 
     const size = this._runningAsyncValidation.size;
 

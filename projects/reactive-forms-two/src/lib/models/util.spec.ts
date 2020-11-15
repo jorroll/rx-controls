@@ -1,23 +1,23 @@
 import { IControlEvent, IControlEventOptions } from './abstract-control';
-import { isMapEqual, pluckOptions, removeElFromArray } from './util';
+import { pluckOptions } from './util';
 
-describe('isMapEqual', () => {
-  test('true', () => {
-    const one = new Map([['one', 1]]);
-    const two = new Map([['one', 1]]);
+// describe('isMapEqual', () => {
+//   test('true', () => {
+//     const one = new Map([['one', 1]]);
+//     const two = new Map([['one', 1]]);
 
-    expect(isMapEqual(one, two)).toBe(true);
-  });
+//     expect(isMapEqual(one, two)).toBe(true);
+//   });
 
-  test('false', () => {
-    const one = new Map([['one', 1]]);
-    const two = new Map([['one', 2]]);
-    const three = new Map([['three', 2]]);
+//   test('false', () => {
+//     const one = new Map([['one', 1]]);
+//     const two = new Map([['one', 2]]);
+//     const three = new Map([['three', 2]]);
 
-    expect(isMapEqual(one, two)).toBe(false);
-    expect(isMapEqual(one, three)).toBe(false);
-  });
-});
+//     expect(isMapEqual(one, two)).toBe(false);
+//     expect(isMapEqual(one, three)).toBe(false);
+//   });
+// });
 
 describe(`pluckOptions`, () => {
   it('', () => {
@@ -28,7 +28,6 @@ describe(`pluckOptions`, () => {
       meta: {
         one: 1,
       },
-      processed: ['two'],
       source: 'one',
       delay: 1,
       noEmit: true,
@@ -65,18 +64,18 @@ describe(`pluckOptions`, () => {
   });
 });
 
-describe(`removeElFromArray`, () => {
-  it('', () => {
-    const id1 = Symbol('TestId-1');
-    const id2 = Symbol('TestId-2');
-    const id3 = Symbol('TestId-3');
-    const array = [id1, id2, id3];
+// describe(`removeElFromArray`, () => {
+//   it('', () => {
+//     const id1 = Symbol('TestId-1');
+//     const id2 = Symbol('TestId-2');
+//     const id3 = Symbol('TestId-3');
+//     const array = [id1, id2, id3];
 
-    removeElFromArray(id2, array);
+//     removeElFromArray(id2, array);
 
-    expect(array).toEqual([id1, id3]);
-  });
-});
+//     expect(array).toEqual([id1, id3]);
+//   });
+// });
 
 // describe('mapIsProperty', () => {
 //   test('true', () => {

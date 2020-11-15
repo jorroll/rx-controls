@@ -208,25 +208,18 @@ describe('FormGroup', () => {
       });
     });
 
-    it.only('should fire a StateChange event', async () => {
+    it('should fire a StateChange event', async () => {
       const newValue = {
         one: 'two',
         two: 3,
       };
 
       const promise1 = a.events.pipe(take(1)).forEach((event) => {
-        console.log('event', event);
-
         expect(event).toEqual({
           type: 'StateChange',
           eventId: expect.any(Number),
           idOfOriginatingEvent: expect.any(Number),
           source: a.id,
-          processed: expect.arrayContaining([
-            a.id,
-            a.get('one').id,
-            a.get('two').id,
-          ]),
           change: {
             value: expect.any(Function),
           },
@@ -241,7 +234,6 @@ describe('FormGroup', () => {
           eventId: expect.any(Number),
           idOfOriginatingEvent: expect.any(Number),
           source: a.id,
-          processed: [a.id],
           value: newValue,
           meta: {},
         });
@@ -253,27 +245,17 @@ describe('FormGroup', () => {
           eventId: expect.any(Number),
           idOfOriginatingEvent: expect.any(Number),
           source: a.id,
-          processed: [a.id],
           value: newValue,
           meta: {},
         });
       });
 
-      // const end = new Subject();
-
-      // const promise4 = a.source.pipe(takeUntil(end)).forEach(console.log);
-
       a.setValue(newValue);
-
-      // end.next();
-      // end.complete();
-
       expect(a.controls.one.value).toEqual(newValue.one);
       expect(a.controls.two.value).toEqual(newValue.two);
       expect(a.value).toEqual(newValue);
       expect(b.value).toEqual({ three: ['one'], four: newValue });
 
-      // return Promise.all([promise4]);
       return Promise.all([promise1, promise2, promise3]);
     });
   });
@@ -391,7 +373,6 @@ describe('FormGroup', () => {
           eventId: expect.any(Number),
           idOfOriginatingEvent: expect.any(Number),
           source: a.id,
-          processed: [],
           change: {
             controlsStore: expect.any(Function),
           },
@@ -406,7 +387,6 @@ describe('FormGroup', () => {
           eventId: expect.any(Number),
           idOfOriginatingEvent: expect.any(Number),
           source: a.id,
-          processed: [],
           change: {
             value: expect.any(Function),
           },
@@ -421,7 +401,6 @@ describe('FormGroup', () => {
           eventId: expect.any(Number),
           idOfOriginatingEvent: expect.any(Number),
           source: a.id,
-          processed: [],
           change: {
             errorsStore: expect.any(Function),
           },
@@ -436,7 +415,6 @@ describe('FormGroup', () => {
           eventId: expect.any(Number),
           idOfOriginatingEvent: expect.any(Number),
           source: a.id,
-          processed: [],
           change: {
             parent: expect.any(Function),
           },
@@ -451,7 +429,6 @@ describe('FormGroup', () => {
           eventId: expect.any(Number),
           idOfOriginatingEvent: expect.any(Number),
           source: a.id,
-          processed: [],
           change: {
             validatorStore: expect.any(Function),
           },

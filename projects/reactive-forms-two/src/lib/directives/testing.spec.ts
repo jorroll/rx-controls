@@ -121,6 +121,10 @@ export class ComplexValueMapperTestComponent {
   }
 
   updateFirstName(text: string) {
+    this.control.get('name').get('firstName').setValue(text);
+  }
+
+  updateRelativeFirstName(text: string) {
     this.alternateRelativeFirstNameControl.setValue(text);
   }
 }
@@ -219,7 +223,51 @@ describe('ComplexValueMapperTestComponent', () => {
   });
 
   it('updateFirstName', async () => {
-    component.updateFirstName('Jack');
+    component.updateFirstName('Cassidy');
+
+    expect(component.control.get('name').get('firstName').value).toEqual(
+      'Cassidy'
+    );
+
+    expect(component.control.value).toEqual({
+      name: {
+        firstName: 'Cassidy',
+        lastName: 'Carroll',
+      },
+      birthdate: new Date(2020, 0, 1),
+      relative: {
+        name: {
+          firstName: 'Alison',
+          lastName: 'Paul',
+        },
+      },
+    });
+
+    const name = container.querySelector(
+      '[ngFormGroupName="name"]'
+    ) as HTMLDivElement;
+
+    const name_firstName = name.querySelector('input');
+
+    expect(name_firstName).toHaveProperty('value', 'Cassidy');
+
+    component.control.patchValue({
+      name: {
+        firstName: 'Bill',
+      },
+    });
+
+    await wait(0); // without this, errors inside the event loop are silently suppressed
+
+    expect(component.control.get('name').get('firstName').value).toEqual(
+      'Bill'
+    );
+
+    expect(name_firstName).toHaveProperty('value', 'Bill');
+  });
+
+  it('updateRelativeFirstName', async () => {
+    component.updateRelativeFirstName('Jack');
 
     expect(component.alternateRelativeFirstNameControl.value).toEqual('Jack');
 
@@ -253,7 +301,7 @@ describe('ComplexValueMapperTestComponent', () => {
       },
     });
 
-    await wait(0); // without this, errors inside the event loop will be silently suppressed
+    await wait(0); // without this, errors inside the event loop are silently suppressed
 
     expect(component.alternateRelativeFirstNameControl.value).toEqual('Jack');
     expect(relative_firstName).toHaveProperty('value', 'Jack');
