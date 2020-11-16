@@ -118,9 +118,27 @@ export interface AbstractControl<Value = any, Data = any> {
   >;
 
   readonly value: Value;
-  readonly parent: AbstractControl | null;
   readonly enabled: boolean;
   readonly disabled: boolean;
+  readonly touched: boolean;
+  readonly dirty: boolean;
+  readonly readonly: boolean;
+  readonly submitted: boolean;
+
+  readonly errors: ValidationErrors | null;
+  readonly errorsStore: ReadonlyMap<ControlId, ValidationErrors>;
+
+  readonly validator: ValidatorFn | null;
+  readonly validatorStore: ReadonlyMap<ControlId, ValidatorFn>;
+
+  readonly pending: boolean;
+  readonly pendingStore: ReadonlySet<ControlId>;
+
+  readonly valid: boolean;
+  readonly invalid: boolean;
+  readonly status: 'DISABLED' | 'PENDING' | 'VALID' | 'INVALID';
+
+  readonly parent: AbstractControl | null;
 
   [AbstractControl.INTERFACE](): this;
 
@@ -505,6 +523,16 @@ export interface AbstractControl<Value = any, Data = any> {
     options?: IControlEventOptions
   ): void;
 
+  markTouched(value: boolean, options?: IControlEventOptions): void;
+  markDirty(value: boolean, options?: IControlEventOptions): void;
+  markReadonly(value: boolean, options?: IControlEventOptions): void;
+  markDisabled(value: boolean, options?: IControlEventOptions): void;
+  markSubmitted(value: boolean, options?: IControlEventOptions): void;
+  markPending(
+    value: boolean | ReadonlySet<ControlId>,
+    options?: IControlEventOptions
+  ): void;
+
   setParent(
     parent: AbstractControl | null,
     options?: IControlEventOptions
@@ -537,6 +565,14 @@ export interface AbstractControl<Value = any, Data = any> {
     source: ControlId,
     options?: IControlEventOptions
   ): void;
+
+  /**
+   * As an alternative to manually setting data (i.e. `AbstractControl#data = newValue`)
+   * you can use `setData()` which uses the standard ControlEvent API and emits a `data`
+   * StateChange. Data values are compared with strict equality (`===`). If it doesn't
+   * look like the data has changed, the event will be ignored.
+   */
+  setData(data: Data, options?: IControlEventOptions): void;
 
   /**
    * Returns an observable of this control's state in the form of

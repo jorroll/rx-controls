@@ -8,6 +8,7 @@ import {
   ValidatorFn,
   IStateChange,
   IControlValidationEvent,
+  ValidationErrors,
 } from './abstract-control';
 import {
   defer,
@@ -19,7 +20,12 @@ import {
   Subscriber,
   Subscription,
 } from 'rxjs';
-import { pluckOptions, isTruthy, isEqual } from './util';
+import {
+  pluckOptions,
+  isTruthy,
+  isEqual,
+  getSimpleStateChangeEventArgs,
+} from './util';
 import {
   map,
   take,
@@ -32,49 +38,66 @@ import {
   shareReplay,
   tap,
 } from 'rxjs/operators';
-import { ValidationErrors } from '@angular/forms';
 
-export interface IControlStateChange<V> {
+export interface IControlStateChange<V, D> {
   value?: IStateChange<V>;
+  disabled?: IStateChange<boolean>;
+  touched?: IStateChange<boolean>;
+  dirty?: IStateChange<boolean>;
+  readonly?: IStateChange<boolean>;
+  submitted?: IStateChange<boolean>;
   errorsStore?: IStateChange<ReadonlyMap<ControlId, ValidationErrors>>;
-  parent?: IStateChange<AbstractControl | null>;
-  // enabled?: IStateChange<boolean>;
   validatorStore?: IStateChange<ReadonlyMap<ControlId, ValidatorFn>>;
   registeredValidators?: IStateChange<ReadonlySet<ControlId>>;
   registeredAsyncValidators?: IStateChange<ReadonlySet<ControlId>>;
   runningValidation?: IStateChange<ReadonlySet<ControlId>>;
   runningAsyncValidation?: IStateChange<ReadonlySet<ControlId>>;
+  pendingStore?: IStateChange<ReadonlySet<ControlId>>;
+  parent?: IStateChange<AbstractControl | null>;
+  data?: IStateChange<D>;
   [key: string]: unknown;
 }
 
-export interface IControlStateChangeEvent<V> extends IControlEvent {
+export interface IControlStateChangeEvent<V, D> extends IControlEvent {
   type: 'StateChange';
-  change: IControlStateChange<V>;
+  change: IControlStateChange<V, D>;
   sideEffects: string[]; // array of other props that have changed;
 }
 
 export interface IControlBaseArgs<Data = any> {
   data?: Data;
   id?: ControlId;
-  // disabled?: boolean;
+  disabled?: boolean;
+  touched?: boolean;
+  dirty?: boolean;
+  readonly?: boolean;
+  submitted?: boolean;
   errors?: null | ValidationErrors | ReadonlyMap<ControlId, ValidationErrors>;
-  // parent?: null | AbstractControl;
-  // validator?: null | ValidatorFn | ReadonlyMap<ControlId, ValidatorFn>;
+  validators?:
+    | null
+    | ValidatorFn
+    | ValidatorFn[]
+    | ReadonlyMap<ControlId, ValidatorFn>;
+  pending?: boolean | ReadonlySet<ControlId>;
 }
 
-export interface IProcessStateChangeFnArgs<Value> {
-  event: IControlStateChangeEvent<Value>;
-  changeType: string;
-  changes?: {
-    change: IControlStateChange<Value>;
-    sideEffects: string[];
-  };
-}
+function composeValidators(
+  validators: undefined | null | ValidatorFn | ValidatorFn[]
+): null | ValidatorFn {
+  if (!validators || (Array.isArray(validators) && validators.length === 0)) {
+    return null;
+  }
 
-export type IProcessStateChangeFnReturn<Value> =
-  | IProcessStateChangeFnArgs<Value> // returned when a state change happens
-  | null // returned when the function
-  | undefined;
+  if (Array.isArray(validators)) {
+    return (control) =>
+      validators.reduce((prev: ValidationErrors | null, curr: ValidatorFn) => {
+        const errors = curr(control);
+        return errors ? { ...prev, ...errors } : prev;
+      }, null);
+  }
+
+  return validators;
+}
 
 function replacer(key: string, value: unknown) {
   if (
@@ -142,14 +165,37 @@ export abstract class ControlBase<Value = any, Data = any>
     share()
   );
 
-  protected _parent: AbstractControl | null = null;
-  get parent() {
-    return this._parent;
-  }
-
   protected _value!: Value;
   get value() {
     return this._value as Value;
+  }
+
+  protected _disabled = false;
+  get enabled() {
+    return !this._disabled;
+  }
+  get disabled() {
+    return this._disabled;
+  }
+
+  protected _touched = false;
+  get touched() {
+    return this._touched;
+  }
+
+  protected _dirty = false;
+  get dirty() {
+    return this._dirty;
+  }
+
+  protected _readonly = false;
+  get readonly() {
+    return this._readonly;
+  }
+
+  protected _submitted = false;
+  get submitted() {
+    return this._submitted;
   }
 
   protected _errors: ValidationErrors | null = null;
@@ -165,17 +211,17 @@ export abstract class ControlBase<Value = any, Data = any>
     return this._errorsStore;
   }
 
+  protected _validator: ValidatorFn | null = null;
+  get validator() {
+    return this._validator;
+  }
+
   protected _validatorStore: ReadonlyMap<ControlId, ValidatorFn> = new Map<
     ControlId,
     ValidatorFn
   >();
   get validatorStore() {
     return this._validatorStore;
-  }
-
-  protected _validator: ValidatorFn | null = null;
-  get validator() {
-    return this._validator;
   }
 
   protected _registeredValidators: ReadonlySet<ControlId> = new Set<
@@ -189,25 +235,31 @@ export abstract class ControlBase<Value = any, Data = any>
     ControlId
   >();
 
-  protected _pendingStore: ReadonlyMap<ControlId, boolean> = new Map<
-    ControlId,
-    boolean
-  >();
-  get pendingStore() {
-    return this._pendingStore;
-  }
-
   protected _pending = false;
   get pending() {
     return this._pending;
   }
 
-  protected _enabled = true;
-  get enabled() {
-    return this._enabled;
+  protected _pendingStore: ReadonlySet<ControlId> = new Set<ControlId>();
+  get pendingStore() {
+    return this._pendingStore;
   }
-  get disabled() {
-    return !this._enabled;
+
+  get valid() {
+    return !this.errors;
+  }
+  get invalid() {
+    return !!this.errors;
+  }
+
+  protected _status: 'DISABLED' | 'PENDING' | 'VALID' | 'INVALID' = 'VALID';
+  get status() {
+    return this._status;
+  }
+
+  protected _parent: AbstractControl | null = null;
+  get parent() {
+    return this._parent;
   }
 
   constructor(controlId: ControlId) {
@@ -217,17 +269,6 @@ export abstract class ControlBase<Value = any, Data = any>
     // need to provide ControlId in constructor otherwise
     // initial errors will have incorrect source ID
     this.id = controlId;
-    // this.data = options.data as Data;
-
-    // this.setValue(value!);
-
-    // if (options.errors) {
-    //   this.setErrors(options.errors);
-    // }
-
-    // if (options.parent) {
-    //   this.setParent(options.parent);
-    // }
   }
 
   observe<
@@ -644,27 +685,15 @@ export abstract class ControlBase<Value = any, Data = any>
   }
 
   setParent(value: AbstractControl | null, options?: IControlEventOptions) {
-    this.emitEvent<IControlStateChangeEvent<Value>>(
-      {
-        type: 'StateChange',
-        change: {
-          parent: () => value,
-        },
-        sideEffects: [],
-      },
+    this.emitEvent<IControlStateChangeEvent<Value, Data>>(
+      getSimpleStateChangeEventArgs({ parent: () => value }),
       options
     );
   }
 
   setValue(value: Value, options?: IControlEventOptions) {
-    this.emitEvent<IControlStateChangeEvent<Value>>(
-      {
-        type: 'StateChange',
-        change: {
-          value: () => value,
-        },
-        sideEffects: [],
-      },
+    this.emitEvent<IControlStateChangeEvent<Value, Data>>(
+      getSimpleStateChangeEventArgs({ value: () => value }),
       options
     );
   }
@@ -675,31 +704,22 @@ export abstract class ControlBase<Value = any, Data = any>
   ) {
     const source = options?.source || this.id;
 
-    let changeFn: IControlStateChange<Value>['errorsStore'];
+    let changeFn: IControlStateChange<Value, Data>['errorsStore'];
 
     if (value instanceof Map) {
       changeFn = () => value;
     } else if (value === null) {
-      changeFn = (old: ReadonlyMap<ControlId, ValidationErrors>) => {
+      changeFn = (old) => {
         const errorsStore = new Map(old);
         errorsStore.delete(source);
         return errorsStore;
       };
     } else {
-      changeFn = (old: ReadonlyMap<ControlId, ValidationErrors>) => {
-        const errorsStore = new Map(old);
-        return errorsStore.set(source, value);
-      };
+      changeFn = (old) => new Map(old).set(source, value);
     }
 
-    this.emitEvent<IControlStateChangeEvent<Value>>(
-      {
-        type: 'StateChange',
-        change: {
-          errorsStore: changeFn,
-        },
-        sideEffects: [],
-      },
+    this.emitEvent<IControlStateChangeEvent<Value, Data>>(
+      getSimpleStateChangeEventArgs({ errorsStore: changeFn }),
       options
     );
   }
@@ -710,14 +730,13 @@ export abstract class ControlBase<Value = any, Data = any>
   ) {
     const source = options?.source || this.id;
 
-    let changeFn: IControlStateChange<Value>['errorsStore'];
+    let changeFn: IControlStateChange<Value, Data>['errorsStore'];
 
     if (value instanceof Map) {
-      changeFn = (old: ReadonlyMap<ControlId, ValidationErrors>) => {
-        return new Map<ControlId, ValidationErrors>([...old, ...value]);
-      };
+      changeFn = (old) =>
+        new Map<ControlId, ValidationErrors>([...old, ...value]);
     } else {
-      changeFn = (old: ReadonlyMap<ControlId, ValidationErrors>) => {
+      changeFn = (old) => {
         let newValue: ValidationErrors = value;
 
         if (Object.entries(newValue).length === 0) return old;
@@ -742,14 +761,105 @@ export abstract class ControlBase<Value = any, Data = any>
       };
     }
 
-    this.emitEvent<IControlStateChangeEvent<Value>>(
-      {
-        type: 'StateChange',
-        change: {
-          errorsStore: changeFn,
-        },
-        sideEffects: [],
-      },
+    this.emitEvent<IControlStateChangeEvent<Value, Data>>(
+      getSimpleStateChangeEventArgs({ errorsStore: changeFn }),
+      options
+    );
+  }
+
+  markTouched(value: boolean, options?: IControlEventOptions) {
+    this.emitEvent<IControlStateChangeEvent<Value, Data>>(
+      getSimpleStateChangeEventArgs({ touched: () => value }),
+      options
+    );
+  }
+
+  markDirty(value: boolean, options?: IControlEventOptions) {
+    this.emitEvent<IControlStateChangeEvent<Value, Data>>(
+      getSimpleStateChangeEventArgs({ dirty: () => value }),
+      options
+    );
+  }
+
+  markReadonly(value: boolean, options?: IControlEventOptions) {
+    this.emitEvent<IControlStateChangeEvent<Value, Data>>(
+      getSimpleStateChangeEventArgs({ readonly: () => value }),
+      options
+    );
+  }
+
+  markDisabled(value: boolean, options?: IControlEventOptions) {
+    this.emitEvent<IControlStateChangeEvent<Value, Data>>(
+      getSimpleStateChangeEventArgs({ disabled: () => value }),
+      options
+    );
+  }
+
+  markSubmitted(value: boolean, options?: IControlEventOptions) {
+    this.emitEvent<IControlStateChangeEvent<Value, Data>>(
+      getSimpleStateChangeEventArgs({ submitted: () => value }),
+      options
+    );
+  }
+
+  markPending(
+    value: boolean | ReadonlySet<ControlId>,
+    options?: IControlEventOptions
+  ) {
+    const source = options?.source || this.id;
+
+    let changeFn: IControlStateChange<Value, Data>['pendingStore'];
+
+    if (value instanceof Set) {
+      changeFn = () => value;
+    } else if (value) {
+      changeFn = (old) => new Set(old).add(source);
+    } else {
+      changeFn = (old) => {
+        const pendingStore = new Set(old);
+        pendingStore.delete(source);
+        return pendingStore;
+      };
+    }
+
+    this.emitEvent<IControlStateChangeEvent<Value, Data>>(
+      getSimpleStateChangeEventArgs({ pendingStore: changeFn }),
+      options
+    );
+  }
+
+  setValidators(
+    value:
+      | ValidatorFn
+      | ValidatorFn[]
+      | ReadonlyMap<ControlId, ValidatorFn>
+      | null,
+    options?: IControlEventOptions
+  ) {
+    const source = options?.source || this.id;
+
+    let changeFn: IControlStateChange<Value, Data>['validatorStore'];
+
+    if (value instanceof Map) {
+      changeFn = () => value as ReadonlyMap<ControlId, ValidatorFn>;
+    } else {
+      const newValue = composeValidators(
+        value as Exclude<typeof value, ReadonlyMap<any, any>>
+      );
+
+      if (newValue) {
+        changeFn = (old) => new Map(old).set(source, newValue);
+      } else {
+        changeFn = (old) => {
+          const validatorStore = new Map(old);
+          validatorStore.delete(source);
+          return validatorStore;
+        };
+      }
+    }
+
+    this.emitEvent<IControlStateChangeEvent<Value, Data>>(
+      getSimpleStateChangeEventArgs({ validatorStore: changeFn }),
       options
     );
   }
@@ -763,16 +873,12 @@ export abstract class ControlBase<Value = any, Data = any>
     }
   > {
     return defer(() => {
-      this.emitEvent<IControlStateChangeEvent<Value>>(
-        {
-          type: 'StateChange',
-          change: {
-            registeredValidators: (old) => {
-              return new Set(old).add(source);
-            },
+      this.emitEvent<IControlStateChangeEvent<Value, Data>>(
+        getSimpleStateChangeEventArgs({
+          registeredValidators: (old) => {
+            return new Set(old).add(source);
           },
-          sideEffects: [],
-        },
+        }),
         options
       );
 
@@ -786,18 +892,14 @@ export abstract class ControlBase<Value = any, Data = any>
         }
       ),
       finalize(() => {
-        this.emitEvent<IControlStateChangeEvent<Value>>(
-          {
-            type: 'StateChange',
-            change: {
-              registeredValidators: (old) => {
-                const newValue = new Set(old);
-                newValue.delete(source);
-                return newValue;
-              },
+        this.emitEvent<IControlStateChangeEvent<Value, Data>>(
+          getSimpleStateChangeEventArgs({
+            registeredValidators: (old) => {
+              const newValue = new Set(old);
+              newValue.delete(source);
+              return newValue;
             },
-            sideEffects: [],
-          },
+          }),
           options
         );
       }),
@@ -809,18 +911,14 @@ export abstract class ControlBase<Value = any, Data = any>
     source: ControlId,
     options?: IControlEventOptions
   ): void {
-    this.emitEvent<IControlStateChangeEvent<Value>>(
-      {
-        type: 'StateChange',
-        change: {
-          runningValidation: (old) => {
-            const newValue = new Set(old);
-            newValue.delete(source);
-            return newValue;
-          },
+    this.emitEvent<IControlStateChangeEvent<Value, Data>>(
+      getSimpleStateChangeEventArgs({
+        runningValidation: (old) => {
+          const newValue = new Set(old);
+          newValue.delete(source);
+          return newValue;
         },
-        sideEffects: [],
-      },
+      }),
       options
     );
   }
@@ -834,16 +932,12 @@ export abstract class ControlBase<Value = any, Data = any>
     }
   > {
     return defer(() => {
-      this.emitEvent<IControlStateChangeEvent<Value>>(
-        {
-          type: 'StateChange',
-          change: {
-            registeredAsyncValidators: (old) => {
-              return new Set(old).add(source);
-            },
+      this.emitEvent<IControlStateChangeEvent<Value, Data>>(
+        getSimpleStateChangeEventArgs({
+          registeredAsyncValidators: (old) => {
+            return new Set(old).add(source);
           },
-          sideEffects: [],
-        },
+        }),
         options
       );
 
@@ -857,18 +951,14 @@ export abstract class ControlBase<Value = any, Data = any>
         }
       ),
       finalize(() => {
-        this.emitEvent<IControlStateChangeEvent<Value>>(
-          {
-            type: 'StateChange',
-            change: {
-              registeredAsyncValidators: (old: ReadonlySet<ControlId>) => {
-                const newValue = new Set(old);
-                newValue.delete(source);
-                return newValue;
-              },
+        this.emitEvent<IControlStateChangeEvent<Value, Data>>(
+          getSimpleStateChangeEventArgs({
+            registeredAsyncValidators: (old: ReadonlySet<ControlId>) => {
+              const newValue = new Set(old);
+              newValue.delete(source);
+              return newValue;
             },
-            sideEffects: [],
-          },
+          }),
           options
         );
       }),
@@ -880,18 +970,23 @@ export abstract class ControlBase<Value = any, Data = any>
     source: ControlId,
     options?: IControlEventOptions
   ): void {
-    this.emitEvent<IControlStateChangeEvent<Value>>(
-      {
-        type: 'StateChange',
-        change: {
-          runningAsyncValidation: (old: ReadonlySet<ControlId>) => {
-            const newValue = new Set(old);
-            newValue.delete(source);
-            return newValue;
-          },
+    this.emitEvent<IControlStateChangeEvent<Value, Data>>(
+      getSimpleStateChangeEventArgs({
+        runningAsyncValidation: (old: ReadonlySet<ControlId>) => {
+          const newValue = new Set(old);
+          newValue.delete(source);
+          return newValue;
         },
-        sideEffects: [],
-      },
+      }),
+      options
+    );
+  }
+
+  setData(data: Data, options?: IControlEventOptions) {
+    this.emitEvent<IControlStateChangeEvent<Value, Data>>(
+      getSimpleStateChangeEventArgs({
+        data: () => data,
+      }),
       options
     );
   }
@@ -902,31 +997,37 @@ export abstract class ControlBase<Value = any, Data = any>
 
   replayState(
     options: Omit<IControlEventOptions, 'idOfOriginatingEvent'> = {}
-  ): Observable<IControlStateChangeEvent<Value>> {
-    const value = this._value;
-    const errorsStore = this._errorsStore;
-    const parent = this._parent;
-    const validatorStore = this._validatorStore;
+  ): Observable<IControlStateChangeEvent<Value, Data>> {
+    const {
+      _value,
+      _disabled,
+      _touched,
+      _dirty,
+      _readonly,
+      _submitted,
+      _errorsStore,
+      _validatorStore,
+      _pendingStore,
+      data,
+    } = this;
 
-    const changes: Array<IControlStateChange<Value>> = [
-      {
-        value: () => value,
-      },
-      {
-        errorsStore: () => errorsStore,
-      },
-      {
-        parent: () => parent,
-      },
-      {
-        validatorStore: () => validatorStore,
-      },
+    const changes: Array<IControlStateChange<Value, Data>> = [
+      { value: () => _value },
+      { disabled: () => _disabled },
+      { touched: () => _touched },
+      { dirty: () => _dirty },
+      { readonly: () => _readonly },
+      { submitted: () => _submitted },
+      { errorsStore: () => _errorsStore },
+      { validatorStore: () => _validatorStore },
+      { pendingStore: () => _pendingStore },
+      { data: () => data },
     ];
 
     let eventId: number;
 
     return from(
-      changes.map<IControlStateChangeEvent<Value>>((change) => ({
+      changes.map<IControlStateChangeEvent<Value, Data>>((change) => ({
         source: this.id,
         meta: {},
         ...pluckOptions(options),
@@ -939,7 +1040,11 @@ export abstract class ControlBase<Value = any, Data = any>
     );
   }
 
-  abstract clone(): ControlBase<Value, Data>;
+  clone(): this {
+    const control = new (this.constructor as any)();
+    this.replayState().subscribe(control.source);
+    return control;
+  }
 
   /**
    * A convenience method for emitting an arbitrary control event.
@@ -973,12 +1078,12 @@ export abstract class ControlBase<Value = any, Data = any>
     this.source.next(normEvent as IControlEvent);
   }
 
-  protected runValidation(options?: IControlEventOptions): string[] {
+  protected runValidation(_options?: IControlEventOptions): string[] {
     const sideEffects: string[] = [];
+    const options = { ..._options, source: this.id };
 
     if (this._validator) {
-      sideEffects.push('errorsStore');
-
+      const oldErrorsStore = this._errorsStore;
       const errors = this._validator(this);
 
       if (errors) {
@@ -987,6 +1092,12 @@ export abstract class ControlBase<Value = any, Data = any>
         const errorsStore = new Map(this._errorsStore);
         errorsStore.delete(this.id);
         this._errorsStore = errorsStore;
+      }
+
+      if (!isEqual(oldErrorsStore, this._errorsStore)) {
+        sideEffects.push('errorsStore');
+
+        this.updateErrorsProp(sideEffects);
       }
     }
 
@@ -1045,7 +1156,7 @@ export abstract class ControlBase<Value = any, Data = any>
     switch (event.type) {
       case 'StateChange': {
         return this.processEvent_StateChange(
-          event as IControlStateChangeEvent<Value>
+          event as IControlStateChangeEvent<Value, Data>
         );
       }
       case 'ValidationStart':
@@ -1061,7 +1172,7 @@ export abstract class ControlBase<Value = any, Data = any>
   }
 
   protected processEvent_StateChange(
-    event: IControlStateChangeEvent<Value>
+    event: IControlStateChangeEvent<Value, Data>
   ): IControlEvent | null {
     const keys = Object.keys(event.change);
 
@@ -1071,59 +1182,70 @@ export abstract class ControlBase<Value = any, Data = any>
       );
     }
 
-    return (
-      this.processStateChange({
-        event,
-        changeType: keys[0],
-      }) || null
-    );
+    return this.processStateChange(keys[0], event);
   }
 
-  /**
-   * Processes a control event. If the event is recognized by this control,
-   * `processEvent()` will return `true`. Otherwise, `false` is returned.
-   *
-   * In general, ControlEvents should not emit additional ControlEvents
-   */
   protected processStateChange(
-    args: IProcessStateChangeFnArgs<Value>
-  ): IControlEvent | null | undefined {
-    switch (args.changeType) {
+    changeType: string,
+    event: IControlStateChangeEvent<Value, Data>
+  ): IControlEvent | null {
+    switch (changeType) {
       case 'value': {
-        return this.processStateChange_Value(args);
+        return this.processStateChange_Value(event);
       }
-      case 'parent': {
-        return this.processStateChange_Parent(args);
+      case 'disabled': {
+        return this.processStateChange_Disabled(event);
+      }
+      case 'touched': {
+        return this.processStateChange_Touched(event);
+      }
+      case 'dirty': {
+        return this.processStateChange_Dirty(event);
+      }
+      case 'readonly': {
+        return this.processStateChange_Readonly(event);
+      }
+      case 'submitted': {
+        return this.processStateChange_Submitted(event);
       }
       case 'errorsStore': {
-        return this.processStateChange_ErrorsStore(args);
+        return this.processStateChange_ErrorsStore(event);
       }
       case 'validatorStore': {
-        return this.processStateChange_ValidatorStore(args);
+        return this.processStateChange_ValidatorStore(event);
       }
       case 'registeredValidators': {
-        return this.processStateChange_RegisteredValidators(args);
+        return this.processStateChange_RegisteredValidators(event);
       }
       case 'registeredAsyncValidators': {
-        return this.processStateChange_RegisteredAsyncValidators(args);
+        return this.processStateChange_RegisteredAsyncValidators(event);
       }
       case 'runningValidation': {
-        return this.processStateChange_RunningValidation(args);
+        return this.processStateChange_RunningValidation(event);
       }
       case 'runningAsyncValidation': {
-        return this.processStateChange_RunningAsyncValidation(args);
+        return this.processStateChange_RunningAsyncValidation(event);
+      }
+      case 'pendingStore': {
+        return this.processStateChange_PendingStore(event);
+      }
+      case 'parent': {
+        return this.processStateChange_Parent(event);
+      }
+      case 'data': {
+        return this.processStateChange_Data(event);
       }
       default: {
-        return;
+        return null;
       }
     }
   }
 
   protected processStateChange_Value(
-    args: IProcessStateChangeFnArgs<Value>
-  ): IControlStateChangeEvent<this['value']> | null {
-    const change = args.event.change.value as NonNullable<
-      IControlStateChange<Value>['value']
+    event: IControlStateChangeEvent<Value, Data>
+  ): IControlStateChangeEvent<Value, Data> | null {
+    const change = event.change.value as NonNullable<
+      IControlStateChange<Value, Data>['value']
     >;
 
     const newValue = change(this._value);
@@ -1133,40 +1255,118 @@ export abstract class ControlBase<Value = any, Data = any>
     this._value = newValue;
 
     return {
-      ...args.event,
+      ...event,
       change: { value: change },
-      sideEffects: this.runValidation(args.event),
+      sideEffects: this.runValidation(event),
     };
   }
 
-  protected processStateChange_Parent(
-    args: IProcessStateChangeFnArgs<Value>
-  ): IControlStateChangeEvent<this['value']> | null {
-    // ignore the parent state changes of linked controls
-    if (args.event.source !== this.id) return null;
-
-    const change = args.event.change.parent as NonNullable<
-      IControlStateChange<Value>['parent']
+  protected processStateChange_Disabled(
+    event: IControlStateChangeEvent<Value, Data>
+  ): IControlStateChangeEvent<Value, Data> | null {
+    const change = event.change.disabled as NonNullable<
+      IControlStateChange<Value, Data>['disabled']
     >;
 
-    const newParent = change(this._parent);
+    const newDisabled = change(this._disabled);
 
-    if (isEqual(this._parent, newParent)) return null;
+    if (isEqual(this._disabled, newDisabled)) return null;
 
-    this._parent = newParent;
+    this._disabled = newDisabled;
+    this._status = this.getControlStatus();
 
     return {
-      ...args.event,
-      change: { parent: change },
+      ...event,
+      change: { disabled: change },
+      sideEffects: ['status'],
+    };
+  }
+
+  protected processStateChange_Touched(
+    event: IControlStateChangeEvent<Value, Data>
+  ): IControlStateChangeEvent<Value, Data> | null {
+    const change = event.change.touched as NonNullable<
+      IControlStateChange<Value, Data>['touched']
+    >;
+
+    const newTouched = change(this._touched);
+
+    if (isEqual(this._touched, newTouched)) return null;
+
+    this._touched = newTouched;
+
+    return {
+      ...event,
+      change: { touched: change },
+      sideEffects: [],
+    };
+  }
+
+  protected processStateChange_Dirty(
+    event: IControlStateChangeEvent<Value, Data>
+  ): IControlStateChangeEvent<Value, Data> | null {
+    const change = event.change.dirty as NonNullable<
+      IControlStateChange<Value, Data>['dirty']
+    >;
+
+    const newDirty = change(this._dirty);
+
+    if (isEqual(this._dirty, newDirty)) return null;
+
+    this._dirty = newDirty;
+
+    return {
+      ...event,
+      change: { dirty: change },
+      sideEffects: [],
+    };
+  }
+
+  protected processStateChange_Readonly(
+    event: IControlStateChangeEvent<Value, Data>
+  ): IControlStateChangeEvent<Value, Data> | null {
+    const change = event.change.readonly as NonNullable<
+      IControlStateChange<Value, Data>['readonly']
+    >;
+
+    const newReadonly = change(this._readonly);
+
+    if (isEqual(this._readonly, newReadonly)) return null;
+
+    this._readonly = newReadonly;
+
+    return {
+      ...event,
+      change: { readonly: change },
+      sideEffects: [],
+    };
+  }
+
+  protected processStateChange_Submitted(
+    event: IControlStateChangeEvent<Value, Data>
+  ): IControlStateChangeEvent<Value, Data> | null {
+    const change = event.change.submitted as NonNullable<
+      IControlStateChange<Value, Data>['submitted']
+    >;
+
+    const newSubmitted = change(this._submitted);
+
+    if (isEqual(this._submitted, newSubmitted)) return null;
+
+    this._submitted = newSubmitted;
+
+    return {
+      ...event,
+      change: { submitted: change },
       sideEffects: [],
     };
   }
 
   protected processStateChange_ErrorsStore(
-    args: IProcessStateChangeFnArgs<Value>
-  ): IControlStateChangeEvent<this['value']> | null {
-    const change = args.event.change.errorsStore as NonNullable<
-      IControlStateChange<Value>['errorsStore']
+    event: IControlStateChangeEvent<Value, Data>
+  ): IControlStateChangeEvent<Value, Data> | null {
+    const change = event.change.errorsStore as NonNullable<
+      IControlStateChange<Value, Data>['errorsStore']
     >;
 
     const newErrorsStore = change(this._errorsStore);
@@ -1175,30 +1375,22 @@ export abstract class ControlBase<Value = any, Data = any>
 
     this._errorsStore = newErrorsStore;
 
-    if (this._errorsStore.size === 0) {
-      this._errors = null;
-    } else {
-      this._errors = Array.from(this._errorsStore).reduce<ValidationErrors>(
-        (p, [, v]) => ({
-          ...p,
-          ...v,
-        }),
-        {}
-      );
-    }
+    const sideEffects: string[] = [];
+
+    this.updateErrorsProp(sideEffects);
 
     return {
-      ...args.event,
+      ...event,
       change: { errorsStore: change },
-      sideEffects: ['errors'],
+      sideEffects,
     };
   }
 
   protected processStateChange_ValidatorStore(
-    args: IProcessStateChangeFnArgs<Value>
-  ): IControlStateChangeEvent<this['value']> | null {
-    const change = args.event.change.validatorStore as NonNullable<
-      IControlStateChange<Value>['validatorStore']
+    event: IControlStateChangeEvent<Value, Data>
+  ): IControlStateChangeEvent<Value, Data> | null {
+    const change = event.change.validatorStore as NonNullable<
+      IControlStateChange<Value, Data>['validatorStore']
     >;
 
     const newValidatorStore = change(this._validatorStore);
@@ -1242,31 +1434,21 @@ export abstract class ControlBase<Value = any, Data = any>
     }
 
     if (this._errorsStore !== oldErrorsStore) {
-      this._errors =
-        this._errorsStore.size === 0
-          ? null
-          : Array.from(this._errorsStore.values()).reduce((prev, curr) => {
-              return {
-                ...prev,
-                ...curr,
-              };
-            }, {} as ValidationErrors);
-
-      sideEffects.push('errors');
+      this.updateErrorsProp(sideEffects);
     }
 
     return {
-      ...args.event,
+      ...event,
       change: { validatorStore: change },
       sideEffects,
     };
   }
 
   protected processStateChange_RegisteredValidators(
-    args: IProcessStateChangeFnArgs<Value>
-  ): IControlStateChangeEvent<this['value']> | null {
-    const change = args.event.change.registeredValidators as NonNullable<
-      IControlStateChange<Value>['registeredValidators']
+    event: IControlStateChangeEvent<Value, Data>
+  ): IControlStateChangeEvent<Value, Data> | null {
+    const change = event.change.registeredValidators as NonNullable<
+      IControlStateChange<Value, Data>['registeredValidators']
     >;
 
     const newRegisteredValidators = change(this._registeredValidators);
@@ -1280,10 +1462,10 @@ export abstract class ControlBase<Value = any, Data = any>
   }
 
   protected processStateChange_RegisteredAsyncValidators(
-    args: IProcessStateChangeFnArgs<Value>
-  ): IControlStateChangeEvent<this['value']> | null {
-    const change = args.event.change.registeredAsyncValidators as NonNullable<
-      IControlStateChange<Value>['registeredAsyncValidators']
+    event: IControlStateChangeEvent<Value, Data>
+  ): IControlStateChangeEvent<Value, Data> | null {
+    const change = event.change.registeredAsyncValidators as NonNullable<
+      IControlStateChange<Value, Data>['registeredAsyncValidators']
     >;
 
     const newRegisteredAsyncValidators = change(
@@ -1301,10 +1483,10 @@ export abstract class ControlBase<Value = any, Data = any>
   }
 
   protected processStateChange_RunningValidation(
-    args: IProcessStateChangeFnArgs<Value>
-  ): IControlStateChangeEvent<this['value']> | null {
-    const change = args.event.change.runningValidation as NonNullable<
-      IControlStateChange<Value>['runningValidation']
+    event: IControlStateChangeEvent<Value, Data>
+  ): IControlStateChangeEvent<Value, Data> | null {
+    const change = event.change.runningValidation as NonNullable<
+      IControlStateChange<Value, Data>['runningValidation']
     >;
 
     const newRunningValidation = change(this._runningValidation);
@@ -1324,7 +1506,7 @@ export abstract class ControlBase<Value = any, Data = any>
         this.emitEvent({
           type: 'AsyncValidationStart',
           value: this.value,
-          idOfOriginatingEvent: args.event.idOfOriginatingEvent,
+          idOfOriginatingEvent: event.idOfOriginatingEvent,
         });
       } else {
         // This is needed so that subscribers can always tell
@@ -1332,13 +1514,13 @@ export abstract class ControlBase<Value = any, Data = any>
         this.emitEvent({
           type: 'AsyncValidationStart',
           value: this.value,
-          idOfOriginatingEvent: args.event.idOfOriginatingEvent,
+          idOfOriginatingEvent: event.idOfOriginatingEvent,
         });
 
         this.emitEvent({
           type: 'ValidationComplete',
           value: this.value,
-          idOfOriginatingEvent: args.event.idOfOriginatingEvent,
+          idOfOriginatingEvent: event.idOfOriginatingEvent,
         });
       }
     }
@@ -1347,10 +1529,10 @@ export abstract class ControlBase<Value = any, Data = any>
   }
 
   protected processStateChange_RunningAsyncValidation(
-    args: IProcessStateChangeFnArgs<Value>
-  ): IControlStateChangeEvent<this['value']> | null {
-    const change = args.event.change.runningAsyncValidation as NonNullable<
-      IControlStateChange<Value>['runningAsyncValidation']
+    event: IControlStateChangeEvent<Value, Data>
+  ): IControlStateChangeEvent<Value, Data> | null {
+    const change = event.change.runningAsyncValidation as NonNullable<
+      IControlStateChange<Value, Data>['runningAsyncValidation']
     >;
 
     const newRunningAsyncValidation = change(this._runningAsyncValidation);
@@ -1370,18 +1552,125 @@ export abstract class ControlBase<Value = any, Data = any>
       this.emitEvent({
         type: 'ValidationComplete',
         value: this.value,
-        idOfOriginatingEvent: args.event.idOfOriginatingEvent,
+        idOfOriginatingEvent: event.idOfOriginatingEvent,
       });
     }
 
     return null;
+  }
+
+  protected processStateChange_PendingStore(
+    event: IControlStateChangeEvent<Value, Data>
+  ): IControlStateChangeEvent<Value, Data> | null {
+    const change = event.change.pendingStore as NonNullable<
+      IControlStateChange<Value, Data>['pendingStore']
+    >;
+
+    const newPendingStore = change(this._pendingStore);
+
+    if (isEqual(this._pendingStore, newPendingStore)) return null;
+
+    const newPending = newPendingStore.size > 0;
+    const sideEffects = newPending === this._pending ? [] : ['pending'];
+    this._pendingStore = newPendingStore;
+    this._pending = newPending;
+
+    const newStatus = this.getControlStatus();
+
+    if (newStatus !== this._status) {
+      sideEffects.push('status');
+      this._status = newStatus;
+    }
+
+    return {
+      ...event,
+      change: { pendingStore: change },
+      sideEffects,
+    };
+  }
+
+  protected processStateChange_Parent(
+    event: IControlStateChangeEvent<Value, Data>
+  ): IControlStateChangeEvent<Value, Data> | null {
+    // ignore the parent state changes of linked controls
+    if (event.source !== this.id) return null;
+
+    const change = event.change.parent as NonNullable<
+      IControlStateChange<Value, Data>['parent']
+    >;
+
+    const newParent = change(this._parent);
+
+    if (isEqual(this._parent, newParent)) return null;
+
+    this._parent = newParent;
+
+    return {
+      ...event,
+      change: { parent: change },
+      sideEffects: [],
+    };
+  }
+
+  protected processStateChange_Data(
+    event: IControlStateChangeEvent<Value, Data>
+  ): IControlStateChangeEvent<Value, Data> | null {
+    const change = event.change.data as NonNullable<
+      IControlStateChange<Value, Data>['data']
+    >;
+
+    const newData = change(this.data);
+
+    if (Number.isNaN(newData)) {
+      throw new Error('Cannot use "setData" with a NaN value');
+    }
+
+    if (this.data === newData) return null;
+
+    this.data = newData;
+
+    return {
+      ...event,
+      change: { data: change },
+      sideEffects: [],
+    };
+  }
+
+  protected updateErrorsProp(sideEffects: string[]) {
+    sideEffects.push('errors');
+
+    if (this._errorsStore.size === 0) {
+      this._errors = null;
+    } else {
+      this._errors = Array.from(this._errorsStore).reduce<ValidationErrors>(
+        (p, [, v]) => ({
+          ...p,
+          ...v,
+        }),
+        {}
+      );
+    }
+
+    const newStatus = this.getControlStatus();
+
+    if (newStatus !== this._status) {
+      sideEffects.push('status');
+      this._status = newStatus;
+    }
+  }
+
+  protected getControlStatus() {
+    if (this.disabled) return 'DISABLED';
+    if (this.pending) return 'PENDING';
+    if (this.invalid) return 'INVALID';
+    return 'VALID';
   }
 }
 
 // function isControlEvent(
 //   type: 'StateChange',
 //   event: IControlEvent
-// ): event is IControlStateChangeEvent<Value>;
+// ): event is IControlStateChangeEvent<Value, Data>;
 // function isControlEvent(type: 'ValidationStart', event: IControlEvent): boolean;
 // function isControlEvent<T extends IControlEvent['type']>(
 //   type: T,

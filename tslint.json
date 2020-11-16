@@ -12,7 +12,7 @@
       "severity": "warning"
     },
     "eofline": true,
-    "import-blacklist": [true, "rxjs/Rx"],
+    "import-blacklist": [true, "rxjs/Rx", "@angular/forms"],
     "import-spacing": true,
     "indent": {
       "options": ["spaces"]

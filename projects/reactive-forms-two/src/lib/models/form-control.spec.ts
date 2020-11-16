@@ -1,119 +1,392 @@
-import { ValidationErrors } from '@angular/forms';
 import { Subject } from 'rxjs';
 import { skip, take, takeUntil, toArray } from 'rxjs/operators';
-import { AbstractControl, ControlId } from './abstract-control';
-import { FormControl as TestControlBase } from './form-control';
-import { wait } from './test-util';
+import {
+  AbstractControl,
+  ControlId,
+  ValidationErrors,
+  ValidatorFn,
+} from './abstract-control';
+import { FormControl } from './form-control';
+import { FormGroup } from './form-group';
+import { testAllAbstractControlDefaultsExcept, wait } from './test-util';
 
-describe('ControlBase', () => {
+describe('FormControl', () => {
   beforeEach(() => {
     AbstractControl.eventId(0);
   });
 
   describe('initialization', () => {
-    describe('defaults', () => {
-      it('value', () => {
-        const c = new TestControlBase();
-        expect(c.value).toEqual(null);
-      });
-
-      it('id', () => {
-        const c = new TestControlBase();
-        expect(typeof c.id).toEqual('symbol');
-      });
-
-      it('parent', () => {
-        const c = new TestControlBase();
-        expect(c.parent).toEqual(null);
-      });
-
-      it('data', () => {
-        const c = new TestControlBase();
-        expect(c.data).toEqual(undefined);
-      });
-
-      it('enabled', () => {
-        const c = new TestControlBase();
-        expect(c.enabled).toEqual(true);
-      });
-
-      it('disabled', () => {
-        const c = new TestControlBase();
-        expect(c.disabled).toEqual(false);
-      });
+    it('defaults', () => {
+      testAllAbstractControlDefaultsExcept(new FormControl());
     });
 
     describe('options', () => {
-      function testAllDefaultsExcept(
-        c: TestControlBase<any>,
-        ...skipTests: string[]
-      ): void {
-        if (!skipTests.includes('value')) {
-          expect(c.value).toEqual(null);
-        }
-        if (!skipTests.includes('id')) {
-          expect(typeof c.id).toEqual('symbol');
-        }
-        if (!skipTests.includes('parent')) {
-          expect(c.parent).toEqual(null);
-        }
-        if (!skipTests.includes('data')) {
-          expect(c.data).toEqual(undefined);
-        }
-        if (!skipTests.includes('enabled')) {
-          expect(c.enabled).toEqual(true);
-        }
-        if (!skipTests.includes('disabled')) {
-          expect(c.disabled).toEqual(false);
-        }
-      }
+      let c: FormControl;
 
       it('value', () => {
-        const c = new TestControlBase('one');
+        c = new FormControl('one');
 
         expect(c.value).toEqual('one');
 
-        testAllDefaultsExcept(c, 'value');
+        testAllAbstractControlDefaultsExcept(c, 'value');
       });
 
       it('id', () => {
-        const c = new TestControlBase(null, {
+        c = new FormControl(null, {
           id: 'one',
         });
 
         expect(c.id).toEqual('one');
-        testAllDefaultsExcept(c, 'id');
+        testAllAbstractControlDefaultsExcept(c, 'id');
       });
 
       it('data', () => {
-        const c = new TestControlBase(null, {
+        c = new FormControl(null, {
           data: 'one',
         });
 
         expect(c.data).toEqual('one');
-        testAllDefaultsExcept(c, 'data');
+        testAllAbstractControlDefaultsExcept(c, 'data');
       });
 
-      // it('disabled', () => {
-      //   const c = new TestControlBase(null, {
-      //     disabled: true,
-      //   });
+      it('disabled', () => {
+        c = new FormControl(null, {
+          disabled: true,
+        });
 
-      //   expect(c.enabled).toEqual(false);
-      //   expect(c.disabled).toEqual(true);
-      //   testAllDefaultsExcept(c, 'enabled', 'disabled');
-      // });
+        expect(c.enabled).toEqual(false);
+        expect(c.disabled).toEqual(true);
+        expect(c.status).toEqual('DISABLED');
+        testAllAbstractControlDefaultsExcept(
+          c,
+          'enabled',
+          'disabled',
+          'status'
+        );
+
+        c = new FormControl(null, {
+          disabled: false,
+        });
+
+        expect(c.enabled).toEqual(true);
+        expect(c.disabled).toEqual(false);
+        expect(c.status).toEqual('VALID');
+        testAllAbstractControlDefaultsExcept(
+          c,
+          'enabled',
+          'disabled',
+          'status'
+        );
+      });
+
+      it('dirty', () => {
+        c = new FormControl(null, {
+          dirty: true,
+        });
+
+        expect(c.dirty).toEqual(true);
+        testAllAbstractControlDefaultsExcept(c, 'dirty');
+
+        c = new FormControl(null, {
+          dirty: false,
+        });
+
+        expect(c.dirty).toEqual(false);
+        testAllAbstractControlDefaultsExcept(c, 'dirty');
+      });
+
+      it('readonly', () => {
+        c = new FormControl(null, {
+          readonly: true,
+        });
+
+        expect(c.readonly).toEqual(true);
+        testAllAbstractControlDefaultsExcept(c, 'readonly');
+
+        c = new FormControl(null, {
+          readonly: false,
+        });
+
+        expect(c.readonly).toEqual(false);
+        testAllAbstractControlDefaultsExcept(c, 'readonly');
+      });
+
+      it('submitted', () => {
+        c = new FormControl(null, {
+          submitted: true,
+        });
+
+        expect(c.submitted).toEqual(true);
+        testAllAbstractControlDefaultsExcept(c, 'submitted');
+
+        c = new FormControl(null, {
+          submitted: false,
+        });
+
+        expect(c.submitted).toEqual(false);
+        testAllAbstractControlDefaultsExcept(c, 'submitted');
+      });
+
+      it('errors', () => {
+        c = new FormControl(null, {
+          errors: { anError: true },
+        });
+
+        expect(c.errors).toEqual({ anError: true });
+        expect(c.errorsStore).toEqual(new Map([[c.id, { anError: true }]]));
+        expect(c.valid).toEqual(false);
+        expect(c.invalid).toEqual(true);
+        expect(c.status).toEqual('INVALID');
+        testAllAbstractControlDefaultsExcept(
+          c,
+          'errors',
+          'errorsStore',
+          'valid',
+          'invalid',
+          'status'
+        );
+
+        const errors = new Map([['one', { secondError: true }]]);
+
+        c = new FormControl(null, { errors });
+
+        expect(c.errors).toEqual(errors.get('one'));
+        expect(c.errorsStore).toEqual(errors);
+        expect(c.valid).toEqual(false);
+        expect(c.invalid).toEqual(true);
+        expect(c.status).toEqual('INVALID');
+        testAllAbstractControlDefaultsExcept(
+          c,
+          'errors',
+          'errorsStore',
+          'valid',
+          'invalid',
+          'status'
+        );
+
+        c = new FormControl(null, { errors: null });
+
+        expect(c.errors).toEqual(null);
+        expect(c.errorsStore).toEqual(new Map());
+        expect(c.valid).toEqual(true);
+        expect(c.invalid).toEqual(false);
+        expect(c.status).toEqual('VALID');
+        testAllAbstractControlDefaultsExcept(
+          c,
+          'errors',
+          'errorsStore',
+          'valid',
+          'invalid',
+          'status'
+        );
+      });
+
+      it('validator', () => {
+        let validators:
+          | ValidatorFn
+          | ValidatorFn[]
+          | Map<ControlId, ValidatorFn> = (c) => null;
+
+        c = new FormControl(null, { validators });
+
+        expect(c.validator).toEqual(expect.any(Function));
+        expect(c.validatorStore).toEqual(new Map([[c.id, validators]]));
+        expect(c.valid).toEqual(true);
+        expect(c.invalid).toEqual(false);
+        expect(c.errors).toEqual(null);
+        expect(c.errorsStore).toEqual(new Map());
+        expect(c.status).toEqual('VALID');
+        testAllAbstractControlDefaultsExcept(
+          c,
+          'validator',
+          'validatorStore',
+          'valid',
+          'invalid',
+          'errors',
+          'errorsStore',
+          'status'
+        );
+
+        validators = [() => null, () => ({ error: true })];
+
+        c = new FormControl(null, { validators });
+
+        expect(c.validator).toEqual(expect.any(Function));
+        expect(c.validatorStore).toEqual(
+          new Map([[c.id, expect.any(Function)]])
+        );
+        expect(c.valid).toEqual(false);
+        expect(c.invalid).toEqual(true);
+        expect(c.errors).toEqual({ error: true });
+        expect(c.errorsStore).toEqual(new Map([[c.id, { error: true }]]));
+        expect(c.status).toEqual('INVALID');
+        testAllAbstractControlDefaultsExcept(
+          c,
+          'validator',
+          'validatorStore',
+          'valid',
+          'invalid',
+          'errors',
+          'errorsStore',
+          'status'
+        );
+
+        const fn1 = (() => null) as ValidatorFn;
+        const fn2 = (() => ({ error: true })) as ValidatorFn;
+
+        validators = new Map([
+          ['one', fn1],
+          ['two', fn2],
+        ]);
+
+        c = new FormControl(null, { validators });
+
+        expect(c.validator).toEqual(expect.any(Function));
+        expect(c.validatorStore).toEqual(
+          new Map([
+            ['one', fn1],
+            ['two', fn2],
+          ])
+        );
+        expect(c.valid).toEqual(false);
+        expect(c.invalid).toEqual(true);
+        expect(c.errors).toEqual({ error: true });
+        expect(c.errorsStore).toEqual(new Map([[c.id, { error: true }]]));
+        expect(c.status).toEqual('INVALID');
+        testAllAbstractControlDefaultsExcept(
+          c,
+          'validator',
+          'validatorStore',
+          'valid',
+          'invalid',
+          'errors',
+          'errorsStore',
+          'status'
+        );
+
+        c = new FormControl(null, { validators: null });
+
+        expect(c.validator).toEqual(null);
+        expect(c.validatorStore).toEqual(new Map());
+        expect(c.valid).toEqual(true);
+        expect(c.invalid).toEqual(false);
+        expect(c.errors).toEqual(null);
+        expect(c.errorsStore).toEqual(new Map());
+        expect(c.status).toEqual('VALID');
+        testAllAbstractControlDefaultsExcept(
+          c,
+          'validator',
+          'validatorStore',
+          'valid',
+          'invalid',
+          'errors',
+          'errorsStore',
+          'status'
+        );
+      });
+
+      it('pending', () => {
+        c = new FormControl(null, {
+          pending: true,
+        });
+
+        expect(c.pending).toEqual(true);
+        expect(c.pendingStore).toEqual(new Set([c.id]));
+        expect(c.status).toEqual('PENDING');
+        testAllAbstractControlDefaultsExcept(
+          c,
+          'pending',
+          'pendingStore',
+          'status'
+        );
+
+        c = new FormControl(null, {
+          pending: new Set(['one']),
+        });
+
+        expect(c.pending).toEqual(true);
+        expect(c.pendingStore).toEqual(new Set(['one']));
+        expect(c.status).toEqual('PENDING');
+        testAllAbstractControlDefaultsExcept(
+          c,
+          'pending',
+          'pendingStore',
+          'status'
+        );
+
+        c = new FormControl(null, {
+          pending: false,
+        });
+
+        expect(c.pending).toEqual(false);
+        expect(c.pendingStore).toEqual(new Set());
+        expect(c.status).toEqual('VALID');
+        testAllAbstractControlDefaultsExcept(
+          c,
+          'pending',
+          'pendingStore',
+          'status'
+        );
+      });
+    });
+  });
+
+  describe('clone', () => {
+    it('', () => {
+      const parent = new FormGroup();
+
+      const original = new FormControl('one', {
+        data: 'one',
+        dirty: true,
+        disabled: true,
+        errors: { error: true },
+        id: 'controlId',
+        pending: true,
+        readonly: true,
+        submitted: true,
+        touched: true,
+        validators: (c) => null,
+      });
+
+      original.setParent(parent);
+
+      const clone = original.clone();
+
+      expect(clone).not.toBe(original);
+      expect(clone).toBeInstanceOf(FormControl);
+
+      expect(clone.data).toEqual(original.data);
+      expect(clone.dirty).toEqual(original.dirty);
+      expect(clone.disabled).toEqual(original.disabled);
+      expect(clone.enabled).toEqual(original.enabled);
+      expect(clone.errors).toEqual(original.errors);
+      expect(clone.errorsStore).toEqual(original.errorsStore);
+      expect(clone.id).not.toEqual(original.id);
+      expect(clone.invalid).toEqual(original.invalid);
+      expect(clone.parent).not.toEqual(original.parent);
+      expect(clone.pending).toEqual(original.pending);
+      expect(clone.pendingStore).toEqual(original.pendingStore);
+      expect(clone.readonly).toEqual(original.readonly);
+      expect(clone.status).toEqual(original.status);
+      expect(clone.submitted).toEqual(original.submitted);
+      expect(clone.touched).toEqual(original.touched);
+      expect(clone.valid).toEqual(original.valid);
+      expect(clone.validator).toEqual(expect.any(Function));
+      expect(clone.validatorStore).toEqual(
+        new Map([[original.id, expect.any(Function)]])
+      );
+      expect(clone.value).toEqual(original.value);
     });
   });
 
   describe('setValue', () => {
-    // let g: TestControlBase;
-    let c: TestControlBase;
-    // let o: TestControlBase;
+    // let g: FormControl;
+    let c: FormControl;
+    // let o: FormControl;
     beforeEach(() => {
-      c = new TestControlBase('oldValue');
-      // o = new TestControlBase('otherValue');
-      // g = new TestControlBase({ one: c });
+      c = new FormControl('oldValue');
+      // o = new FormControl('otherValue');
+      // g = new FormControl({ one: c });
     });
 
     it('should have starting value', () => {
@@ -191,10 +464,10 @@ describe('ControlBase', () => {
   });
 
   describe('setParent', () => {
-    // let g: TestControlBase;
-    let c: TestControlBase;
+    // let g: FormControl;
+    let c: FormControl;
     beforeEach(() => {
-      c = new TestControlBase('oldValue');
+      c = new FormControl('oldValue');
     });
 
     it('should start with no parent', () => {
@@ -204,7 +477,7 @@ describe('ControlBase', () => {
     it('should set the parent of the control', () => {
       expect.assertions(2);
 
-      const parent = new TestControlBase();
+      const parent = new FormControl();
 
       const promise1 = c.events.pipe(take(1)).forEach((event) => {
         expect(event).toEqual({
@@ -228,9 +501,9 @@ describe('ControlBase', () => {
   });
 
   describe('setErrors', () => {
-    let c: TestControlBase;
+    let c: FormControl;
     beforeEach(() => {
-      c = new TestControlBase('oldValue');
+      c = new FormControl('oldValue');
     });
 
     it('should start with no errors', () => {
@@ -255,7 +528,7 @@ describe('ControlBase', () => {
             change: {
               errorsStore: expect.any(Function),
             },
-            sideEffects: ['errors'],
+            sideEffects: ['errors', 'status'],
           });
         });
 
@@ -289,7 +562,7 @@ describe('ControlBase', () => {
             change: {
               errorsStore: expect.any(Function),
             },
-            sideEffects: ['errors'],
+            sideEffects: ['errors', 'status'],
           });
         });
 
@@ -322,7 +595,7 @@ describe('ControlBase', () => {
             change: {
               errorsStore: expect.any(Function),
             },
-            sideEffects: ['errors'],
+            sideEffects: ['errors', 'status'],
           });
         });
 
@@ -355,7 +628,7 @@ describe('ControlBase', () => {
             change: {
               errorsStore: expect.any(Function),
             },
-            sideEffects: ['errors'],
+            sideEffects: ['errors', 'status'],
           });
         });
 
@@ -369,9 +642,9 @@ describe('ControlBase', () => {
   });
 
   describe('validationService', () => {
-    let c: TestControlBase;
+    let c: FormControl;
     beforeEach(() => {
-      c = new TestControlBase('oldValue');
+      c = new FormControl('oldValue');
     });
 
     it('with one service', async () => {
@@ -443,7 +716,7 @@ describe('ControlBase', () => {
         change: {
           errorsStore: expect.any(Function),
         },
-        sideEffects: ['errors'],
+        sideEffects: ['errors', 'status'],
       });
 
       // expect(five).toEqual({
@@ -489,75 +762,44 @@ describe('ControlBase', () => {
   });
 
   describe(`replayState`, () => {
-    let a: TestControlBase<string>;
-    let b: TestControlBase<number>;
+    let a: FormControl<string>;
+    let b: FormControl<number>;
     beforeEach(() => {
-      a = new TestControlBase('one');
-      b = new TestControlBase(2);
+      a = new FormControl('one');
+      b = new FormControl(2);
     });
 
-    it('', () => {
-      AbstractControl.eventId(0);
-
+    it('', async () => {
       const state = a.replayState();
 
-      const promise1 = state.pipe(take(1)).forEach((event) => {
+      const changes = [
+        { value: expect.any(Function) },
+        { disabled: expect.any(Function) },
+        { touched: expect.any(Function) },
+        { dirty: expect.any(Function) },
+        { readonly: expect.any(Function) },
+        { submitted: expect.any(Function) },
+        { errorsStore: expect.any(Function) },
+        { validatorStore: expect.any(Function) },
+        { pendingStore: expect.any(Function) },
+        { data: expect.any(Function) },
+      ];
+
+      const events = await state
+        .pipe(take(changes.length), toArray())
+        .toPromise();
+
+      events.forEach((event, i) => {
         expect(event).toEqual({
           type: 'StateChange',
-          eventId: 1,
-          idOfOriginatingEvent: 1,
+          eventId: expect.any(Number),
+          idOfOriginatingEvent: expect.any(Number),
           source: a.id,
-          change: {
-            value: expect.any(Function),
-          },
           sideEffects: [],
           meta: {},
+          change: changes[i],
         });
       });
-
-      const promise2 = state.pipe(skip(1), take(1)).forEach((event) => {
-        expect(event).toEqual({
-          type: 'StateChange',
-          eventId: 2,
-          idOfOriginatingEvent: 2,
-          source: a.id,
-          change: {
-            errorsStore: expect.any(Function),
-          },
-          sideEffects: [],
-          meta: {},
-        });
-      });
-
-      const promise3 = state.pipe(skip(2), take(1)).forEach((event) => {
-        expect(event).toEqual({
-          type: 'StateChange',
-          eventId: 3,
-          idOfOriginatingEvent: 3,
-          source: a.id,
-          change: {
-            parent: expect.any(Function),
-          },
-          sideEffects: [],
-          meta: {},
-        });
-      });
-
-      const promise4 = state.pipe(skip(3), take(1)).forEach((event) => {
-        expect(event).toEqual({
-          type: 'StateChange',
-          eventId: 4,
-          idOfOriginatingEvent: 4,
-          source: a.id,
-          change: {
-            validatorStore: expect.any(Function),
-          },
-          sideEffects: [],
-          meta: {},
-        });
-      });
-
-      return Promise.all([promise1, promise2, promise3, promise4]);
     });
 
     it('can be subscribed to multiple times', () => {
@@ -583,9 +825,9 @@ describe('ControlBase', () => {
   });
 
   describe(`observe`, () => {
-    let a: TestControlBase;
+    let a: FormControl;
     beforeEach(() => {
-      a = new TestControlBase();
+      a = new FormControl();
     });
 
     describe('value', () => {
@@ -679,7 +921,7 @@ describe('ControlBase', () => {
           expect(p).toEqual(null);
         });
 
-      const parent = new TestControlBase();
+      const parent = new FormControl();
 
       const promise2 = a
         .observe('parent')
@@ -744,9 +986,9 @@ describe('ControlBase', () => {
   });
 
   describe(`observeChanges`, () => {
-    let a: TestControlBase;
+    let a: FormControl;
     beforeEach(() => {
-      a = new TestControlBase();
+      a = new FormControl();
     });
 
     describe('value', () => {
@@ -818,7 +1060,7 @@ describe('ControlBase', () => {
     });
 
     it('parent', () => {
-      const parent = new TestControlBase();
+      const parent = new FormControl();
 
       const promise1 = a
         .observeChanges('parent')
@@ -869,11 +1111,11 @@ describe('ControlBase', () => {
   });
 
   describe(`link`, () => {
-    let a: TestControlBase;
-    let b: TestControlBase;
+    let a: FormControl;
+    let b: FormControl;
     beforeEach(() => {
-      a = new TestControlBase('one');
-      b = new TestControlBase(2);
+      a = new FormControl('one');
+      b = new FormControl(2);
     });
 
     it(`a to b`, () => {

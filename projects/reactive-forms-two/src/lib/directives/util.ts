@@ -80,12 +80,12 @@ export function resolveControlContainerAccessor(
 
 export function isValueStateChange<T = unknown>(
   event: IControlEvent
-): event is IControlStateChangeEvent<T> & {
+): event is IControlStateChangeEvent<T, any> & {
   change: { value: IStateChange<T> };
 } {
   return (
     event.type === 'StateChange' &&
-    !!(event as IControlStateChangeEvent<T>).change.value
+    !!(event as IControlStateChangeEvent<T, any>).change.value
   );
 }
 

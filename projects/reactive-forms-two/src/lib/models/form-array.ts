@@ -70,36 +70,36 @@ export class FormArray<
 > extends ControlContainerBase<Controls, Data> {
   static id = 0;
 
-  protected _controlsStore: ReadonlyMap<number, Controls[number]> = new Map();
-  get controlsStore() {
-    return this._controlsStore;
-  }
+  // protected _controlsStore: ReadonlyMap<number, Controls[number]> = new Map();
+  // get controlsStore() {
+  //   return this._controlsStore;
+  // }
 
-  protected _controls: Controls;
+  // protected _controls: Controls;
 
-  protected _enabledValue: ControlsEnabledValue<Controls>;
-  get enabledValue() {
-    return this._enabledValue;
-  }
+  // protected _enabledValue: ControlsEnabledValue<Controls>;
+  // get enabledValue() {
+  //   return this._enabledValue;
+  // }
 
   constructor(
     controls: Controls = ([] as unknown) as Controls,
-    options: IFormArrayArgs<Data> = {},
+    options: IFormArrayArgs<Data> = {}
   ) {
     super(
       options.id || Symbol(`FormArray-${FormArray.id++}`),
-      extractValue(controls),
-      options,
+      controls,
+      options
     );
 
-    this._controls = (controls.slice() as unknown) as Controls;
-    this._controlsStore = new Map<number, Controls[number]>(
-      this._controls.map((c, i) => [i, c]) as any,
-    );
-    this._enabledValue = extractEnabledValue(controls);
-
-    // this.setupControls(new Map());
-    // this.registerControls();
+    // The constructor's call to "setControls" will only actually fire
+    // if a non-default value is provided. In the case of a default value,
+    // the following properties need be manually set.
+    if (!this._controls) this._controls = ([] as unknown) as Controls;
+    if (!this._value) this._value = ([] as unknown) as ControlsValue<Controls>;
+    if (!this._enabledValue) {
+      this._enabledValue = ([] as unknown) as ControlsEnabledValue<Controls>;
+    }
   }
 
   get<A extends number>(a: A): Controls[A];
@@ -164,7 +164,7 @@ export class FormArray<
 
   patchValue(
     value: ControlsValue<Controls>,
-    options: IControlEventOptions = {},
+    options: IControlEventOptions = {}
   ) {
     // if (!Array.isArray(value)) {
     //   throw new Error(
@@ -206,12 +206,12 @@ export class FormArray<
   setControl<N extends number>(
     index: N,
     control: Controls[N] | null,
-    options: IControlEventOptions = {},
+    options: IControlEventOptions = {}
   ) {
     if (index > this._controls.length) {
       throw new Error(
         'Invalid FormArray#setControl index value. ' +
-          'Provided index cannot be greater than FormArray#controls.length',
+          'Provided index cannot be greater than FormArray#controls.length'
       );
     }
 
@@ -252,7 +252,7 @@ export class FormArray<
 
   removeControl<N extends number>(
     control: N | Controls[number],
-    options: IControlEventOptions = {},
+    options: IControlEventOptions = {}
   ) {
     const index =
       typeof control === 'object'
@@ -420,19 +420,17 @@ export class FormArray<
 }
 
 function extractEnabledValue<T extends ReadonlyArray<AbstractControl>>(
-  controls: T,
+  controls: T
 ): ControlsEnabledValue<T> {
   return controls
     .filter((c) => c.enabled)
     .map((ctrl) =>
-      ControlContainer.isControlContainer(ctrl)
-        ? ctrl.enabledValue
-        : ctrl.value,
+      ControlContainer.isControlContainer(ctrl) ? ctrl.enabledValue : ctrl.value
     ) as any;
 }
 
 function extractValue<T extends ReadonlyArray<AbstractControl>>(
-  controls: T,
+  controls: T
 ): ControlsValue<T> {
   return controls.map((ctrl) => ctrl.value) as any;
 }

@@ -1,6 +1,12 @@
 import { Subscription, concat, Observable, of, from } from 'rxjs';
-import { map } from 'rxjs/operators';
-import { AbstractControl, IControlEventOptions } from './abstract-control';
+import { filter, map } from 'rxjs/operators';
+import {
+  AbstractControl,
+  ControlId,
+  IControlEvent,
+  IControlEventOptions,
+  ValidationErrors,
+} from './abstract-control';
 import {
   ControlContainer,
   ControlsValue,
@@ -8,69 +14,326 @@ import {
   IControlContainerStateChangeEvent,
   IControlContainerStateChange,
   IChildControlStateChangeEvent,
+  GenericControlsObject,
+  ContainerControls,
+  IChildControlEvent,
+  // IChildControlEvent,
 } from './control-container';
 import {
   ControlBase,
+  IControlBaseArgs,
   IControlStateChangeEvent,
-  IProcessStateChangeFnArgs,
 } from './control-base';
-import { pluckOptions } from './util';
+import {
+  getSimpleContainerStateChangeEventArgs,
+  isTruthy,
+  pluckOptions,
+} from './util';
 
-export interface IProcessContainerStateChangeFnArgs<Value> {
-  event: IControlContainerStateChangeEvent<Value>;
-  changes?: {
-    change: IControlContainerStateChange<Value>;
-    sideEffects?: string[];
-  };
-}
+// export interface IProcessContainerStateChangeFnArgs<
+//   Controls extends GenericControlsObject,
+//   D
+// > extends IProcessStateChangeFnArgs<ControlsValue<Controls>, D> {
+//   event: IControlContainerStateChangeEvent<Controls, D>;
+//   changes?: {
+//     change: IControlContainerStateChange<Controls, D>;
+//     sideEffects: string[];
+//   };
+// }
 
-export interface IProcessChildStateChangeFnArgs<
-  Controls extends
-    | {
-        readonly [key: string]: AbstractControl;
-      }
-    | {
-        readonly [key: number]: AbstractControl;
-      }
-> extends IChildControlStateChangeEvent<Controls> {
-  changeType: string;
-  changes?: {
-    change: IControlContainerStateChange<ControlsValue<Controls>>;
-    sideEffects: string[];
-  };
-}
+// export interface IProcessChildStateChangeFnArgs<
+//   Controls extends GenericControlsObject,
+//   D
+// > extends IChildControlStateChangeEvent<Controls, D> {
+//   changeType: string;
+//   control: Controls[keyof Controls];
+//   changes?: {
+//     change: IControlContainerStateChange<ControlsValue<Controls>, D>;
+//     sideEffects: string[];
+//   };
+// }
 
 export abstract class ControlContainerBase<
-    Controls extends
-      | {
-          readonly [key: string]: AbstractControl;
-        }
-      | {
-          readonly [key: number]: AbstractControl;
-        } = any,
+    Controls extends GenericControlsObject = any,
     Data = any
   >
   extends ControlBase<ControlsValue<Controls>, Data>
   implements ControlContainer<Controls, Data> {
-  abstract readonly controlsStore: ReadonlyMap<any, AbstractControl>;
-
-  protected abstract _controls: Controls;
+  protected _controls!: Controls;
   get controls() {
     return this._controls;
+  }
+
+  protected _controlsStore: ReadonlyMap<
+    keyof Controls,
+    Controls[keyof Controls]
+  > = new Map();
+  get controlsStore() {
+    return this._controlsStore;
   }
 
   get size() {
     return this.controlsStore.size;
   }
 
-  abstract readonly enabledValue: ControlsEnabledValue<Controls>;
+  protected _enabledValue!: ControlsEnabledValue<Controls>;
+  get enabledValue() {
+    return this._enabledValue;
+  }
 
-  protected _controlsSubscriptions = new Map<AbstractControl, Subscription>();
+  // VALID
+
+  get valid() {
+    return !this.invalid;
+  }
+
+  get containerValid() {
+    return !this.errors;
+  }
+
+  get childValid() {
+    return !this.childrenInvalid;
+  }
+
+  get childrenValid() {
+    return !this.childInvalid;
+  }
+
+  // INVALID
+
+  get invalid() {
+    return this.containerInvalid || this.childInvalid;
+  }
+
+  get containerInvalid() {
+    return !!this.errors;
+  }
+
+  protected _childInvalid = false;
+  get childInvalid() {
+    return this._childInvalid;
+  }
+
+  protected _childrenInvalid = false;
+  get childrenInvalid() {
+    return this._childrenInvalid;
+  }
+
+  // DISABLED
+
+  get disabled() {
+    return this.containerDisabled || this.childrenDisabled;
+  }
+
+  get containerDisabled() {
+    return this._disabled;
+  }
+
+  protected _childDisabled = false;
+  get childDisabled() {
+    return this._childDisabled;
+  }
+
+  protected _childrenDisabled = false;
+  get childrenDisabled() {
+    return this._childrenDisabled;
+  }
+
+  // READONLY
+
+  get readonly() {
+    return this.containerReadonly || this.childrenReadonly;
+  }
+
+  get containerReadonly() {
+    return this._readonly;
+  }
+
+  protected _childReadonly = false;
+  get childReadonly() {
+    return this._childReadonly;
+  }
+
+  protected _childrenReadonly = false;
+  get childrenReadonly() {
+    return this._childrenReadonly;
+  }
+
+  // SUBMITTED
+
+  get submitted() {
+    return this.containerSubmitted || this.childrenSubmitted;
+  }
+
+  get containerSubmitted() {
+    return this._submitted;
+  }
+
+  protected _childSubmitted = false;
+  get childSubmitted() {
+    return this._childSubmitted;
+  }
+
+  protected _childrenSubmitted = false;
+  get childrenSubmitted() {
+    return this._childrenSubmitted;
+  }
+
+  // TOUCHED
+
+  get touched() {
+    return this.containerTouched || this.childTouched;
+  }
+
+  get containerTouched() {
+    return this._touched;
+  }
+
+  protected _childTouched = false;
+  get childTouched() {
+    return this._childTouched;
+  }
+
+  protected _childrenTouched = false;
+  get childrenTouched() {
+    return this._childrenTouched;
+  }
+
+  // DIRTY
+
+  get dirty() {
+    return this.containerDirty || this.childDirty;
+  }
+
+  get containerDirty() {
+    return this._dirty;
+  }
+
+  protected _childDirty = false;
+  get childDirty() {
+    return this._childDirty;
+  }
+
+  protected _childrenDirty = false;
+  get childrenDirty() {
+    return this._childrenDirty;
+  }
+
+  // PENDING
+
+  get pending() {
+    return this.containerPending || this.childPending;
+  }
+
+  get containerPending() {
+    return this._pending;
+  }
+
+  protected _childPending = false;
+  get childPending() {
+    return this._childPending;
+  }
+
+  protected _childrenPending = false;
+  get childrenPending() {
+    return this._childrenPending;
+  }
+
+  // ERRORS
+
+  protected _combinedErrors: ValidationErrors | null = null;
+  get errors() {
+    return this._combinedErrors;
+  }
+
+  get containerErrors() {
+    return this._errors;
+  }
+
+  protected _childrenErrors: ValidationErrors | null = null;
+  get childrenErrors() {
+    return this._childrenErrors;
+  }
+
+  // MISC
+
+  protected _controlsSubscriptions = new Map<
+    Controls[keyof Controls],
+    Subscription
+  >();
+
+  constructor(
+    controlId: ControlId,
+    controls: Controls,
+    options: IControlBaseArgs<Data> = {}
+  ) {
+    super(controlId);
+
+    this.data = options.data!;
+    this.setControls(controls);
+    if (options.disabled) this.markDisabled(options.disabled);
+    if (options.touched) this.markTouched(options.touched);
+    if (options.dirty) this.markDirty(options.dirty);
+    if (options.readonly) this.markReadonly(options.readonly);
+    if (options.submitted) this.markSubmitted(options.submitted);
+    if (options.errors) this.setErrors(options.errors);
+    if (options.validators) this.setValidators(options.validators);
+    if (options.pending) this.markPending(options.pending);
+  }
 
   [ControlContainer.INTERFACE]() {
     return this;
   }
 
+  get<A extends keyof Controls>(a: A): Controls[A];
+  get<A extends keyof Controls, B extends keyof ContainerControls<Controls[A]>>(
+    a: A,
+    b: B
+  ): ContainerControls<Controls[A]>[B];
+  get<
+    A extends keyof Controls,
+    B extends keyof ContainerControls<Controls[A]>,
+    C extends keyof ContainerControls<ContainerControls<Controls[A]>[B]>
+  >(a: A, b: B, c: C): ContainerControls<ContainerControls<Controls[A]>[B]>[C];
+  get<
+    A extends keyof Controls,
+    B extends keyof ContainerControls<Controls[A]>,
+    C extends keyof ContainerControls<ContainerControls<Controls[A]>[B]>,
+    D extends keyof ContainerControls<
+      ContainerControls<ContainerControls<Controls[A]>[B]>[C]
+    >
+  >(
+    a: A,
+    b: B,
+    c: C,
+    d: D
+  ): ContainerControls<
+    ContainerControls<ContainerControls<Controls[A]>[B]>[C]
+  >[D];
+  get<
+    A extends keyof Controls,
+    B extends keyof ContainerControls<Controls[A]>,
+    C extends keyof ContainerControls<ContainerControls<Controls[A]>[B]>,
+    D extends keyof ContainerControls<
+      ContainerControls<ContainerControls<Controls[A]>[B]>[C]
+    >,
+    E extends keyof ContainerControls<
+      ContainerControls<
+        ContainerControls<ContainerControls<Controls[A]>[B]>[C]
+      >[D]
+    >
+  >(
+    a: A,
+    b: B,
+    c: C,
+    d: D,
+    e: E
+  ): ContainerControls<
+    ContainerControls<
+      ContainerControls<ContainerControls<Controls[A]>[B]>[C]
+    >[D]
+  >[E];
+  get<A extends AbstractControl = AbstractControl>(...args: any[]): A | null;
   get<A extends AbstractControl = AbstractControl>(...args: any[]): A | null {
     if (args.length === 0) return null;
     else if (args.length === 1) return (this.controls as any)[args[0]];
@@ -84,32 +347,167 @@ export abstract class ControlContainerBase<
     }, this as AbstractControl | null);
   }
 
-  abstract patchValue(value: unknown, options?: IControlEventOptions): void;
+  patchValue(value: object, options?: IControlEventOptions) {
+    Object.entries(value).forEach(([key, val]) => {
+      const c = this.controls[key as keyof Controls];
 
-  abstract setControls(...args: any[]): void;
+      if (!c) {
+        throw new Error(`Invalid patchValue key "${key}".`);
+      }
 
-  abstract setControl(...args: any[]): void;
+      ControlContainer.isControlContainer(c)
+        ? c.patchValue(val, options)
+        : ((c as unknown) as AbstractControl).setValue(val, options);
+    });
+  }
 
-  abstract addControl(...args: any[]): void;
+  setControls(controls: Controls, options?: IControlEventOptions) {
+    const controlsStore = new Map(
+      (Object.entries(controls) as unknown) as Array<
+        [keyof Controls, Controls[keyof Controls]]
+      >
+    );
 
-  abstract removeControl(...args: any[]): void;
+    this.emitEvent<IControlContainerStateChangeEvent<Controls, Data>>(
+      getSimpleContainerStateChangeEventArgs({
+        controlsStore: () => controlsStore,
+      }),
+      options
+    );
+  }
+
+  setControl<N extends keyof Controls>(
+    name: N,
+    control: Controls[N] | null,
+    options?: IControlEventOptions
+  ) {
+    if (((control as unknown) as AbstractControl)?.parent) {
+      throw new Error('AbstractControl can only have one parent');
+    }
+
+    this.emitEvent<IControlContainerStateChangeEvent<Controls, Data>>(
+      getSimpleContainerStateChangeEventArgs({
+        controlsStore: (old) => {
+          const controls = new Map(old);
+
+          if (control) {
+            controls.set(name, control);
+          } else {
+            controls.delete(name);
+          }
+
+          return controls;
+        },
+      }),
+      options
+    );
+  }
+
+  addControl<N extends keyof Controls>(
+    name: N,
+    control: Controls[N],
+    options?: IControlEventOptions
+  ) {
+    if (((control as unknown) as AbstractControl)?.parent) {
+      throw new Error('AbstractControl can only have one parent');
+    }
+
+    this.emitEvent<IControlContainerStateChangeEvent<Controls, Data>>(
+      getSimpleContainerStateChangeEventArgs({
+        controlsStore: (old) => {
+          if (old.has(name)) return old;
+
+          return new Map(old).set(name, control);
+        },
+      }),
+      options
+    );
+  }
+
+  // cannot accept an AbstractControl as a param because that wouldn't work for
+  // synced controls that were cloned.
+
+  removeControl(
+    name: keyof Controls | Controls[keyof Controls],
+    options?: IControlEventOptions
+  ) {
+    let key: keyof Controls;
+
+    if (AbstractControl.isAbstractControl(name)) {
+      for (const [k, c] of this.controlsStore) {
+        if (c !== name) continue;
+
+        key = k;
+        break;
+      }
+    } else {
+      key = name as keyof Controls;
+    }
+
+    this.emitEvent<IControlContainerStateChangeEvent<Controls, Data>>(
+      getSimpleContainerStateChangeEventArgs({
+        controlsStore: (old) => {
+          if (!old.has(key)) return old;
+
+          const controls = new Map(old);
+          controls.delete(key);
+          return controls;
+        },
+      }),
+      options
+    );
+  }
+
+  markChildrenDisabled(value: boolean, options?: IControlEventOptions) {
+    this.controlsStore.forEach((c) => {
+      ((c as unknown) as AbstractControl).markDisabled(value, options);
+    });
+  }
+
+  markChildrenTouched(value: boolean, options?: IControlEventOptions) {
+    this.controlsStore.forEach((c) => {
+      ((c as unknown) as AbstractControl).markTouched(value, options);
+    });
+  }
+
+  markChildrenDirty(value: boolean, options?: IControlEventOptions) {
+    this.controlsStore.forEach((c) => {
+      ((c as unknown) as AbstractControl).markDirty(value, options);
+    });
+  }
+
+  markChildrenReadonly(value: boolean, options?: IControlEventOptions) {
+    this.controlsStore.forEach((c) => {
+      ((c as unknown) as AbstractControl).markReadonly(value, options);
+    });
+  }
+
+  markChildrenSubmitted(value: boolean, options?: IControlEventOptions) {
+    this.controlsStore.forEach((c) => {
+      ((c as unknown) as AbstractControl).markSubmitted(value, options);
+    });
+  }
+
+  markChildrenPending(value: boolean, options?: IControlEventOptions) {
+    this.controlsStore.forEach((c) => {
+      ((c as unknown) as AbstractControl).markPending(value, options);
+    });
+  }
 
   replayState(
     options: Omit<IControlEventOptions, 'idOfOriginatingEvent'> = {}
-  ): Observable<IControlContainerStateChangeEvent<this['value']>> {
-    const controlsStore = this.controlsStore;
+  ): Observable<IControlContainerStateChangeEvent<Controls, Data>> {
+    const { _controlsStore } = this;
 
-    const changes: Array<IControlContainerStateChange<this['value']>> = [
-      {
-        controlsStore: () => controlsStore,
-      },
+    const changes: Array<IControlContainerStateChange<Controls, Data>> = [
+      { controlsStore: () => _controlsStore },
     ];
 
     let eventId: number;
 
     return concat(
       from(
-        changes.map<IControlContainerStateChangeEvent<this['value']>>(
+        changes.map<IControlContainerStateChangeEvent<Controls, Data>>(
           (change) => ({
             source: this.id,
             meta: {},
@@ -126,298 +524,77 @@ export abstract class ControlContainerBase<
     );
   }
 
-  abstract clone(): ControlContainerBase<Controls, Data>;
+  protected registerControl(
+    key: keyof Controls,
+    control: Controls[keyof Controls],
+    options?: IControlEventOptions
+  ) {
+    // This clone might problems when unregistering controls...
 
-  // protected registerControls(changes: Map<any, any>) {
-  //   const subscriptionsStore = new Map<AbstractControl, Subscription>();
+    if (((control as unknown) as AbstractControl).parent) {
+      control = (((control as unknown) as AbstractControl).clone() as unknown) as Controls[keyof Controls];
+      // throw new Error('AbstractControl can only have one parent');
+    }
 
-  //   this.controlsStore.forEach((control, key) => {
-  //     subscriptionsStore.set(
-  //       control,
-  //       control.events.subscribe((event) =>
-  //         this.processChildEvent({ control, key, event })
-  //       )
-  //     );
-  //     control.setParent(this);
-  //   });
+    ((control as unknown) as AbstractControl).setParent(this, options);
 
-  // calcChildrenProps(this as any, "disabled", asArray, changes);
+    const sub = ((control as unknown) as AbstractControl).events
+      .pipe(
+        filter(
+          (e) => e.type === 'StateChange' || e.type === 'ChildStateChange'
+        ),
+        map((event) => {
+          const newEvent: IChildControlStateChangeEvent<Controls, Data> = {
+            type: `ChildStateChange`,
+            eventId: AbstractControl.eventId(),
+            idOfOriginatingEvent: event.idOfOriginatingEvent,
+            source: this.id,
+            key: key as string | number,
+            childEvent: event as IControlStateChangeEvent<
+              this['value'][keyof Controls],
+              Data
+            >,
+            sideEffects: [],
+            meta: {},
+          };
 
-  // asArray = asArray.filter(([, c]) => c.enabled);
+          return newEvent;
+        }),
+        filter(isTruthy)
+      )
+      .subscribe(this.source);
 
-  // calcChildrenProps(this as any, "touched", asArray, changes);
-  // calcChildrenProps(this as any, "readonly", asArray, changes);
-  // calcChildrenProps(this as any, "changed", asArray, changes);
-  // calcChildrenProps(this as any, "submitted", asArray, changes);
-  // calcChildrenProps(this as any, "pending", asArray, changes);
-  // calcChildrenProps(this as any, "invalid", asArray, changes);
-  // }
+    this._controlsSubscriptions.set(control, sub);
 
-  // protected deregisterControls() {
-  //   this.controlsStore.forEach((control) => {
-  //     control.atomic.delete(this.id);
-  //   });
-  // }
+    return control;
+  }
 
-  // protected setupControls(changes: Map<any, any>) {
-  //   let asArray = Array.from(this.controlsStore);
+  protected unregisterControl(
+    control: Controls[keyof Controls],
+    options?: IControlEventOptions
+  ) {
+    const sub = this._controlsSubscriptions.get(control);
 
-  //   calcChildrenProps(this as any, "disabled", asArray, changes);
+    if (!sub) {
+      throw new Error('Control was not registered to begin with');
+    }
 
-  //   asArray = asArray.filter(([, c]) => c.enabled);
+    sub.unsubscribe();
 
-  //   calcChildrenProps(this as any, "touched", asArray, changes);
-  //   calcChildrenProps(this as any, "readonly", asArray, changes);
-  //   calcChildrenProps(this as any, "changed", asArray, changes);
-  //   calcChildrenProps(this as any, "submitted", asArray, changes);
-  //   calcChildrenProps(this as any, "pending", asArray, changes);
-  //   calcChildrenProps(this as any, "invalid", asArray, changes);
-  // }
+    this._controlsSubscriptions.delete(control);
 
-  // protected processChildEvent(args: {
-  //   control: AbstractControl;
-  //   key: any;
-  //   event: ControlEvent;
-  // }): ControlEvent | null {
-  //   const { control, key, event } = args;
+    ((control as unknown) as AbstractControl).setParent(null, options);
+  }
 
-  //   switch (event.type) {
-  //     case "StateChange": {
-  //       const changes = new Map();
+  protected updateErrorsProp(sideEffects: string[]) {
+    super.updateErrorsProp(sideEffects);
 
-  //       // here, we flatten changes which will result in redundant processing
-  //       // e.g. we only need to process "disabled", "childDisabled",
-  //       // "childrenDisabled" changes once per event.
-  //       new Map(
-  //         Array.from((event as StateChange).changes).map(([prop, value]) => {
-  //           if (["childDisabled", "childrenDisabled"].includes(prop)) {
-  //             return ["disabled", undefined];
-  //           }
+    if (this._childrenErrors || this._errors) {
+      this._combinedErrors = { ...this._childrenErrors, ...this._errors };
+    } else {
+      this._combinedErrors = null;
+    }
 
-  //           if (["childTouched", "childrenTouched"].includes(prop)) {
-  //             return ["touched", undefined];
-  //           }
-
-  //           if (["childPending", "childrenPending"].includes(prop)) {
-  //             return ["pending", undefined];
-  //           }
-
-  //           if (["childChanged", "childrenChanged"].includes(prop)) {
-  //             return ["changed", undefined];
-  //           }
-
-  //           if (["childReadonly", "childrenReadonly"].includes(prop)) {
-  //             return ["readonly", undefined];
-  //           }
-
-  //           if (
-  //             ["childInvalid", "childrenInvalid", "errorsStore"].includes(prop)
-  //           ) {
-  //             return ["invalid", undefined];
-  //           }
-
-  //           return [prop, value];
-  //         })
-  //       ).forEach((value, prop) => {
-  //         const success = this.processChildStateChange({
-  //           control,
-  //           key,
-  //           event: event as StateChange,
-  //           prop,
-  //           value,
-  //           changes,
-  //         });
-
-  //         if (!success) {
-  //           // we want to emit a state change from the parent
-  //           // whenever the child emits a state change, to ensure
-  //           // that `observe()` calls trigger properly
-  //           changes.set("otherChildStateChange", undefined);
-  //         }
-  //       });
-
-  //       if (changes.size === 0) return null;
-
-  //       return {
-  //         ...event,
-  //         changes,
-  //       } as StateChange;
-  //     }
-  //   }
-
-  //   return null;
-  // }
-
-  //   protected processChildStateChange(args: {
-  //     control: AbstractControl;
-  //     key: keyof ControlsValue<Controls>;
-  //     event: IControlStateChangeEvent<ControlsValue<Controls>>;
-  //     prop: string;
-  //     change: IStateChange;
-  //     changes: IControlContainerStateChanges;
-  //   }): boolean {
-  //     const { control, prop, changes } = args;
-
-  //     switch (
-  //       prop
-  //       // case 'disabled': {
-  //       //   let asArray = Array.from(this.controlsStore);
-
-  //       //   calcChildrenProps(this as any, 'disabled', asArray, changes);
-
-  //       //   asArray = asArray.filter(([, c]) => c.enabled);
-
-  //       //   calcChildrenProps(this as any, 'touched', asArray, changes);
-  //       //   calcChildrenProps(this as any, 'readonly', asArray, changes);
-  //       //   calcChildrenProps(this as any, 'changed', asArray, changes);
-  //       //   calcChildrenProps(this as any, 'submitted', asArray, changes);
-  //       //   calcChildrenProps(this as any, 'pending', asArray, changes);
-  //       //   calcChildrenProps(this as any, 'invalid', asArray, changes);
-
-  //       //   return true;
-  //       // }
-  //       // case 'touched': {
-  //       //   if (control.disabled) return true;
-
-  //       //   const asArray = Array.from(this.controlsStore).filter(
-  //       //     ([, c]) => c.enabled
-  //       //   );
-
-  //       //   calcChildrenProps(this, 'touched', asArray, changes);
-
-  //       //   return true;
-  //       // }
-  //       // case 'changed': {
-  //       //   if (control.disabled) return true;
-
-  //       //   const asArray = Array.from(this.controlsStore).filter(
-  //       //     ([, c]) => c.enabled
-  //       //   );
-
-  //       //   calcChildrenProps(this, 'changed', asArray, changes);
-
-  //       //   return true;
-  //       // }
-  //       // case 'readonly': {
-  //       //   if (control.disabled) return true;
-
-  //       //   const asArray = Array.from(this.controlsStore).filter(
-  //       //     ([, c]) => c.enabled
-  //       //   );
-
-  //       //   calcChildrenProps(this, 'readonly', asArray, changes);
-
-  //       //   return true;
-  //       // }
-  //       // case 'invalid': {
-  //       //   if (control.disabled) return true;
-
-  //       //   const asArray = Array.from(this.controlsStore).filter(
-  //       //     ([, c]) => c.enabled
-  //       //   );
-
-  //       //   calcChildrenProps(this, 'invalid', asArray, changes);
-
-  //       //   return true;
-  //       // }
-  //       // case 'pending': {
-  //       //   if (control.disabled) return true;
-
-  //       //   const asArray = Array.from(this.controlsStore).filter(
-  //       //     ([, c]) => c.enabled
-  //       //   );
-
-  //       //   calcChildrenProps(this, 'pending', asArray, changes);
-
-  //       //   return true;
-  //       // }
-  //     ) {
-  //     }
-
-  //     return false;
-  //   }
+    sideEffects.push('containerErrors');
+  }
 }
-
-// const asArray = Array.from(this.controlsStore).filter(
-//   ([, c]) => c.enabled,
-// );
-
-// this._childPending = asArray.some(([, c]) => {
-//   if (ControlContainer.isControlContainer(c)) {
-//     return c.childPending;
-//   } else {
-//     return c.changed;
-//   }
-// });
-
-// this._childrenPending =
-//   this.controlsStore.size > 0 &&
-//   asArray.every(([, c]) => {
-//     if (ControlContainer.isControlContainer(c)) {
-//       return c.childrenPending;
-//     } else {
-//       return c.changed;
-//     }
-//   });
-
-// export function calcChildrenProps(
-//   parent: ControlContainer,
-//   prop: // | 'pending'
-//   // | 'readonly'
-//   // | 'touched'
-//   // | 'submitted'
-//   // | 'changed'
-//   // | 'invalid'
-//   'enabled',
-//   controls: [any, AbstractControl][],
-//   changes: IControlContainerStateChanges
-// ) {
-//   const cprop = capitalize(prop);
-//   const childProp: // | 'pending'
-//   // | 'readonly'
-//   // | 'touched'
-//   // | 'submitted'
-//   // | 'changed'
-//   // | 'invalid'
-//   'enabled' = `child${cprop}` as any;
-//   const childrenProp: // | 'pending'
-//   // | 'readonly'
-//   // | 'touched'
-//   // | 'submitted'
-//   // | 'changed'
-//   // | 'invalid'
-//   'enabled' = `children${cprop}` as any;
-
-//   const child = parent[childProp];
-//   const children = parent[childrenProp];
-
-//   (parent as any)[`_${childProp}`] = controls.some(([, c]) => {
-//     if (ControlContainer.isControlContainer(c)) {
-//       return (c as any)[childProp];
-//     } else {
-//       return (c as any)[prop];
-//     }
-//   });
-
-//   (parent as any)[`_${childrenProp}`] =
-//     controls.length > 0 &&
-//     controls.every(([, c]) => {
-//       if (ControlContainer.isControlContainer(c)) {
-//         return (c as any)[childrenProp];
-//       } else {
-//         return (c as any)[prop];
-//       }
-//     });
-
-//   if (child !== parent[childProp]) {
-//     changes[childProp] = {
-//       value: parent[childProp],
-//     };
-//   }
-
-//   if (children !== parent[childrenProp]) {
-//     changes[childrenProp] = {
-//       value: parent[childrenProp],
-//     };
-//   }
-// }

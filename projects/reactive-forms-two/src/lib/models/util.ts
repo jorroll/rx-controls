@@ -4,7 +4,12 @@ import {
   ControlId,
 } from './abstract-control';
 import _isEqual from 'lodash-es/isEqual';
-import { IControlStateChangeEvent } from './control-base';
+import { IControlStateChange, IControlStateChangeEvent } from './control-base';
+import {
+  ControlsValue,
+  GenericControlsObject,
+  IControlContainerStateChange,
+} from './control-container';
 
 export type Mutable<T> = {
   -readonly [P in keyof T]: T[P] extends ReadonlyArray<infer U> ? U[] : T[P];
@@ -35,9 +40,12 @@ export function isTruthy<T>(value: T): value is NonNullable<T> {
   return !!value;
 }
 
-export function isStateChange<T = unknown>(
-  event: IControlEventArgs
-): event is IControlStateChangeEvent<T> {
+export function isStateChange<
+  T extends IControlStateChangeEvent<any, any> = IControlStateChangeEvent<
+    any,
+    any
+  >
+>(event: IControlEventArgs): event is T {
   return event.type === 'StateChange';
 }
 
@@ -71,6 +79,27 @@ export function pluckOptions({
 // }
 
 export const isEqual: <T>(a: T, b: T) => boolean = _isEqual;
+
+export function getSimpleStateChangeEventArgs<V, D>(
+  change: IControlStateChange<V, D>
+) {
+  return {
+    type: 'StateChange' as const,
+    change,
+    sideEffects: [],
+  };
+}
+
+export const getSimpleContainerStateChangeEventArgs: <
+  Controls extends GenericControlsObject,
+  D
+>(
+  change: IControlContainerStateChange<Controls, D>
+) => {
+  type: 'StateChange';
+  change: IControlContainerStateChange<Controls, D>;
+  sideEffects: never[];
+} = getSimpleStateChangeEventArgs;
 
 // export function mapIsProperty(a: Map<any, any>) {
 //   if (a.size === 0) return true;

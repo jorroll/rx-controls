@@ -1,9 +1,14 @@
 import { merge, Subject } from 'rxjs';
-import { skip, take, takeUntil } from 'rxjs/operators';
+import { skip, take, takeUntil, toArray } from 'rxjs/operators';
 import { AbstractControl } from './abstract-control';
 import { FormControl } from './form-control';
 import { FormGroup } from './form-group';
-import { wait } from './test-util';
+import {
+  testAllControlContainerDefaultsExcept,
+  wait,
+  logControlEventsUntilEnd,
+  getControlEventsUntilEnd,
+} from './test-util';
 
 describe('FormGroup', () => {
   beforeEach(() => {
@@ -11,102 +16,39 @@ describe('FormGroup', () => {
   });
 
   describe('initialization', () => {
-    describe('defaults', () => {
-      it('value', () => {
-        const c = new FormGroup();
+    function testAllDefaultsExcept(
+      c: FormGroup<any>,
+      ...skipTests: Array<keyof FormGroup>
+    ) {
+      testAllControlContainerDefaultsExcept(c, ...skipTests);
+
+      if (!skipTests.includes('value')) {
         expect(c.value).toEqual({});
-      });
+      }
 
-      it('enabledValue', () => {
-        const c = new FormGroup();
+      if (!skipTests.includes('enabledValue')) {
         expect(c.enabledValue).toEqual({});
-      });
+      }
 
-      it('controls', () => {
-        const c = new FormGroup();
+      if (!skipTests.includes('controls')) {
         expect(c.controls).toEqual({});
-      });
+      }
+    }
 
-      it('controlsStore', () => {
-        const c = new FormGroup();
-        expect(c.controlsStore).toEqual(new Map());
-      });
-
-      it('size', () => {
-        const c = new FormGroup();
-        expect(c.size).toEqual(0);
-      });
-
-      it('id', () => {
-        const c = new FormGroup();
-        expect(typeof c.id).toEqual('symbol');
-      });
-
-      it('parent', () => {
-        const c = new FormGroup();
-        expect(c.parent).toEqual(null);
-      });
-
-      it('data', () => {
-        const c = new FormGroup();
-        expect(c.data).toEqual(undefined);
-      });
-
-      it('enabled', () => {
-        const c = new FormGroup();
-        expect(c.enabled).toEqual(true);
-      });
-
-      it('disabled', () => {
-        const c = new FormGroup();
-        expect(c.disabled).toEqual(false);
-      });
+    it('defaults', () => {
+      testAllDefaultsExcept(new FormGroup());
     });
 
     describe('options', () => {
-      function testAllDefaultsExcept(
-        c: FormGroup<any>,
-        ...skipTests: string[]
-      ): void {
-        if (!skipTests.includes('value')) {
-          expect(c.value).toEqual({});
-        }
-        if (!skipTests.includes('enabledValue')) {
-          expect(c.enabledValue).toEqual({});
-        }
-        if (!skipTests.includes('controls')) {
-          expect(c.controls).toEqual({});
-        }
-        if (!skipTests.includes('controlsStore')) {
-          expect(c.controlsStore).toEqual(new Map());
-        }
-        if (!skipTests.includes('size')) {
-          expect(c.size).toEqual(0);
-        }
-        if (!skipTests.includes('id')) {
-          expect(typeof c.id).toEqual('symbol');
-        }
-        if (!skipTests.includes('parent')) {
-          expect(c.parent).toEqual(null);
-        }
-        if (!skipTests.includes('data')) {
-          expect(c.data).toEqual(undefined);
-        }
-        if (!skipTests.includes('enabled')) {
-          expect(c.enabled).toEqual(true);
-        }
-        if (!skipTests.includes('disabled')) {
-          expect(c.disabled).toEqual(false);
-        }
-      }
-
-      it('value', () => {
+      it('value', async () => {
         const controls = {
           one: new FormControl('one'),
           two: new FormControl(2),
         };
 
         const c = new FormGroup(controls);
+
+        await wait(0);
 
         expect(c.value).toEqual({
           one: 'one',
@@ -168,32 +110,129 @@ describe('FormGroup', () => {
       // });
     });
   });
+});
 
-  describe('setValue', () => {
-    // let g: FormGroup;
-    let a: FormGroup<{
-      one: FormControl<string>;
-      two: FormControl<number>;
-    }>;
+describe('FormGroup', () => {
+  let a: FormGroup<any>;
 
-    let b: FormGroup<{
-      three: FormControl<string[]>;
-      four: typeof a;
-    }>;
+  let b: FormGroup<{
+    three: FormControl<string[]>;
+    four: typeof a;
+  }>;
 
-    beforeEach(() => {
-      a = new FormGroup({
-        one: new FormControl('one'),
-        two: new FormControl(2),
+  beforeEach(() => {
+    AbstractControl.eventId(0);
+
+    a = new FormGroup({
+      one: new FormControl('one'),
+      two: new FormControl(2),
+    });
+
+    b = new FormGroup({
+      three: new FormControl(['one']),
+      four: a,
+    });
+  });
+
+  it('initialization', () => {
+    expect(a.value).toEqual({
+      one: 'one',
+      two: 2,
+    });
+
+    expect(b.value).toEqual({
+      three: ['one'],
+      four: {
+        one: 'one',
+        two: 2,
+      },
+    });
+  });
+
+  describe('setControls', () => {
+    it('works', async () => {
+      a.setControls({ three: new FormControl('three') });
+
+      expect(a.value).toEqual({ three: 'three' });
+      expect(b.value).toEqual({
+        three: ['one'],
+        four: { three: 'three' },
+      });
+    });
+  });
+
+  describe('setControl', () => {
+    it('adds additional control', async () => {
+      a.setControl('three', new FormControl('three'));
+
+      expect(a.value).toEqual({
+        one: 'one',
+        two: 2,
+        three: 'three',
       });
 
-      b = new FormGroup({
-        three: new FormControl(['one']),
-        four: a,
+      expect(b.value).toEqual({
+        three: ['one'],
+        four: {
+          one: 'one',
+          two: 2,
+          three: 'three',
+        },
       });
     });
 
-    it('starting value', () => {
+    it('replaces existing control', async () => {
+      a.setControl('two', new FormControl('three'));
+
+      expect(a.value).toEqual({
+        one: 'one',
+        two: 'three',
+      });
+
+      expect(b.value).toEqual({
+        three: ['one'],
+        four: {
+          one: 'one',
+          two: 'three',
+        },
+      });
+    });
+
+    it('deletes existing control', async () => {
+      a.setControl('two', null);
+
+      expect(a.value).toEqual({ one: 'one' });
+
+      expect(b.value).toEqual({
+        three: ['one'],
+        four: { one: 'one' },
+      });
+    });
+  });
+
+  describe('addControl', () => {
+    it('adds additional control', async () => {
+      a.addControl('three', new FormControl('three'));
+
+      expect(a.value).toEqual({
+        one: 'one',
+        two: 2,
+        three: 'three',
+      });
+
+      expect(b.value).toEqual({
+        three: ['one'],
+        four: {
+          one: 'one',
+          two: 2,
+          three: 'three',
+        },
+      });
+    });
+
+    it('does not replace existing control', async () => {
+      a.addControl('two', new FormControl('three'));
+
       expect(a.value).toEqual({
         one: 'one',
         two: 2,
@@ -207,102 +246,175 @@ describe('FormGroup', () => {
         },
       });
     });
+  });
 
+  describe('removeControl', () => {
+    describe('when provided control', () => {
+      it('ignores non-existant control', async () => {
+        const c = new FormControl('fake');
+
+        a.removeControl(c);
+
+        expect(a.value).toEqual({
+          one: 'one',
+          two: 2,
+        });
+
+        expect(b.value).toEqual({
+          three: ['one'],
+          four: {
+            one: 'one',
+            two: 2,
+          },
+        });
+      });
+
+      it('removes existing control', async () => {
+        const c = a.get('two');
+
+        a.removeControl(c);
+
+        expect(a.value).toEqual({
+          one: 'one',
+        });
+
+        expect(b.value).toEqual({
+          three: ['one'],
+          four: {
+            one: 'one',
+          },
+        });
+      });
+    });
+
+    describe('when provided key', () => {
+      it('ignores non-existant control', async () => {
+        a.removeControl('three');
+
+        expect(a.value).toEqual({
+          one: 'one',
+          two: 2,
+        });
+
+        expect(b.value).toEqual({
+          three: ['one'],
+          four: {
+            one: 'one',
+            two: 2,
+          },
+        });
+      });
+
+      it('removes existing control', async () => {
+        a.removeControl('two');
+
+        expect(a.value).toEqual({
+          one: 'one',
+        });
+
+        expect(b.value).toEqual({
+          three: ['one'],
+          four: {
+            one: 'one',
+          },
+        });
+      });
+    });
+  });
+
+  describe('setValue', () => {
     it('should fire a StateChange event', async () => {
       const newValue = {
         one: 'two',
         two: 3,
       };
 
-      const promise1 = a.events.pipe(take(1)).forEach((event) => {
-        expect(event).toEqual({
-          type: 'StateChange',
-          eventId: expect.any(Number),
-          idOfOriginatingEvent: expect.any(Number),
-          source: a.id,
-          change: {
-            value: expect.any(Function),
-          },
-          sideEffects: [],
-          meta: {},
-        });
-      });
+      const end = new Subject();
 
-      const promise2 = a.events.pipe(skip(1), take(1)).forEach((event) => {
-        expect(event).toEqual({
-          type: 'AsyncValidationStart',
-          eventId: expect.any(Number),
-          idOfOriginatingEvent: expect.any(Number),
-          source: a.id,
-          value: newValue,
-          meta: {},
-        });
-      });
-
-      const promise3 = a.events.pipe(skip(2), take(1)).forEach((event) => {
-        expect(event).toEqual({
-          type: 'ValidationComplete',
-          eventId: expect.any(Number),
-          idOfOriginatingEvent: expect.any(Number),
-          source: a.id,
-          value: newValue,
-          meta: {},
-        });
-      });
+      const [promise1] = getControlEventsUntilEnd(a, end);
+      const [promise2] = getControlEventsUntilEnd(b, end);
 
       a.setValue(newValue);
       expect(a.controls.one.value).toEqual(newValue.one);
       expect(a.controls.two.value).toEqual(newValue.two);
       expect(a.value).toEqual(newValue);
-      expect(b.value).toEqual({ three: ['one'], four: newValue });
 
-      return Promise.all([promise1, promise2, promise3]);
+      const bNewValue = { three: ['one'], four: newValue };
+      expect(b.value).toEqual(bNewValue);
+
+      end.next();
+      end.complete();
+
+      const [event1, event2, event3] = await promise1;
+      const [event4, event5, event6] = await promise2;
+
+      expect(event1).toEqual({
+        type: 'StateChange',
+        eventId: expect.any(Number),
+        idOfOriginatingEvent: expect.any(Number),
+        source: a.id,
+        change: {
+          value: expect.any(Function),
+        },
+        sideEffects: ['enabledValue'],
+        meta: {},
+      });
+
+      expect(event2).toEqual({
+        type: 'AsyncValidationStart',
+        eventId: expect.any(Number),
+        idOfOriginatingEvent: expect.any(Number),
+        source: a.id,
+        value: newValue,
+        meta: {},
+      });
+
+      expect(event3).toEqual({
+        type: 'ValidationComplete',
+        eventId: expect.any(Number),
+        idOfOriginatingEvent: expect.any(Number),
+        source: a.id,
+        value: newValue,
+        meta: {},
+      });
+
+      expect(event4).toEqual({
+        type: 'StateChange',
+        eventId: expect.any(Number),
+        idOfOriginatingEvent: expect.any(Number),
+        source: a.id,
+        change: {
+          value: expect.any(Function),
+        },
+        sideEffects: ['enabledValue'],
+        meta: {},
+      });
+
+      expect(event5).toEqual({
+        type: 'AsyncValidationStart',
+        eventId: expect.any(Number),
+        idOfOriginatingEvent: expect.any(Number),
+        source: b.id,
+        value: bNewValue,
+        meta: {},
+      });
+
+      expect(event6).toEqual({
+        type: 'ValidationComplete',
+        eventId: expect.any(Number),
+        idOfOriginatingEvent: expect.any(Number),
+        source: b.id,
+        value: bNewValue,
+        meta: {},
+      });
     });
   });
 
   describe('patchValue', () => {
-    // let g: FormGroup;
-    let a: FormGroup<{
-      one: FormControl<string>;
-      two: FormControl<number>;
-    }>;
-
-    let b: FormGroup<{
-      three: FormControl<string[]>;
-      four: typeof a;
-    }>;
-
-    beforeEach(() => {
-      a = new FormGroup({
-        one: new FormControl('one'),
-        two: new FormControl(2),
-      });
-
-      b = new FormGroup({
-        three: new FormControl(['one']),
-        four: a,
-      });
-    });
-
-    it('starting value', () => {
-      expect(a.value).toEqual({
-        one: 'one',
-        two: 2,
-      });
-
-      expect(b.value).toEqual({
-        three: ['one'],
-        four: {
-          one: 'one',
-          two: 2,
-        },
-      });
-    });
-
     it('works', async () => {
       b.patchValue({
         four: {
-          one: 'two',
+          one: 'two' as any,
         },
       });
 
@@ -317,25 +429,6 @@ describe('FormGroup', () => {
   });
 
   describe('get', () => {
-    // let g: FormGroup;
-    let a: FormGroup<{
-      one: FormControl<string>;
-    }>;
-
-    let b: FormGroup<{
-      four: typeof a;
-    }>;
-
-    beforeEach(() => {
-      a = new FormGroup({
-        one: new FormControl('one'),
-      });
-
-      b = new FormGroup({
-        four: a,
-      });
-    });
-
     it('', () => {
       const one = a.get('one');
       const two = b.get('four').get('one');
@@ -345,6 +438,12 @@ describe('FormGroup', () => {
       const three = b.get('four', 'one');
       expect(one).toBe(three);
     });
+  });
+});
+
+describe('FormGroup', () => {
+  beforeEach(() => {
+    AbstractControl.eventId(0);
   });
 
   describe(`replayState`, () => {
@@ -364,80 +463,53 @@ describe('FormGroup', () => {
       b = new FormGroup();
     });
 
-    it('', () => {
+    it('', async () => {
       const state = a.replayState();
 
-      const promise1 = state.pipe(take(1)).forEach((event) => {
-        expect(event).toEqual({
+      function buildStateChangeBase(change: any) {
+        return {
           type: 'StateChange',
           eventId: expect.any(Number),
           idOfOriginatingEvent: expect.any(Number),
           source: a.id,
-          change: {
-            controlsStore: expect.any(Function),
-          },
+          change,
           sideEffects: [],
           meta: {},
-        });
-      });
+        };
+      }
 
-      const promise2 = state.pipe(skip(1), take(1)).forEach((event) => {
-        expect(event).toEqual({
-          type: 'StateChange',
-          eventId: expect.any(Number),
-          idOfOriginatingEvent: expect.any(Number),
-          source: a.id,
-          change: {
-            value: expect.any(Function),
-          },
-          sideEffects: [],
-          meta: {},
-        });
-      });
+      const [
+        controlsStoreEvent,
+        valueEvent,
+        disabledEvent,
+        touchedEvent,
+        dirtyEvent,
+        readonlyEvent,
+        submittedEvent,
+        errorsStoreEvent,
+        validatorStoreEvent,
+        pendingStoreEvent,
+        dataEvent,
+      ] = await state.pipe(toArray()).toPromise();
 
-      const promise3 = state.pipe(skip(2), take(1)).forEach((event) => {
-        expect(event).toEqual({
-          type: 'StateChange',
-          eventId: expect.any(Number),
-          idOfOriginatingEvent: expect.any(Number),
-          source: a.id,
-          change: {
-            errorsStore: expect.any(Function),
-          },
-          sideEffects: [],
-          meta: {},
-        });
+      [
+        [controlsStoreEvent, { controlsStore: expect.any(Function) }] as const,
+        [valueEvent, { value: expect.any(Function) }] as const,
+        [disabledEvent, { disabled: expect.any(Function) }] as const,
+        [touchedEvent, { touched: expect.any(Function) }] as const,
+        [dirtyEvent, { dirty: expect.any(Function) }] as const,
+        [readonlyEvent, { readonly: expect.any(Function) }] as const,
+        [submittedEvent, { submitted: expect.any(Function) }] as const,
+        [errorsStoreEvent, { errorsStore: expect.any(Function) }] as const,
+        [
+          validatorStoreEvent,
+          { validatorStore: expect.any(Function) },
+        ] as const,
+        [pendingStoreEvent, { pendingStore: expect.any(Function) }] as const,
+        [dataEvent, { data: expect.any(Function) }] as const,
+      ].forEach(([event, change]) => {
+        expect(event).toEqual(buildStateChangeBase(change));
       });
-
-      const promise4 = state.pipe(skip(3), take(1)).forEach((event) => {
-        expect(event).toEqual({
-          type: 'StateChange',
-          eventId: expect.any(Number),
-          idOfOriginatingEvent: expect.any(Number),
-          source: a.id,
-          change: {
-            parent: expect.any(Function),
-          },
-          sideEffects: [],
-          meta: {},
-        });
-      });
-
-      const promise5 = state.pipe(skip(4), take(1)).forEach((event) => {
-        expect(event).toEqual({
-          type: 'StateChange',
-          eventId: expect.any(Number),
-          idOfOriginatingEvent: expect.any(Number),
-          source: a.id,
-          change: {
-            validatorStore: expect.any(Function),
-          },
-          sideEffects: [],
-          meta: {},
-        });
-      });
-
-      return Promise.all([promise1, promise2, promise3, promise4, promise5]);
     });
 
     it('can be subscribed to multiple times', async () => {
@@ -447,14 +519,14 @@ describe('FormGroup', () => {
 
       state.subscribe(b.source);
 
-      // Errors in the queueSchedular are suppressed unless you await
-      // a promise like below. If this test is failing, uncomment the
-      // line below to see if there's a hidden error:
-      // await wait(0);
-
       expect(b.value).toEqual(a.value);
 
       b.setControls({ threvinty: new FormControl('sleven') });
+
+      // Errors in the queueSchedular are suppressed unless you await
+      // a promise like below. If this test is failing, uncomment the
+      // line below to see if there's a hidden error:
+      await wait(0);
 
       expect(b.value).not.toEqual(a.value);
       expect(b.value).toEqual({ threvinty: 'sleven' });
