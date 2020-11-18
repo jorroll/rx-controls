@@ -512,7 +512,7 @@ export interface AbstractControl<Value = any, Data = any> {
   /**
    * If provided a `ValidationErrors` object, that object is merged with the
    * existing errors associated with the source ID. If the error object has
-   * properties containing `null`, errors associated with those keys are deleted
+   * properties = `null`, errors associated with those keys are deleted
    * from the `errorsStore`.
    *
    * If provided a `Map` object containing `ValidationErrors` keyed to source IDs,

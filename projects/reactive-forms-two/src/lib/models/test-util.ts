@@ -204,15 +204,6 @@ export function testAllControlContainerDefaultsExcept<
   }
 }
 
-export function logControlEventsUntilEnd(control: AbstractControl) {
-  const end = new Subject();
-
-  return {
-    end,
-    promise: control.events.pipe(takeUntil(end)).forEach(console.log),
-  };
-}
-
 export function getControlEventsUntilEnd(
   control: AbstractControl,
   end?: Subject<any>
@@ -225,4 +216,12 @@ export function getControlEventsUntilEnd(
     control.events.pipe(takeUntil(end), toArray()).toPromise(),
     end,
   ] as const;
+}
+
+export function toControlMatcherEntries(controls: {
+  [key: string]: AbstractControl;
+}) {
+  return Object.entries(controls).map(
+    ([k, v]) => [k, expect.toEqualControl(v)] as const
+  );
 }

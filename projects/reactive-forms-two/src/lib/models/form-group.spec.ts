@@ -1,14 +1,34 @@
+import isEqual from 'lodash-es/isEqual';
 import { merge, Subject } from 'rxjs';
 import { skip, take, takeUntil, toArray } from 'rxjs/operators';
-import { AbstractControl } from './abstract-control';
+import { AbstractControl, ValidationErrors } from './abstract-control';
 import { FormControl } from './form-control';
 import { FormGroup } from './form-group';
 import {
   testAllControlContainerDefaultsExcept,
   wait,
-  logControlEventsUntilEnd,
   getControlEventsUntilEnd,
+  toControlMatcherEntries,
 } from './test-util';
+
+function testAllDefaultsExcept(
+  c: FormGroup<any>,
+  ...skipTests: Array<keyof FormGroup>
+) {
+  testAllControlContainerDefaultsExcept(c, ...skipTests);
+
+  if (!skipTests.includes('value')) {
+    expect(c.value).toEqual({});
+  }
+
+  if (!skipTests.includes('enabledValue')) {
+    expect(c.enabledValue).toEqual({});
+  }
+
+  if (!skipTests.includes('controls')) {
+    expect(c.controls).toEqual({});
+  }
+}
 
 describe('FormGroup', () => {
   beforeEach(() => {
@@ -16,25 +36,6 @@ describe('FormGroup', () => {
   });
 
   describe('initialization', () => {
-    function testAllDefaultsExcept(
-      c: FormGroup<any>,
-      ...skipTests: Array<keyof FormGroup>
-    ) {
-      testAllControlContainerDefaultsExcept(c, ...skipTests);
-
-      if (!skipTests.includes('value')) {
-        expect(c.value).toEqual({});
-      }
-
-      if (!skipTests.includes('enabledValue')) {
-        expect(c.enabledValue).toEqual({});
-      }
-
-      if (!skipTests.includes('controls')) {
-        expect(c.controls).toEqual({});
-      }
-    }
-
     it('defaults', () => {
       testAllDefaultsExcept(new FormGroup());
     });
@@ -114,24 +115,37 @@ describe('FormGroup', () => {
 
 describe('FormGroup', () => {
   let a: FormGroup<any>;
+  let aControls: any;
 
   let b: FormGroup<{
     three: FormControl<string[]>;
     four: typeof a;
   }>;
+  let bControls: {
+    three: FormControl<string[]>;
+    four: typeof a;
+  };
+
+  let c: FormGroup<any>;
+  let cControls: any;
 
   beforeEach(() => {
     AbstractControl.eventId(0);
 
-    a = new FormGroup({
+    aControls = {
       one: new FormControl('one'),
       two: new FormControl(2),
-    });
+    };
+    a = new FormGroup(aControls);
 
-    b = new FormGroup({
+    bControls = {
       three: new FormControl(['one']),
       four: a,
-    });
+    };
+    b = new FormGroup(bControls);
+
+    cControls = {};
+    c = new FormGroup(cControls);
   });
 
   it('initialization', () => {
@@ -411,7 +425,7 @@ describe('FormGroup', () => {
   });
 
   describe('patchValue', () => {
-    it('works', async () => {
+    it('', async () => {
       b.patchValue({
         four: {
           one: 'two' as any,
@@ -424,6 +438,354 @@ describe('FormGroup', () => {
       expect(b.value).toEqual({
         three: ['one'],
         four: { one: 'two', two: 2 },
+      });
+    });
+  });
+
+  describe('setErrors', () => {
+    describe('c', () => {
+      it('null', async () => {
+        c.setErrors(null);
+
+        testAllDefaultsExcept(c);
+      });
+
+      it('{ error: true }', async () => {
+        const error: ValidationErrors = { error: true };
+
+        c.setErrors(error);
+
+        testAllDefaultsExcept(
+          c,
+          'errors',
+          'containerErrors',
+          'errorsStore',
+          'valid',
+          'containerValid',
+          'invalid',
+          'containerInvalid',
+          'status'
+        );
+
+        expect(c.errors).toEqual(error);
+        expect(c.containerErrors).toEqual(error);
+        expect(c.errorsStore).toEqual(new Map([[c.id, error]]));
+        expect(c.valid).toEqual(false);
+        expect(c.containerValid).toEqual(false);
+        expect(c.invalid).toEqual(true);
+        expect(c.containerInvalid).toEqual(true);
+        expect(c.status).toEqual('INVALID');
+      });
+    });
+
+    describe('b', () => {
+      function testLocalDefaults() {
+        expect(b.value).toEqual({
+          three: ['one'],
+          four: { one: 'one', two: 2 },
+        });
+        expect(b.enabledValue).toEqual({
+          three: ['one'],
+          four: { one: 'one', two: 2 },
+        });
+        expect(b.controls).toEqual(bControls);
+        expect(b.controlsStore).toEqual(new Map(Object.entries(bControls)));
+      }
+
+      it('null', async () => {
+        b.setErrors(null);
+
+        testAllDefaultsExcept(
+          b,
+          'value',
+          'enabledValue',
+          'controls',
+          'controlsStore'
+        );
+
+        testLocalDefaults();
+      });
+
+      it('{ error: true }', async () => {
+        const error: ValidationErrors = { error: true };
+
+        b.setErrors(error);
+
+        testAllDefaultsExcept(
+          b,
+          'value',
+          'enabledValue',
+          'controls',
+          'controlsStore',
+          'errors',
+          'containerErrors',
+          'errorsStore',
+          'valid',
+          'containerValid',
+          'invalid',
+          'containerInvalid',
+          'status'
+        );
+
+        testLocalDefaults();
+
+        expect(b.errors).toEqual(error);
+        expect(b.containerErrors).toEqual(error);
+        expect(b.errorsStore).toEqual(new Map([[b.id, error]]));
+        expect(b.valid).toEqual(false);
+        expect(b.containerValid).toEqual(false);
+        expect(b.invalid).toEqual(true);
+        expect(b.containerInvalid).toEqual(true);
+        expect(b.status).toEqual('INVALID');
+      });
+    });
+  });
+
+  describe('patchErrors', () => {
+    function testBLocalDefaults() {
+      expect(b.value).toEqual({
+        three: ['one'],
+        four: { one: 'one', two: 2 },
+      });
+      expect(b.enabledValue).toEqual({
+        three: ['one'],
+        four: { one: 'one', two: 2 },
+      });
+
+      const entries = toControlMatcherEntries(bControls);
+
+      expect(b.controls).toEqual(Object.fromEntries(entries));
+      expect(b.controlsStore).toEqual(new Map(entries));
+    }
+
+    describe('on parent', () => {
+      describe('c', () => {
+        it('{}', async () => {
+          c.patchErrors({});
+
+          testAllDefaultsExcept(c);
+        });
+
+        it('{ error: true }', async () => {
+          const error: ValidationErrors = { error: true };
+
+          c.patchErrors(error);
+
+          testAllDefaultsExcept(
+            c,
+            'errors',
+            'containerErrors',
+            'errorsStore',
+            'valid',
+            'containerValid',
+            'invalid',
+            'containerInvalid',
+            'status'
+          );
+
+          expect(c.errors).toEqual(error);
+          expect(c.containerErrors).toEqual(error);
+          expect(c.errorsStore).toEqual(new Map([[c.id, error]]));
+          expect(c.valid).toEqual(false);
+          expect(c.containerValid).toEqual(false);
+          expect(c.invalid).toEqual(true);
+          expect(c.containerInvalid).toEqual(true);
+          expect(c.status).toEqual('INVALID');
+        });
+
+        it('{ error: null }', async () => {
+          c = new FormGroup(
+            {},
+            {
+              errors: { error: true },
+            }
+          );
+
+          c.patchErrors({ error: null });
+
+          testAllDefaultsExcept(c);
+        });
+      });
+
+      describe('b', () => {
+        it('{}', async () => {
+          b.patchErrors({});
+
+          testAllDefaultsExcept(
+            b,
+            'value',
+            'enabledValue',
+            'controls',
+            'controlsStore'
+          );
+
+          testBLocalDefaults();
+        });
+
+        it('{ error: true }', async () => {
+          const error: ValidationErrors = { error: true };
+
+          b.patchErrors(error);
+
+          testAllDefaultsExcept(
+            b,
+            'value',
+            'enabledValue',
+            'controls',
+            'controlsStore',
+            'errors',
+            'containerErrors',
+            'errorsStore',
+            'valid',
+            'containerValid',
+            'invalid',
+            'containerInvalid',
+            'status'
+          );
+
+          testBLocalDefaults();
+
+          expect(b.errors).toEqual(error);
+          expect(b.containerErrors).toEqual(error);
+          expect(b.errorsStore).toEqual(new Map([[b.id, error]]));
+          expect(b.valid).toEqual(false);
+          expect(b.containerValid).toEqual(false);
+          expect(b.invalid).toEqual(true);
+          expect(b.containerInvalid).toEqual(true);
+          expect(b.status).toEqual('INVALID');
+        });
+
+        it('{ error: null }', async () => {
+          // because bControls was already used in the beforeEach()
+          // callback, above, all of these controls already have a
+          // parent in this test and are being cloned. This means that
+          // strict equality doesn't work, which might explain the huge
+          // memory issues
+          b = new FormGroup(bControls, {
+            errors: { error: true },
+          });
+
+          b.patchErrors({ error: null });
+
+          expect(b.value).toEqual({
+            three: ['one'],
+            four: { one: 'one', two: 2 },
+          });
+          expect(b.enabledValue).toEqual({
+            three: ['one'],
+            four: { one: 'one', two: 2 },
+          });
+
+          const entries = toControlMatcherEntries(bControls);
+
+          expect(b.controls).toEqual(Object.fromEntries(entries));
+          expect(b.controlsStore).toEqual(new Map(entries));
+
+          testAllDefaultsExcept(
+            b,
+            'value',
+            'enabledValue',
+            'controls',
+            'controlsStore'
+          );
+
+          testBLocalDefaults();
+        });
+      });
+    });
+
+    describe('on child', () => {
+      describe('b', () => {
+        it('{}', async () => {
+          const child = bControls.four.controls.one;
+
+          child.patchErrors({});
+
+          testAllDefaultsExcept(
+            b,
+            'value',
+            'enabledValue',
+            'controls',
+            'controlsStore'
+          );
+
+          testBLocalDefaults();
+        });
+
+        it('{ error: true }', async () => {
+          const child = bControls.four.controls.one;
+
+          const error: ValidationErrors = { error: true };
+
+          child.patchErrors(error);
+
+          testAllDefaultsExcept(
+            b,
+            'value',
+            'enabledValue',
+            'controls',
+            'controlsStore',
+            'errors',
+            'containerErrors',
+            'childrenErrors',
+            'errorsStore',
+            'valid',
+            'containerValid',
+            'childValid',
+            'childrenValid',
+            'invalid',
+            'containerInvalid',
+            'childInvalid',
+            'childrenInvalid',
+            'status'
+          );
+
+          testBLocalDefaults();
+
+          expect(b).toImplementObject({
+            errors: error,
+            containerErrors: null,
+            childrenErrors: error,
+            errorsStore: new Map(),
+            valid: false,
+            containerValid: true,
+            childValid: true,
+            childrenValid: false,
+            invalid: true,
+            containerInvalid: false,
+            childInvalid: true,
+            childrenInvalid: false,
+            status: 'INVALID',
+          });
+        });
+
+        it('{ error: null }', async () => {
+          const child = new FormControl('one', {
+            errors: { error: true },
+          });
+
+          a = new FormGroup({
+            ...aControls,
+            one: child,
+          });
+
+          b = new FormGroup({
+            ...bControls,
+            four: a,
+          });
+
+          child.patchErrors({ error: null });
+
+          testAllDefaultsExcept(
+            b,
+            'value',
+            'enabledValue',
+            'controls',
+            'controlsStore'
+          );
+
+          testBLocalDefaults();
+        });
       });
     });
   });
@@ -486,9 +848,9 @@ describe('FormGroup', () => {
         dirtyEvent,
         readonlyEvent,
         submittedEvent,
-        errorsStoreEvent,
         validatorStoreEvent,
         pendingStoreEvent,
+        errorsStoreEvent,
         dataEvent,
       ] = await state.pipe(toArray()).toPromise();
 
@@ -500,12 +862,12 @@ describe('FormGroup', () => {
         [dirtyEvent, { dirty: expect.any(Function) }] as const,
         [readonlyEvent, { readonly: expect.any(Function) }] as const,
         [submittedEvent, { submitted: expect.any(Function) }] as const,
-        [errorsStoreEvent, { errorsStore: expect.any(Function) }] as const,
         [
           validatorStoreEvent,
           { validatorStore: expect.any(Function) },
         ] as const,
         [pendingStoreEvent, { pendingStore: expect.any(Function) }] as const,
+        [errorsStoreEvent, { errorsStore: expect.any(Function) }] as const,
         [dataEvent, { data: expect.any(Function) }] as const,
       ].forEach(([event, change]) => {
         expect(event).toEqual(buildStateChangeBase(change));
@@ -616,3 +978,54 @@ describe('FormGroup', () => {
     });
   });
 });
+
+// testAllDefaultsExcept(
+//   b,
+//   'value',
+//   'enabledValue',
+//   'controls',
+//   'id',
+//   'data',
+//   'valid',
+//   'invalid',
+//   'status',
+//   'enabled',
+//   'disabled',
+//   'dirty',
+//   'readonly',
+//   'submitted',
+//   'errors',
+//   'errorsStore',
+//   'validator',
+//   'validatorStore',
+//   'pending',
+//   'pendingStore',
+//   'parent',
+//   'childDirty',
+//   'childDisabled',
+//   'childInvalid',
+//   'childPending',
+//   'childReadonly',
+//   'childSubmitted',
+//   'childTouched',
+//   'childValid',
+//   'childrenDirty',
+//   'childrenDisabled',
+//   'childrenErrors',
+//   'childrenInvalid',
+//   'childrenPending',
+//   'childrenReadonly',
+//   'childrenSubmitted',
+//   'childrenTouched',
+//   'childrenValid',
+//   'containerDirty',
+//   'containerDisabled',
+//   'containerErrors',
+//   'containerInvalid',
+//   'containerPending',
+//   'containerReadonly',
+//   'containerSubmitted',
+//   'containerTouched',
+//   'containerValid',
+//   'controlsStore'
+// );

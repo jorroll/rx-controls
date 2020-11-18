@@ -12,13 +12,17 @@ export type ContainerControls<C> = C extends ControlContainer<infer Controls>
   ? Controls
   : unknown;
 
-export type GenericControlsObject =
-  | {
-      readonly [key: string]: AbstractControl;
-    }
-  | {
-      readonly [key: number]: AbstractControl;
-    };
+// export type GenericControlsObject =
+//   | {
+//       readonly [key: string]: AbstractControl;
+//     }
+//   | {
+//       readonly [key: number]: AbstractControl;
+//     };
+
+export type GenericControlsObject = {
+  readonly [key in string | number]: AbstractControl;
+};
 
 export interface IControlContainerStateChange<
   Controls extends GenericControlsObject,
@@ -36,21 +40,16 @@ export interface IControlContainerStateChangeEvent<
   change: IControlContainerStateChange<Controls, D>;
 }
 
-export interface IChildControlEvent extends IControlEvent {
-  key: string | number;
+export interface IChildControlEvent<Controls extends GenericControlsObject>
+  extends IControlEvent {
+  key: keyof Controls;
   childEvent: IControlEvent;
 }
 
 export interface IChildControlStateChangeEvent<
-  Controls extends
-    | {
-        readonly [key: string]: AbstractControl;
-      }
-    | {
-        readonly [key: number]: AbstractControl;
-      },
+  Controls extends GenericControlsObject,
   D
-> extends IChildControlEvent {
+> extends IChildControlEvent<Controls> {
   type: 'ChildStateChange';
   childEvent:
     | IControlStateChangeEvent<ControlsValue<Controls>[keyof Controls], D>

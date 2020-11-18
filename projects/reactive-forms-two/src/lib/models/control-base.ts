@@ -757,7 +757,15 @@ export abstract class ControlBase<Value = any, Data = any>
           newValue = existingValue;
         }
 
-        return new Map(old).set(source, newValue);
+        const errorsStore = new Map(old);
+
+        if (Object.keys(newValue).length === 0) {
+          errorsStore.delete(source);
+        } else {
+          errorsStore.set(source, newValue);
+        }
+
+        return errorsStore;
       };
     }
 
@@ -1005,8 +1013,8 @@ export abstract class ControlBase<Value = any, Data = any>
       _dirty,
       _readonly,
       _submitted,
-      _errorsStore,
       _validatorStore,
+      _errorsStore,
       _pendingStore,
       data,
     } = this;
@@ -1018,9 +1026,11 @@ export abstract class ControlBase<Value = any, Data = any>
       { dirty: () => _dirty },
       { readonly: () => _readonly },
       { submitted: () => _submitted },
-      { errorsStore: () => _errorsStore },
       { validatorStore: () => _validatorStore },
       { pendingStore: () => _pendingStore },
+      // important for errorsStore to come at the end because otherwise
+      // the value/validatorStore state change would overwrite the errors
+      { errorsStore: () => _errorsStore },
       { data: () => data },
     ];
 

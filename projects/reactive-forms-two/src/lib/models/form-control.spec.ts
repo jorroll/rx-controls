@@ -353,29 +353,9 @@ describe('FormControl', () => {
       const clone = original.clone();
 
       expect(clone).not.toBe(original);
-      expect(clone).toBeInstanceOf(FormControl);
-
-      expect(clone.data).toEqual(original.data);
-      expect(clone.dirty).toEqual(original.dirty);
-      expect(clone.disabled).toEqual(original.disabled);
-      expect(clone.enabled).toEqual(original.enabled);
-      expect(clone.errors).toEqual(original.errors);
-      expect(clone.errorsStore).toEqual(original.errorsStore);
-      expect(clone.id).not.toEqual(original.id);
-      expect(clone.invalid).toEqual(original.invalid);
-      expect(clone.parent).not.toEqual(original.parent);
-      expect(clone.pending).toEqual(original.pending);
-      expect(clone.pendingStore).toEqual(original.pendingStore);
-      expect(clone.readonly).toEqual(original.readonly);
-      expect(clone.status).toEqual(original.status);
-      expect(clone.submitted).toEqual(original.submitted);
-      expect(clone.touched).toEqual(original.touched);
-      expect(clone.valid).toEqual(original.valid);
-      expect(clone.validator).toEqual(expect.any(Function));
-      expect(clone.validatorStore).toEqual(
-        new Map([[original.id, expect.any(Function)]])
-      );
-      expect(clone.value).toEqual(original.value);
+      expect(clone).toEqualControl(original, {
+        skip: ['parent'],
+      });
     });
   });
 
@@ -779,9 +759,9 @@ describe('FormControl', () => {
         { dirty: expect.any(Function) },
         { readonly: expect.any(Function) },
         { submitted: expect.any(Function) },
-        { errorsStore: expect.any(Function) },
         { validatorStore: expect.any(Function) },
         { pendingStore: expect.any(Function) },
+        { errorsStore: expect.any(Function) },
         { data: expect.any(Function) },
       ];
 
