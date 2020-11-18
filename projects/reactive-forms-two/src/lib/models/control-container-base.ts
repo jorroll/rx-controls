@@ -711,8 +711,33 @@ export abstract class ControlContainerBase<
     // bubbling up, re-emit it after handling side effects
     if (event.source === this.id) {
       const sideEffects: string[] = [];
+      const cse = event.childEvent.sideEffects;
 
-      if (event.childEvent.sideEffects.includes('errors')) {
+      if (cse.includes('disabled')) {
+        sideEffects.push(...updateProps(this, 'Disabled'));
+      }
+
+      if (cse.includes('readonly')) {
+        sideEffects.push(...updateProps(this, 'Readonly'));
+      }
+
+      if (cse.includes('pending')) {
+        sideEffects.push(...updateProps(this, 'Pending'));
+      }
+
+      if (cse.includes('touched')) {
+        sideEffects.push(...updateProps(this, 'Touched'));
+      }
+
+      if (cse.includes('dirty')) {
+        sideEffects.push(...updateProps(this, 'Dirty'));
+      }
+
+      if (cse.includes('submitted')) {
+        sideEffects.push(...updateProps(this, 'Submitted'));
+      }
+
+      if (cse.includes('errors')) {
         this.updateChildrenErrors(sideEffects);
       }
 
