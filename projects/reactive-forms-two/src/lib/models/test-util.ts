@@ -1,6 +1,11 @@
 import { Subject } from 'rxjs';
 import { takeUntil, toArray } from 'rxjs/operators';
-import { AbstractControl } from './abstract-control';
+import {
+  AbstractControl,
+  ControlId,
+  ValidationErrors,
+} from './abstract-control';
+import { ControlBase } from './control-base';
 import { ControlContainer } from './control-container';
 
 export function wait(ms: number) {
@@ -224,4 +229,20 @@ export function toControlMatcherEntries(controls: {
   return Object.entries(controls).map(
     ([k, v]) => [k, expect.toEqualControl(v)] as const
   );
+}
+
+export function setExistingErrors(
+  control: ControlBase,
+  errors: ValidationErrors | null,
+  errorsStore: ReadonlyMap<ControlId, ValidationErrors>
+) {
+  const c = control as any;
+
+  c._errorsStore = errorsStore;
+  c._errors = errors;
+  c._status = errors ? 'INVALID' : 'VALID';
+
+  if (ControlContainer.isControlContainer(control)) {
+    c._combinedErrors = errors;
+  }
 }

@@ -2,6 +2,7 @@ import isEqual from 'lodash-es/isEqual';
 import { merge, Subject } from 'rxjs';
 import { skip, take, takeUntil, toArray } from 'rxjs/operators';
 import { AbstractControl, ValidationErrors } from './abstract-control';
+import runControlBaseTestSuite from './control-base-tests';
 import { FormControl } from './form-control';
 import { FormGroup } from './form-group';
 import {
@@ -10,6 +11,8 @@ import {
   getControlEventsUntilEnd,
   toControlMatcherEntries,
 } from './test-util';
+
+runControlBaseTestSuite('FormGroup', () => new FormGroup());
 
 function testAllDefaultsExcept(
   c: FormGroup<any>,
@@ -114,8 +117,8 @@ describe('FormGroup', () => {
 });
 
 describe('FormGroup', () => {
-  let a: FormGroup<any>;
-  let aControls: any;
+  let a: FormGroup;
+  let aControls: { [key: string]: AbstractControl };
 
   let b: FormGroup<{
     three: FormControl<string[]>;
@@ -126,12 +129,10 @@ describe('FormGroup', () => {
     four: typeof a;
   };
 
-  let c: FormGroup<any>;
-  let cControls: any;
+  let c: FormGroup;
+  let cControls: { [key: string]: AbstractControl };
 
   beforeEach(() => {
-    AbstractControl.eventId(0);
-
     aControls = {
       one: new FormControl('one'),
       two: new FormControl(2),
@@ -428,7 +429,7 @@ describe('FormGroup', () => {
     it('', async () => {
       b.patchValue({
         four: {
-          one: 'two' as any,
+          one: 'two',
         },
       });
 
@@ -439,6 +440,16 @@ describe('FormGroup', () => {
         three: ['one'],
         four: { one: 'two', two: 2 },
       });
+    });
+
+    it('errors if incorrect shape', async () => {
+      expect(() => {
+        b.patchValue({
+          four: {
+            five: 'two' as any,
+          },
+        });
+      }).toThrowError();
     });
   });
 
@@ -764,7 +775,7 @@ describe('FormGroup', () => {
             errors: { error: true },
           });
 
-          a = new FormGroup({
+          a = new FormGroup<{ [key: string]: AbstractControl }>({
             ...aControls,
             one: child,
           });

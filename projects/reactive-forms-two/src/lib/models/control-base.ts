@@ -708,7 +708,7 @@ export abstract class ControlBase<Value = any, Data = any>
 
     if (value instanceof Map) {
       changeFn = () => value;
-    } else if (value === null) {
+    } else if (value === null || Object.keys(value).length === 0) {
       changeFn = (old) => {
         const errorsStore = new Map(old);
         errorsStore.delete(source);
@@ -733,13 +733,15 @@ export abstract class ControlBase<Value = any, Data = any>
     let changeFn: IControlStateChange<Value, Data>['errorsStore'];
 
     if (value instanceof Map) {
+      if (value.size === 0) return;
+
       changeFn = (old) =>
         new Map<ControlId, ValidationErrors>([...old, ...value]);
     } else {
+      if (Object.keys(value).length === 0) return;
+
       changeFn = (old) => {
         let newValue: ValidationErrors = value;
-
-        if (Object.entries(newValue).length === 0) return old;
 
         let existingValue = old.get(source);
 
@@ -755,6 +757,14 @@ export abstract class ControlBase<Value = any, Data = any>
           }
 
           newValue = existingValue;
+        } else {
+          const entries = Object.entries(newValue).filter(
+            ([, v]) => v !== null
+          );
+
+          if (entries.length === 0) return old;
+
+          newValue = Object.fromEntries(entries);
         }
 
         const errorsStore = new Map(old);
@@ -990,10 +1000,13 @@ export abstract class ControlBase<Value = any, Data = any>
     );
   }
 
-  setData(data: Data, options?: IControlEventOptions) {
+  setData(data: Data | ((data: Data) => Data), options?: IControlEventOptions) {
     this.emitEvent<IControlStateChangeEvent<Value, Data>>(
       getSimpleStateChangeEventArgs({
-        data: () => data,
+        data:
+          typeof data === 'function'
+            ? (data as (data: Data) => Data)
+            : () => data as Data,
       }),
       options
     );

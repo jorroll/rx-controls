@@ -12,24 +12,26 @@ export type ContainerControls<C> = C extends ControlContainer<infer Controls>
   ? Controls
   : unknown;
 
-// export type GenericControlsObject =
-//   | {
-//       readonly [key: string]: AbstractControl;
-//     }
-//   | {
-//       readonly [key: number]: AbstractControl;
-//     };
+export type GenericControlsObject =
+  | {
+      readonly [key: string]: AbstractControl;
+    }
+  | ReadonlyArray<AbstractControl>;
 
-export type GenericControlsObject = {
-  readonly [key in string | number]: AbstractControl;
-};
+export type ControlsKey<
+  Controls extends GenericControlsObject
+> = Controls extends ReadonlyArray<any>
+  ? number
+  : // the `& string` is needed or else
+    // ControlsKey<{[key: string]: AbstractControl}> is type string | number
+    keyof Controls & string;
 
 export interface IControlContainerStateChange<
   Controls extends GenericControlsObject,
   D
 > extends IControlStateChange<ControlsValue<Controls>, D> {
   controlsStore?: IStateChange<
-    ReadonlyMap<keyof Controls, Controls[keyof Controls]>
+    ReadonlyMap<ControlsKey<Controls>, Controls[ControlsKey<Controls>]>
   >;
 }
 
@@ -42,7 +44,7 @@ export interface IControlContainerStateChangeEvent<
 
 export interface IChildControlEvent<Controls extends GenericControlsObject>
   extends IControlEvent {
-  key: keyof Controls;
+  key: ControlsKey<Controls>;
   childEvent: IControlEvent;
 }
 
@@ -52,36 +54,27 @@ export interface IChildControlStateChangeEvent<
 > extends IChildControlEvent<Controls> {
   type: 'ChildStateChange';
   childEvent:
-    | IControlStateChangeEvent<ControlsValue<Controls>[keyof Controls], D>
+    | IControlStateChangeEvent<
+        ControlsValue<Controls>[ControlsKey<Controls>],
+        D
+      >
     | IChildControlStateChangeEvent<Controls, D>;
   sideEffects: string[];
 }
 
-export type ControlsValue<
-  Controls extends
-    | {
-        readonly [key: string]: AbstractControl;
-      }
-    | {
-        readonly [key: number]: AbstractControl;
-      }
-> = {
-  readonly [Key in keyof Controls]: Controls[Key] extends AbstractControl
+export type ControlsValue<Controls extends GenericControlsObject> = {
+  readonly [Key in ControlsKey<Controls>]: Controls[Key] extends AbstractControl
     ? Controls[Key]['value']
     : never;
 };
 
 export type ControlsEnabledValue<
-  Controls extends
-    | {
-        readonly [key: string]: AbstractControl;
-      }
-    | {
-        readonly [key: number]: AbstractControl;
-      }
+  Controls extends GenericControlsObject
 > = Controls extends ReadonlyArray<any>
   ? {
-      readonly [Key in keyof Controls]: Controls[Key] extends ControlContainer
+      readonly [Key in ControlsKey<
+        Controls
+      >]: Controls[Key] extends ControlContainer
         ? Controls[Key]['enabledValue']
         : Controls[Key] extends AbstractControl
         ? Controls[Key]['value']
@@ -89,7 +82,9 @@ export type ControlsEnabledValue<
     }
   : Partial<
       {
-        readonly [Key in keyof Controls]: Controls[Key] extends ControlContainer
+        readonly [Key in ControlsKey<
+          Controls
+        >]: Controls[Key] extends ControlContainer
           ? Controls[Key]['enabledValue']
           : Controls[Key] extends AbstractControl
           ? Controls[Key]['value']
@@ -110,17 +105,14 @@ export namespace ControlContainer {
 }
 
 export interface ControlContainer<
-  Controls extends
-    | {
-        readonly [key: string]: AbstractControl;
-      }
-    | {
-        readonly [key: number]: AbstractControl;
-      } = any,
+  Controls extends GenericControlsObject = any,
   Data = any
 > extends AbstractControl<ControlsValue<Controls>, Data> {
   readonly controls: Controls;
-  readonly controlsStore: ReadonlyMap<keyof Controls, Controls[keyof Controls]>;
+  readonly controlsStore: ReadonlyMap<
+    ControlsKey<Controls>,
+    Controls[ControlsKey<Controls>]
+  >;
   readonly size: number;
 
   /**
@@ -214,13 +206,16 @@ export interface ControlContainer<
 
   [ControlContainer.INTERFACE](): this;
 
-  get<A extends keyof Controls>(a: A): Controls[A];
-  get<A extends keyof Controls, B extends keyof ContainerControls<Controls[A]>>(
+  get<A extends ControlsKey<Controls>>(a: A): Controls[A];
+  get<
+    A extends ControlsKey<Controls>,
+    B extends keyof ContainerControls<Controls[A]>
+  >(
     a: A,
     b: B
   ): ContainerControls<Controls[A]>[B];
   get<
-    A extends keyof Controls,
+    A extends ControlsKey<Controls>,
     B extends keyof ContainerControls<Controls[A]>,
     C extends keyof ContainerControls<ContainerControls<Controls[A]>[B]>
   >(
@@ -229,7 +224,7 @@ export interface ControlContainer<
     c: C
   ): ContainerControls<ContainerControls<Controls[A]>[B]>[C];
   get<
-    A extends keyof Controls,
+    A extends ControlsKey<Controls>,
     B extends keyof ContainerControls<Controls[A]>,
     C extends keyof ContainerControls<ContainerControls<Controls[A]>[B]>,
     D extends keyof ContainerControls<
@@ -244,7 +239,7 @@ export interface ControlContainer<
     ContainerControls<ContainerControls<Controls[A]>[B]>[C]
   >[D];
   get<
-    A extends keyof Controls,
+    A extends ControlsKey<Controls>,
     B extends keyof ContainerControls<Controls[A]>,
     C extends keyof ContainerControls<ContainerControls<Controls[A]>[B]>,
     D extends keyof ContainerControls<
@@ -271,17 +266,20 @@ export interface ControlContainer<
   patchValue(value: unknown, options?: IControlEventOptions): void;
 
   setControls(controls: Controls, options?: IControlEventOptions): void;
-  setControl<N extends keyof Controls>(
+  setControl<N extends ControlsKey<Controls>>(
     name: N,
     control: Controls[N] | null,
     options?: IControlEventOptions
   ): void;
-  addControl<N extends keyof Controls>(
+  addControl<N extends ControlsKey<Controls>>(
     name: N,
     control: Controls[N],
     options?: IControlEventOptions
   ): void;
-  removeControl(name: keyof Controls, options?: IControlEventOptions): void;
+  removeControl(
+    name: ControlsKey<Controls>,
+    options?: IControlEventOptions
+  ): void;
 
   markChildrenDisabled(value: boolean, options?: IControlEventOptions): void;
   markChildrenTouched(value: boolean, options?: IControlEventOptions): void;

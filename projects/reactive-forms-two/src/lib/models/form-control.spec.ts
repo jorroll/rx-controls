@@ -6,9 +6,12 @@ import {
   ValidationErrors,
   ValidatorFn,
 } from './abstract-control';
+import runControlBaseTestSuite from './control-base-tests';
 import { FormControl } from './form-control';
 import { FormGroup } from './form-group';
 import { testAllAbstractControlDefaultsExcept, wait } from './test-util';
+
+runControlBaseTestSuite('FormControl', () => new FormControl());
 
 describe('FormControl', () => {
   beforeEach(() => {
@@ -424,201 +427,6 @@ describe('FormControl', () => {
 
       return Promise.all([promise1, promise2, promise3]);
     });
-
-    // describe('when linked', () => {
-    //   it('should set the value of other FormControl', () => {
-    //     c.events.subscribe(o.source);
-    //     c.setValue('newValue');
-    //     expect(c.value).toEqual('newValue');
-    //     expect(o.value).toEqual('newValue');
-    //   });
-
-    //   it('should not enter infinite loop', () => {
-    //     c.events.subscribe(o.source);
-    //     o.events.subscribe(c.source);
-    //     c.setValue('newValue');
-    //     expect(c.value).toEqual('newValue');
-    //     expect(o.value).toEqual('newValue');
-    //   });
-    // });
-  });
-
-  describe('setParent', () => {
-    // let g: FormControl;
-    let c: FormControl;
-    beforeEach(() => {
-      c = new FormControl('oldValue');
-    });
-
-    it('should start with no parent', () => {
-      expect(c.parent).toEqual(null);
-    });
-
-    it('should set the parent of the control', () => {
-      expect.assertions(2);
-
-      const parent = new FormControl();
-
-      const promise1 = c.events.pipe(take(1)).forEach((event) => {
-        expect(event).toEqual({
-          type: 'StateChange',
-          eventId: expect.any(Number),
-          idOfOriginatingEvent: expect.any(Number),
-          source: c.id,
-          meta: {},
-          change: {
-            parent: expect.any(Function),
-          },
-          sideEffects: [],
-        });
-      });
-
-      c.setParent(parent);
-      expect(c.parent).toEqual(parent);
-
-      return promise1;
-    });
-  });
-
-  describe('setErrors', () => {
-    let c: FormControl;
-    beforeEach(() => {
-      c = new FormControl('oldValue');
-    });
-
-    it('should start with no errors', () => {
-      expect(c.errors).toEqual(null);
-      expect(c.errorsStore.size).toEqual(0);
-    });
-
-    describe('when passed ValidationErrors', () => {
-      it('should set a ValidationErrors object for the control', () => {
-        expect.assertions(3);
-
-        const error = { required: 'This control is required' };
-        const errorsStore = new Map([[c.id, error]]);
-
-        const promise1 = c.events.pipe(take(1)).forEach((event) => {
-          expect(event).toEqual({
-            type: 'StateChange',
-            eventId: expect.any(Number),
-            idOfOriginatingEvent: expect.any(Number),
-            source: c.id,
-            meta: {},
-            change: {
-              errorsStore: expect.any(Function),
-            },
-            sideEffects: ['errors', 'status'],
-          });
-        });
-
-        c.setErrors(error);
-        expect(c.errors).toEqual(error);
-        expect(c.errorsStore).toEqual(errorsStore);
-
-        return promise1;
-      });
-
-      it('should not modify errors for other ControlIds', () => {
-        expect.assertions(3);
-
-        const prexistingError = { required: 'This control is required' };
-        (c as any)._errorsStore = new Map([['one', prexistingError]]);
-        (c as any)._errors = prexistingError;
-
-        const newError = { spelling: 'Text is mispelled' };
-        const newErrorsStore = new Map<ControlId, ValidationErrors>([
-          [c.id, newError],
-          ['one', prexistingError],
-        ]);
-
-        const promise1 = c.events.pipe(take(1)).forEach((event) => {
-          expect(event).toEqual({
-            type: 'StateChange',
-            eventId: expect.any(Number),
-            idOfOriginatingEvent: expect.any(Number),
-            source: c.id,
-            meta: {},
-            change: {
-              errorsStore: expect.any(Function),
-            },
-            sideEffects: ['errors', 'status'],
-          });
-        });
-
-        c.setErrors(newError);
-        expect(c.errors).toEqual({ ...prexistingError, ...newError });
-        expect(c.errorsStore).toEqual(newErrorsStore);
-
-        return promise1;
-      });
-
-      it('should replace existing errors for this ControlId', () => {
-        expect.assertions(3);
-
-        const prexistingError = { required: 'This control is required' };
-        (c as any)._errorsStore = new Map([[c.id, prexistingError]]);
-        (c as any)._errors = prexistingError;
-
-        const newError = { spelling: 'Text is mispelled' };
-        const newErrorsStore = new Map<ControlId, ValidationErrors>([
-          [c.id, newError],
-        ]);
-
-        const promise1 = c.events.pipe(take(1)).forEach((event) => {
-          expect(event).toEqual({
-            type: 'StateChange',
-            eventId: expect.any(Number),
-            idOfOriginatingEvent: expect.any(Number),
-            source: c.id,
-            meta: {},
-            change: {
-              errorsStore: expect.any(Function),
-            },
-            sideEffects: ['errors', 'status'],
-          });
-        });
-
-        c.setErrors(newError);
-        expect(c.errors).toEqual(newError);
-        expect(c.errorsStore).toEqual(newErrorsStore);
-
-        return promise1;
-      });
-    });
-
-    describe('when passed errorsStore', () => {
-      it('should set the errorsStore for the control', () => {
-        expect.assertions(3);
-
-        const error1 = { required: 'This control is required' };
-        const error2 = { spelling: 'Text is mispelled' };
-        const errorsStore = new Map<ControlId, ValidationErrors>([
-          [c.id, error1],
-          ['two', error2],
-        ]);
-
-        const promise1 = c.events.pipe(take(1)).forEach((event) => {
-          expect(event).toEqual({
-            type: 'StateChange',
-            eventId: expect.any(Number),
-            idOfOriginatingEvent: expect.any(Number),
-            source: c.id,
-            meta: {},
-            change: {
-              errorsStore: expect.any(Function),
-            },
-            sideEffects: ['errors', 'status'],
-          });
-        });
-
-        c.setErrors(errorsStore);
-        expect(c.errors).toEqual({ ...error1, ...error2 });
-        expect(c.errorsStore).toEqual(errorsStore);
-
-        return promise1;
-      });
-    });
   });
 
   describe('validationService', () => {
@@ -965,7 +773,7 @@ describe('FormControl', () => {
     });
   });
 
-  describe(`observeChanges`, () => {
+  describe.skip(`observeChanges`, () => {
     let a: FormControl;
     beforeEach(() => {
       a = new FormControl();

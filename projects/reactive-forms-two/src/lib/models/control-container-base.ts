@@ -5,6 +5,7 @@ import {
   ControlId,
   IControlEvent,
   IControlEventOptions,
+  IStateChange,
   ValidationErrors,
 } from './abstract-control';
 import {
@@ -17,6 +18,7 @@ import {
   GenericControlsObject,
   ContainerControls,
   IChildControlEvent,
+  ControlsKey,
   // IChildControlEvent,
 } from './control-container';
 import {
@@ -28,12 +30,13 @@ import {
 import {
   getSimpleContainerStateChangeEventArgs,
   isTruthy,
+  Mutable,
   pluckOptions,
 } from './util';
 import isEqual from 'lodash-es/isEqual';
 
 export type DeepPartial<T> = {
-  [P in keyof T]?: DeepPartial<T[P]>;
+  [P in keyof T]?: T[P] extends object ? DeepPartial<T[P]> : T[P];
 };
 
 export abstract class ControlContainerBase<
@@ -48,8 +51,8 @@ export abstract class ControlContainerBase<
   }
 
   protected _controlsStore: ReadonlyMap<
-    keyof Controls,
-    Controls[keyof Controls]
+    ControlsKey<Controls>,
+    Controls[ControlsKey<Controls>]
   > = new Map();
   get controlsStore() {
     return this._controlsStore;
@@ -241,7 +244,7 @@ export abstract class ControlContainerBase<
   // MISC
 
   protected _controlsSubscriptions = new Map<
-    Controls[keyof Controls],
+    Controls[ControlsKey<Controls>],
     Subscription
   >();
 
@@ -268,18 +271,18 @@ export abstract class ControlContainerBase<
     return this;
   }
 
-  get<A extends keyof Controls>(a: A): Controls[A];
-  get<A extends keyof Controls, B extends keyof ContainerControls<Controls[A]>>(
-    a: A,
-    b: B
-  ): ContainerControls<Controls[A]>[B];
+  get<A extends ControlsKey<Controls>>(a: A): Controls[A];
   get<
-    A extends keyof Controls,
+    A extends ControlsKey<Controls>,
+    B extends keyof ContainerControls<Controls[A]>
+  >(a: A, b: B): ContainerControls<Controls[A]>[B];
+  get<
+    A extends ControlsKey<Controls>,
     B extends keyof ContainerControls<Controls[A]>,
     C extends keyof ContainerControls<ContainerControls<Controls[A]>[B]>
   >(a: A, b: B, c: C): ContainerControls<ContainerControls<Controls[A]>[B]>[C];
   get<
-    A extends keyof Controls,
+    A extends ControlsKey<Controls>,
     B extends keyof ContainerControls<Controls[A]>,
     C extends keyof ContainerControls<ContainerControls<Controls[A]>[B]>,
     D extends keyof ContainerControls<
@@ -294,7 +297,7 @@ export abstract class ControlContainerBase<
     ContainerControls<ContainerControls<Controls[A]>[B]>[C]
   >[D];
   get<
-    A extends keyof Controls,
+    A extends ControlsKey<Controls>,
     B extends keyof ContainerControls<Controls[A]>,
     C extends keyof ContainerControls<ContainerControls<Controls[A]>[B]>,
     D extends keyof ContainerControls<
@@ -335,7 +338,7 @@ export abstract class ControlContainerBase<
     options?: IControlEventOptions
   ) {
     Object.entries(value).forEach(([key, val]) => {
-      const c = this.controls[key as keyof Controls];
+      const c = this.controls[key as ControlsKey<Controls>];
 
       if (!c) {
         throw new Error(`Invalid patchValue key "${key}".`);
@@ -350,7 +353,7 @@ export abstract class ControlContainerBase<
   setControls(controls: Controls, options?: IControlEventOptions) {
     const controlsStore = new Map(
       (Object.entries(controls) as unknown) as Array<
-        [keyof Controls, Controls[keyof Controls]]
+        [ControlsKey<Controls>, Controls[ControlsKey<Controls>]]
       >
     );
 
@@ -362,7 +365,7 @@ export abstract class ControlContainerBase<
     );
   }
 
-  setControl<N extends keyof Controls>(
+  setControl<N extends ControlsKey<Controls>>(
     name: N,
     control: Controls[N] | null,
     options?: IControlEventOptions
@@ -389,7 +392,7 @@ export abstract class ControlContainerBase<
     );
   }
 
-  addControl<N extends keyof Controls>(
+  addControl<N extends ControlsKey<Controls>>(
     name: N,
     control: Controls[N],
     options?: IControlEventOptions
@@ -414,10 +417,10 @@ export abstract class ControlContainerBase<
   // synced controls that were cloned.
 
   removeControl(
-    name: keyof Controls | Controls[keyof Controls],
+    name: ControlsKey<Controls> | Controls[ControlsKey<Controls>],
     options?: IControlEventOptions
   ) {
-    let key: keyof Controls;
+    let key: ControlsKey<Controls>;
 
     if (AbstractControl.isAbstractControl(name)) {
       for (const [k, c] of this.controlsStore) {
@@ -427,7 +430,7 @@ export abstract class ControlContainerBase<
         break;
       }
     } else {
-      key = name as keyof Controls;
+      key = name as ControlsKey<Controls>;
     }
 
     this.emitEvent<IControlContainerStateChangeEvent<Controls, Data>>(
@@ -511,14 +514,16 @@ export abstract class ControlContainerBase<
   }
 
   protected registerControl(
-    key: keyof Controls,
-    control: Controls[keyof Controls],
+    key: ControlsKey<Controls>,
+    control: Controls[ControlsKey<Controls>],
     options?: IControlEventOptions
   ) {
     // This clone might problems when unregistering controls...
 
     if (((control as unknown) as AbstractControl).parent) {
-      control = (((control as unknown) as AbstractControl).clone() as unknown) as Controls[keyof Controls];
+      control = (((control as unknown) as AbstractControl).clone() as unknown) as Controls[ControlsKey<
+        Controls
+      >];
       // throw new Error('AbstractControl can only have one parent');
     }
 
@@ -537,7 +542,7 @@ export abstract class ControlContainerBase<
             source: this.id,
             key,
             childEvent: event as IControlStateChangeEvent<
-              this['value'][keyof Controls],
+              this['value'][ControlsKey<Controls>],
               Data
             >,
             sideEffects: [],
@@ -556,7 +561,7 @@ export abstract class ControlContainerBase<
   }
 
   protected unregisterControl(
-    control: Controls[keyof Controls],
+    control: Controls[ControlsKey<Controls>],
     options?: IControlEventOptions
   ) {
     const sub = this._controlsSubscriptions.get(control);
@@ -595,9 +600,6 @@ export abstract class ControlContainerBase<
       case 'controlsStore': {
         return this.processStateChange_ControlsStore(event);
       }
-      case 'value': {
-        return this.processStateChange_Value(event);
-      }
       default: {
         return super.processStateChange(changeType, event);
       }
@@ -607,6 +609,153 @@ export abstract class ControlContainerBase<
   protected abstract processStateChange_ControlsStore(
     event: IControlContainerStateChangeEvent<Controls, Data>
   ): IControlContainerStateChangeEvent<Controls, Data> | null;
+
+  protected processStateChange_Value(
+    event: IControlContainerStateChangeEvent<Controls, Data> & {
+      controlContainerValueChange?: {
+        id: ControlId;
+        originalEnabledValue: ControlsEnabledValue<Controls>;
+      };
+    }
+  ): IControlContainerStateChangeEvent<Controls, Data> | null {
+    if (event.controlContainerValueChange?.id === this.id) {
+      const sideEffects = this.runValidation(pluckOptions(event));
+
+      if (
+        !isEqual(
+          this.enabledValue,
+          event.controlContainerValueChange.originalEnabledValue
+        )
+      ) {
+        sideEffects.push('enabledValue');
+      }
+
+      const newEvent = { ...event, sideEffects };
+
+      delete newEvent.controlContainerValueChange;
+
+      return newEvent;
+    }
+
+    const change = event.change.value as NonNullable<
+      IControlContainerStateChange<Controls, Data>['value']
+    >;
+
+    const newValue = change(this._value);
+
+    if (isEqual(this._value, newValue)) return null;
+
+    for (const [key, value] of Object.entries<
+      this['value'][ControlsKey<Controls>]
+    >(newValue)) {
+      const control = (this._controls[
+        key as ControlsKey<Controls>
+      ] as unknown) as AbstractControl;
+
+      if (!control) {
+        throw new Error(`Invalid control key: "${key}"`);
+      }
+
+      /**
+       * We want the FormGroup value StateChange to only emit after the FormGroup's
+       * value has actually finished being updated. Because of the queue schedule
+       * that ControlSource events are emitted with, this is the order of operations
+       * of these emissions:
+       *
+       * 1. This FormGroup sends a value StateChange to child controls. Each of
+       *    these state changes are put in the queue.
+       * 2. The FormGroup adds it's value StateChange to the queue with delay 1.
+       * 3. A child control StateChange is removed from the queue and the state
+       *    change is processed, resulting in the child emitting a new StateChange.
+       * 4. This new StateChange triggers a ChildControlEvent on the FormGroup which
+       *    is added to the queue.
+       * 5. Steps 3 and 4 repeat for each child control.
+       * 6. The FormGroup value StateChange is removed from the queue and then
+       *    re-queued because it has a delay. The delay of the new event is 0.
+       * 7. The FormGroup's ChildControlEvent's are popped from the queue and
+       *    processed one by one. These result in the FormControl's value being
+       *    updated.
+       * 8. The FormGroup value StateChange is removed from the queue and
+       *    processed, emitting normally and also triggering validation for the
+       *    FormGroup.
+       */
+
+      control.emitEvent<
+        IControlStateChangeEvent<this['value'][ControlsKey<Controls>], Data> & {
+          controlContainerValueChangeId: ControlId;
+        }
+      >(
+        {
+          type: 'StateChange',
+          change: {
+            value: () => value,
+          },
+          sideEffects: [],
+          controlContainerValueChangeId: this.id,
+        },
+        event
+      );
+    }
+
+    this.emitEvent({
+      ...event,
+      delay: 1,
+      controlContainerValueChange: {
+        id: this.id,
+        originalEnabledValue: this.enabledValue,
+      },
+    });
+
+    return null;
+  }
+
+  protected processStateChange_Disabled(
+    event: IControlContainerStateChangeEvent<Controls, Data>
+  ): IControlContainerStateChangeEvent<Controls, Data> | null {
+    return updateContainerProp(this, 'containerDisabled', () =>
+      super.processStateChange_Disabled(event)
+    );
+  }
+
+  protected processStateChange_Touched(
+    event: IControlContainerStateChangeEvent<Controls, Data>
+  ): IControlContainerStateChangeEvent<Controls, Data> | null {
+    return updateContainerProp(this, 'containerTouched', () =>
+      super.processStateChange_Touched(event)
+    );
+  }
+
+  protected processStateChange_Dirty(
+    event: IControlContainerStateChangeEvent<Controls, Data>
+  ): IControlContainerStateChangeEvent<Controls, Data> | null {
+    return updateContainerProp(this, 'containerDirty', () =>
+      super.processStateChange_Dirty(event)
+    );
+  }
+
+  protected processStateChange_Readonly(
+    event: IControlContainerStateChangeEvent<Controls, Data>
+  ): IControlContainerStateChangeEvent<Controls, Data> | null {
+    return updateContainerProp(this, 'containerReadonly', () =>
+      super.processStateChange_Readonly(event)
+    );
+  }
+
+  protected processStateChange_Submitted(
+    event: IControlContainerStateChangeEvent<Controls, Data>
+  ): IControlContainerStateChangeEvent<Controls, Data> | null {
+    return updateContainerProp(this, 'containerSubmitted', () =>
+      super.processStateChange_Submitted(event)
+    );
+  }
+
+  protected processStateChange_PendingStore(
+    event: IControlContainerStateChangeEvent<Controls, Data>
+  ): IControlContainerStateChangeEvent<Controls, Data> | null {
+    return updateContainerProp(this, 'containerPending', () =>
+      super.processStateChange_PendingStore(event)
+    );
+  }
 
   protected processChildEvent_StateChange(
     event: IChildControlStateChangeEvent<Controls, Data>
@@ -645,7 +794,7 @@ export abstract class ControlContainerBase<
 
   protected processChildStateChange(
     changeType: string,
-    control: Controls[keyof Controls],
+    control: Controls[ControlsKey<Controls>],
     event: IChildControlStateChangeEvent<Controls, Data>
   ): IControlEvent | null {
     switch (changeType) {
@@ -654,7 +803,7 @@ export abstract class ControlContainerBase<
           control,
           event as IChildControlStateChangeEvent<Controls, Data> & {
             childEvent: IControlStateChangeEvent<
-              ControlsValue<Controls>[keyof Controls],
+              ControlsValue<Controls>[ControlsKey<Controls>],
               Data
             > & { controlContainerId?: ControlId };
           }
@@ -689,7 +838,7 @@ export abstract class ControlContainerBase<
           control,
           event as IChildControlStateChangeEvent<Controls, Data> & {
             childEvent: IControlStateChangeEvent<
-              ControlsValue<Controls>[keyof Controls],
+              ControlsValue<Controls>[ControlsKey<Controls>],
               Data
             >;
           }
@@ -704,7 +853,7 @@ export abstract class ControlContainerBase<
   }
 
   protected processChildStateChange_ChildStateChange(
-    control: Controls[keyof Controls],
+    control: Controls[ControlsKey<Controls>],
     event: IChildControlStateChangeEvent<Controls, Data>
   ): IChildControlStateChangeEvent<Controls, Data> | null {
     // If the event was created by a child of this control
@@ -714,27 +863,27 @@ export abstract class ControlContainerBase<
       const cse = event.childEvent.sideEffects;
 
       if (cse.includes('disabled')) {
-        sideEffects.push(...updateProps(this, 'Disabled'));
+        sideEffects.push(...updateChildrenProps(this, 'Disabled'));
       }
 
       if (cse.includes('readonly')) {
-        sideEffects.push(...updateProps(this, 'Readonly'));
+        sideEffects.push(...updateChildrenProps(this, 'Readonly'));
       }
 
       if (cse.includes('pending')) {
-        sideEffects.push(...updateProps(this, 'Pending'));
+        sideEffects.push(...updateChildrenProps(this, 'Pending'));
       }
 
       if (cse.includes('touched')) {
-        sideEffects.push(...updateProps(this, 'Touched'));
+        sideEffects.push(...updateChildrenProps(this, 'Touched'));
       }
 
       if (cse.includes('dirty')) {
-        sideEffects.push(...updateProps(this, 'Dirty'));
+        sideEffects.push(...updateChildrenProps(this, 'Dirty'));
       }
 
       if (cse.includes('submitted')) {
-        sideEffects.push(...updateProps(this, 'Submitted'));
+        sideEffects.push(...updateChildrenProps(this, 'Submitted'));
       }
 
       if (cse.includes('errors')) {
@@ -745,73 +894,126 @@ export abstract class ControlContainerBase<
     }
 
     // Else, just pass the wrapped event downward
-    control.emitEvent(event.childEvent);
+    ((control as unknown) as AbstractControl).emitEvent(event.childEvent);
 
     return null;
   }
 
-  protected abstract processChildStateChange_Value(
-    control: Controls[keyof Controls],
+  protected processChildStateChange_Value(
+    _control: Controls[ControlsKey<Controls>],
     event: IChildControlStateChangeEvent<Controls, Data> & {
       childEvent: IControlStateChangeEvent<
-        ControlsValue<Controls>[keyof Controls],
+        ControlsValue<Controls>[ControlsKey<Controls>],
         Data
       > & { controlContainerValueChangeId?: ControlId };
     }
-  ): IControlContainerStateChangeEvent<Controls, Data> | null;
+  ): IControlContainerStateChangeEvent<Controls, Data> | null {
+    const { key } = event;
+    const control = (_control as unknown) as AbstractControl;
+
+    const change = event.childEvent.change.value as NonNullable<
+      IControlStateChange<this['value'][typeof key], unknown>['value']
+    >;
+
+    const newChange: IStateChange<this['value']> = (old) => {
+      const v = this.shallowCloneValue(old);
+      (v as Mutable<typeof v>)[key] = change(old[key]);
+      return v;
+    };
+
+    const newValue = newChange(this._value);
+
+    if (isEqual(this._value, newValue)) return null;
+
+    this._value = newValue as ControlsValue<Controls>;
+
+    const sideEffects: string[] = [];
+
+    if (control.enabled) {
+      const childEnabledValue = ControlContainer.isControlContainer(control)
+        ? control.enabledValue
+        : control.value;
+
+      const enabledValue = this.shallowCloneValue(this._enabledValue);
+
+      ((enabledValue as unknown) as Mutable<typeof enabledValue>)[
+        (key as unknown) as keyof this['enabledValue']
+      ] = childEnabledValue;
+
+      this._enabledValue = enabledValue;
+
+      sideEffects.push('enabledValue');
+    }
+
+    if (event.childEvent.controlContainerValueChangeId === this.id) {
+      // if controlContainerId is present and equals this FormGroup's ID,
+      // that means we should suppress this child event.
+      return null;
+    }
+
+    sideEffects.push(...this.runValidation(event.childEvent));
+
+    return {
+      ...event.childEvent,
+      change: {
+        value: newChange,
+      },
+      sideEffects,
+    };
+  }
 
   protected processChildStateChange_Disabled(
-    _control: Controls[keyof Controls],
+    _control: Controls[ControlsKey<Controls>],
     event: IChildControlStateChangeEvent<Controls, Data>
   ): IChildControlStateChangeEvent<Controls, Data> | null {
     return {
       ...event,
-      sideEffects: updateProps(this, 'Disabled'),
+      sideEffects: updateChildrenProps(this, 'Disabled'),
     };
   }
 
   protected processChildStateChange_Touched(
-    _control: Controls[keyof Controls],
+    _control: Controls[ControlsKey<Controls>],
     event: IChildControlStateChangeEvent<Controls, Data>
   ): IChildControlStateChangeEvent<Controls, Data> | null {
     return {
       ...event,
-      sideEffects: updateProps(this, 'Touched'),
+      sideEffects: updateChildrenProps(this, 'Touched'),
     };
   }
 
   protected processChildStateChange_Dirty(
-    _control: Controls[keyof Controls],
+    _control: Controls[ControlsKey<Controls>],
     event: IChildControlStateChangeEvent<Controls, Data>
   ): IChildControlStateChangeEvent<Controls, Data> | null {
     return {
       ...event,
-      sideEffects: updateProps(this, 'Dirty'),
+      sideEffects: updateChildrenProps(this, 'Dirty'),
     };
   }
 
   protected processChildStateChange_Readonly(
-    _control: Controls[keyof Controls],
+    _control: Controls[ControlsKey<Controls>],
     event: IChildControlStateChangeEvent<Controls, Data>
   ): IChildControlStateChangeEvent<Controls, Data> | null {
     return {
       ...event,
-      sideEffects: updateProps(this, 'Readonly'),
+      sideEffects: updateChildrenProps(this, 'Readonly'),
     };
   }
 
   protected processChildStateChange_Submitted(
-    _control: Controls[keyof Controls],
+    _control: Controls[ControlsKey<Controls>],
     event: IChildControlStateChangeEvent<Controls, Data>
   ): IChildControlStateChangeEvent<Controls, Data> | null {
     return {
       ...event,
-      sideEffects: updateProps(this, 'Submitted'),
+      sideEffects: updateChildrenProps(this, 'Submitted'),
     };
   }
 
   protected processChildStateChange_ErrorsStore(
-    _control: Controls[keyof Controls],
+    _control: Controls[ControlsKey<Controls>],
     event: IChildControlStateChangeEvent<Controls, Data>
   ): IChildControlStateChangeEvent<Controls, Data> | null {
     const sideEffects: string[] = [];
@@ -825,34 +1027,87 @@ export abstract class ControlContainerBase<
   }
 
   protected processChildStateChange_ValidatorStore(
-    _control: Controls[keyof Controls],
+    _control: Controls[ControlsKey<Controls>],
     event: IChildControlStateChangeEvent<Controls, Data>
   ): IChildControlStateChangeEvent<Controls, Data> | null {
     return {
       ...event,
-      sideEffects: updateProps(this, 'Invalid'),
+      sideEffects: updateChildrenProps(this, 'Invalid'),
     };
   }
 
   protected processChildStateChange_PendingStore(
-    _control: Controls[keyof Controls],
+    _control: Controls[ControlsKey<Controls>],
     event: IChildControlStateChangeEvent<Controls, Data>
   ): IChildControlStateChangeEvent<Controls, Data> | null {
     return {
       ...event,
-      sideEffects: updateProps(this, 'Pending'),
+      sideEffects: updateChildrenProps(this, 'Pending'),
     };
   }
 
-  protected abstract processChildStateChange_ControlsStore(
-    control: Controls[keyof Controls],
+  protected processChildStateChange_ControlsStore(
+    _control: Controls[ControlsKey<Controls>],
     event: IChildControlStateChangeEvent<Controls, Data> & {
       childEvent: IControlStateChangeEvent<
-        ControlsValue<Controls>[keyof Controls],
+        ControlsValue<Controls>[ControlsKey<Controls>],
         Data
       >;
     }
-  ): IControlContainerStateChangeEvent<Controls, Data> | null;
+  ): IControlContainerStateChangeEvent<Controls, Data> | null {
+    const childSideEffects = event.childEvent.sideEffects;
+    const control = (_control as unknown) as AbstractControl;
+
+    if (
+      !(
+        childSideEffects.includes('value') ||
+        (childSideEffects.includes('enabledValue') && control.enabled)
+      )
+    ) {
+      return null;
+    }
+
+    const { key } = event;
+    const newControlValue = control.value;
+
+    const change: IStateChange<ControlsValue<Controls>> = (old) => {
+      const nv = this.shallowCloneValue(old);
+      (nv as Mutable<typeof nv>)[key] = newControlValue;
+      return nv;
+    };
+
+    const newValue = change(this._value);
+
+    if (isEqual(this._value, newValue)) return null;
+
+    this._value = newValue;
+
+    const sideEffects: string[] = [];
+
+    if (control.enabled) {
+      const childEnabledValue = ControlContainer.isControlContainer(control)
+        ? control.enabledValue
+        : control.value;
+
+      const newEnabledValue = this.shallowCloneValue(this._enabledValue);
+
+      ((newEnabledValue as unknown) as Mutable<typeof newEnabledValue>)[
+        (key as unknown) as keyof this['enabledValue']
+      ] = childEnabledValue;
+
+      this._enabledValue = newEnabledValue;
+
+      sideEffects.push('enabledValue');
+    }
+
+    sideEffects.push(...this.runValidation(event.childEvent));
+
+    return {
+      ...event.childEvent,
+      change: { value: change },
+      sideEffects,
+    };
+  }
 
   protected updateChildrenErrors(sideEffects: string[]) {
     const prevChildrenErrors = this._childrenErrors;
@@ -860,7 +1115,7 @@ export abstract class ControlContainerBase<
 
     this._childrenErrors = Array.from(this.controlsStore.values()).reduce(
       (prev, curr) => {
-        return { ...prev, ...curr.errors };
+        return { ...prev, ...((curr as unknown) as AbstractControl).errors };
       },
       {}
     );
@@ -875,7 +1130,7 @@ export abstract class ControlContainerBase<
       this._combinedErrors = { ...this._childrenErrors, ...this._errors };
     }
 
-    sideEffects.push(...updateProps(this, 'Invalid'));
+    sideEffects.push(...updateChildrenProps(this, 'Invalid'));
 
     if (!isEqual(this._childrenErrors, prevChildrenErrors)) {
       sideEffects.push('childrenErrors');
@@ -893,6 +1148,10 @@ export abstract class ControlContainerBase<
     }
   }
 
+  protected abstract shallowCloneValue<
+    T extends this['value'] | this['enabledValue']
+  >(value: T): T;
+
   protected updateErrorsProp(sideEffects: string[]) {
     super.updateErrorsProp(sideEffects);
 
@@ -906,7 +1165,21 @@ export abstract class ControlContainerBase<
   }
 }
 
-function updateProps(that: any, prop: string) {
+function updateContainerProp<
+  T extends IControlStateChangeEvent<any, any> | null
+>(that: any, prop: string, event: () => T) {
+  const oldVal = that[prop];
+
+  const newEvent = event();
+
+  if (that[prop] !== oldVal) {
+    newEvent?.sideEffects.push(prop);
+  }
+
+  return newEvent;
+}
+
+function updateChildrenProps(that: any, prop: string) {
   const sideEffects: string[] = [];
   const regProp = prop.toLowerCase();
   const childrenProp = `_children${prop}`;

@@ -567,12 +567,21 @@ export interface AbstractControl<Value = any, Data = any> {
   ): void;
 
   /**
-   * As an alternative to manually setting data (i.e. `AbstractControl#data = newValue`)
+   * Unlike other AbstractControl properties, the `data` property can be set directly.
+   * i.e. `control.data = newValue`.
+   *
+   * As an alternative to setting data this way,
    * you can use `setData()` which uses the standard ControlEvent API and emits a `data`
-   * StateChange. Data values are compared with strict equality (`===`). If it doesn't
-   * look like the data has changed, the event will be ignored.
+   * StateChange that can be observed. Data values are compared with strict equality
+   * (`===`). If it doesn't look like the data has changed, the event will be ignored.
+   *
+   * You can also pass a change function instead. This function will be passed the old data
+   * value and is expected to return a new data value.
    */
-  setData(data: Data, options?: IControlEventOptions): void;
+  setData(
+    data: Data | ((data: Data) => Data),
+    options?: IControlEventOptions
+  ): void;
 
   /**
    * Returns an observable of this control's state in the form of
