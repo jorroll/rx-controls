@@ -988,49 +988,67 @@ export abstract class AbstractControlContainerBase<
     _control: Controls[ControlsKey<Controls>],
     event: IChildControlStateChangeEvent<Controls, Data>
   ): IChildControlStateChangeEvent<Controls, Data> | null {
+    const sideEffects = updateChildrenProps(this, 'Disabled');
+
+    // TODO: refactor this into something more efficient...
+    sideEffects.push(...updateChildrenProps(this, 'Dirty'));
+    sideEffects.push(...updateChildrenProps(this, 'Invalid'));
+    sideEffects.push(...updateChildrenProps(this, 'Pending'));
+    sideEffects.push(...updateChildrenProps(this, 'Readonly'));
+    sideEffects.push(...updateChildrenProps(this, 'Submitted'));
+    sideEffects.push(...updateChildrenProps(this, 'Touched'));
+
     return {
       ...event,
-      sideEffects: updateChildrenProps(this, 'Disabled'),
+      sideEffects,
     };
   }
 
   protected processChildStateChange_Touched(
-    _control: Controls[ControlsKey<Controls>],
+    control: Controls[ControlsKey<Controls>],
     event: IChildControlStateChangeEvent<Controls, Data>
   ): IChildControlStateChangeEvent<Controls, Data> | null {
     return {
       ...event,
-      sideEffects: updateChildrenProps(this, 'Touched'),
+      sideEffects: ((control as unknown) as AbstractControl).enabled
+        ? updateChildrenProps(this, 'Touched')
+        : [],
     };
   }
 
   protected processChildStateChange_Dirty(
-    _control: Controls[ControlsKey<Controls>],
+    control: Controls[ControlsKey<Controls>],
     event: IChildControlStateChangeEvent<Controls, Data>
   ): IChildControlStateChangeEvent<Controls, Data> | null {
     return {
       ...event,
-      sideEffects: updateChildrenProps(this, 'Dirty'),
+      sideEffects: ((control as unknown) as AbstractControl).enabled
+        ? updateChildrenProps(this, 'Dirty')
+        : [],
     };
   }
 
   protected processChildStateChange_Readonly(
-    _control: Controls[ControlsKey<Controls>],
+    control: Controls[ControlsKey<Controls>],
     event: IChildControlStateChangeEvent<Controls, Data>
   ): IChildControlStateChangeEvent<Controls, Data> | null {
     return {
       ...event,
-      sideEffects: updateChildrenProps(this, 'Readonly'),
+      sideEffects: ((control as unknown) as AbstractControl).enabled
+        ? updateChildrenProps(this, 'Readonly')
+        : [],
     };
   }
 
   protected processChildStateChange_Submitted(
-    _control: Controls[ControlsKey<Controls>],
+    control: Controls[ControlsKey<Controls>],
     event: IChildControlStateChangeEvent<Controls, Data>
   ): IChildControlStateChangeEvent<Controls, Data> | null {
     return {
       ...event,
-      sideEffects: updateChildrenProps(this, 'Submitted'),
+      sideEffects: ((control as unknown) as AbstractControl).enabled
+        ? updateChildrenProps(this, 'Submitted')
+        : [],
     };
   }
 
@@ -1049,22 +1067,26 @@ export abstract class AbstractControlContainerBase<
   }
 
   protected processChildStateChange_ValidatorStore(
-    _control: Controls[ControlsKey<Controls>],
+    control: Controls[ControlsKey<Controls>],
     event: IChildControlStateChangeEvent<Controls, Data>
   ): IChildControlStateChangeEvent<Controls, Data> | null {
     return {
       ...event,
-      sideEffects: updateChildrenProps(this, 'Invalid'),
+      sideEffects: ((control as unknown) as AbstractControl).enabled
+        ? updateChildrenProps(this, 'Invalid')
+        : [],
     };
   }
 
   protected processChildStateChange_PendingStore(
-    _control: Controls[ControlsKey<Controls>],
+    control: Controls[ControlsKey<Controls>],
     event: IChildControlStateChangeEvent<Controls, Data>
   ): IChildControlStateChangeEvent<Controls, Data> | null {
     return {
       ...event,
-      sideEffects: updateChildrenProps(this, 'Pending'),
+      sideEffects: ((control as unknown) as AbstractControl).enabled
+        ? updateChildrenProps(this, 'Pending')
+        : [],
     };
   }
 
@@ -1139,7 +1161,11 @@ export abstract class AbstractControlContainerBase<
 
     this._childrenErrors = Array.from(this.controlsStore.values()).reduce(
       (prev, curr) => {
-        return { ...prev, ...((curr as unknown) as AbstractControl).errors };
+        const c = (curr as unknown) as AbstractControl;
+
+        if (c.disabled) return prev;
+
+        return { ...prev, ...c.errors };
       },
       {}
     );
@@ -1203,7 +1229,21 @@ function updateContainerProp<
   return newEvent;
 }
 
-function updateChildrenProps(that: any, prop: string) {
+/**
+ * NEED TO UPDATE THIS TO ONLY COUNT ENABLED CHILDREN!!!!!
+ */
+
+function updateChildrenProps(
+  that: any,
+  prop:
+    | 'Disabled'
+    | 'Dirty'
+    | 'Readonly'
+    | 'Touched'
+    | 'Submitted'
+    | 'Invalid'
+    | 'Pending'
+) {
   const sideEffects: string[] = [];
   const regProp = prop.toLowerCase();
   const childrenProp = `_children${prop}`;
@@ -1213,16 +1253,20 @@ function updateChildrenProps(that: any, prop: string) {
   const prevChild = that[childProp];
   const prevCombined = that[regProp];
 
+  let controls = Array.from<AbstractControl>(that._controlsStore.values());
+
+  if (prop !== 'Disabled') {
+    // TODO: refactor this into something more efficient
+    controls = controls.filter((c) => c.enabled);
+  }
+
   that[childrenProp] =
-    that.size > 0 &&
-    Array.from(that._controlsStore.values()).every((c: any) => c[regProp]);
+    controls.length > 0 && controls.every((c: any) => c[regProp]);
 
   if (that[childrenProp]) {
     that[childProp] = true;
   } else {
-    that[childProp] = Array.from(that._controlsStore.values()).some(
-      (c: any) => c[regProp]
-    );
+    that[childProp] = controls.some((c: any) => c[regProp]);
   }
 
   if (that[childrenProp] !== prevChildren) {

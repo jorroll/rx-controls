@@ -210,14 +210,11 @@ export interface AbstractControlContainer<
   /** Will return true if *all* enabled child control's are submitted */
   readonly childrenSubmitted: boolean;
 
-  /**
-   * If both containerErrors and childrenErrors are null, is null.
-   * Else contains `{ ...childrenErrors, ...containerErrors }`.
-   */
+  /** Contains `{ ...childrenErrors, ...containerErrors }` or `null` if there are none */
   readonly errors: ValidationErrors | null;
-  /** Contains errors specific to this ControlContainer */
+  /** Contains this AbstractControlContainer's errors or `null` if there are none */
   readonly containerErrors: ValidationErrors | null;
-  /** Contains a merged object with all the child control errors or null */
+  /** Contains *all* enabled child control errors or `null` if there are none */
   readonly childrenErrors: ValidationErrors | null;
 
   [AbstractControlContainer.INTERFACE](): this;
