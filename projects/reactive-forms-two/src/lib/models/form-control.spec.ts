@@ -771,7 +771,7 @@ describe('FormControl', () => {
     });
   });
 
-  describe.skip(`observeChanges`, () => {
+  describe(`observeChanges`, () => {
     let a: FormControl;
     beforeEach(() => {
       a = new FormControl();
@@ -842,56 +842,6 @@ describe('FormControl', () => {
         testCompleteSignal.complete();
 
         return Promise.all([promise1, promise2, validatorPromise]);
-      });
-    });
-
-    it('parent', () => {
-      const parent = new FormControl();
-
-      const promise1 = a
-        .observeChanges('parent')
-        .pipe(take(1))
-        .forEach((p) => {
-          expect(p).toEqual(parent);
-        });
-
-      a.setParent(parent);
-
-      return Promise.all([promise1]);
-    });
-
-    describe('options', () => {
-      it('noEmit', async () => {
-        const completeSignal = new Subject();
-
-        const promise1 = a
-          .observeChanges('value')
-          .pipe(takeUntil(completeSignal))
-          .forEach(() => {
-            throw new Error('This should never be called');
-          });
-
-        a.setValue('one', { noEmit: true });
-
-        await wait(0);
-
-        completeSignal.next();
-        completeSignal.complete();
-
-        return promise1;
-      });
-
-      it('ignoreNoEmit', async () => {
-        const promise1 = a
-          .observeChanges('value', { ignoreNoEmit: true })
-          .pipe(take(1))
-          .forEach((value) => {
-            expect(value).toEqual('one');
-          });
-
-        a.setValue('one', { noEmit: true });
-
-        return promise1;
       });
     });
   });
