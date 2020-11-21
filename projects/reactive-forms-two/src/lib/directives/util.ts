@@ -4,9 +4,12 @@ import {
   DefaultValueAccessor,
   ControlContainerAccessor,
 } from '../accessors';
-import { ControlContainer, IControlEvent } from '../models';
-import { AbstractControl, IStateChange } from '../models/abstract-control';
-import { IControlStateChangeEvent } from '../models/control-base';
+import { AbstractControlContainer, IControlEvent } from '../models';
+import {
+  AbstractControl,
+  IStateChange,
+  IControlStateChangeEvent,
+} from '../models/abstract-control/abstract-control';
 
 const STD_ACCESSORS: ControlAccessor[] = [];
 
@@ -58,7 +61,7 @@ export function resolveControlContainerAccessor(
   accessors: ControlAccessor[]
 ): ControlContainerAccessor {
   const containerAccessors = accessors.filter((acc) =>
-    ControlContainer.isControlContainer(acc)
+    AbstractControlContainer.isControlContainer(acc.control)
   );
 
   if (containerAccessors.length > 1) {
@@ -70,6 +73,7 @@ export function resolveControlContainerAccessor(
   } else if (containerAccessors.length === 1) {
     return accessors[0] as ControlContainerAccessor;
   } else {
+    console.error('accessors', accessors);
     throw new Error('Could not find control container accessor');
   }
 }

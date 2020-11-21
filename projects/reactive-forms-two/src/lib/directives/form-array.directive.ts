@@ -10,7 +10,7 @@ import {
   Optional,
   Input,
 } from '@angular/core';
-import { FormGroup } from '../models';
+import { FormArray } from '../models';
 import { SW_CONTROL_DIRECTIVE } from './base.directive';
 import { resolveControlContainerAccessor, syncAccessorToControl } from './util';
 import {
@@ -23,34 +23,31 @@ import { IControlValueMapper } from './interface';
 import { concat } from 'rxjs';
 
 @Directive({
-  selector: '[swFormGroup]',
+  selector: '[swFormArray]',
   exportAs: 'ngForm',
   providers: [
     {
       provide: SW_CONTROL_DIRECTIVE,
-      useExisting: forwardRef(() => SwFormGroupDirective),
+      useExisting: forwardRef(() => SwFormArrayDirective),
     },
     {
       provide: SW_CONTROL_ACCESSOR,
-      useExisting: forwardRef(() => SwFormGroupDirective),
+      useExisting: forwardRef(() => SwFormArrayDirective),
       multi: true,
     },
   ],
 })
-export class SwFormGroupDirective
-  extends SwControlDirective<FormGroup>
+export class SwFormArrayDirective
+  extends SwControlDirective<FormArray>
   implements OnChanges {
   static id = 0;
-  @Input('swFormGroup') providedControl!: FormGroup;
-  @Input('swFormGroupValueMapper')
+  @Input('swFormArray') providedControl!: FormArray;
+  @Input('swFormArrayValueMapper')
   valueMapper: IControlValueMapper | undefined;
 
-  readonly control = new FormGroup<any>(
-    {},
-    {
-      id: Symbol(`SwFormGroupDirective-${SwFormGroupDirective.id++}`),
-    }
-  );
+  readonly control = new FormArray<any>([], {
+    id: Symbol(`SwFormArrayDirective-${SwFormArrayDirective.id++}`),
+  });
 
   readonly accessor: ControlContainerAccessor | null;
 
@@ -78,11 +75,11 @@ export class SwFormGroupDirective
     valueMapper?: SimpleChange;
   }) {
     if (!this.providedControl) {
-      throw new Error(`SwFormGroupDirective must be passed a swFormGroup`);
+      throw new Error(`SwFormArrayDirective must be passed a swFormArray`);
     }
 
     this.assertValidValueMapper(
-      'SwFormGroupDirective#swFormGroupValueMapper',
+      'SwFormArrayDirective#swFormArrayValueMapper',
       this.valueMapper
     );
 

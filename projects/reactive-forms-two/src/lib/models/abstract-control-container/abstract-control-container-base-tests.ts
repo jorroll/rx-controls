@@ -1,32 +1,37 @@
 import { toArray } from 'rxjs/operators';
-import { AbstractControl, ControlId, ValidatorFn } from './abstract-control';
-import { ControlContainer, IControlContainerArgs } from './control-container';
+import {
+  AbstractControl,
+  ControlId,
+  ValidatorFn,
+} from '../abstract-control/abstract-control';
+import { AbstractControlContainer } from './abstract-control-container';
+import { IAbstractControlContainerBaseArgs } from './abstract-control-container-base';
 import {
   testAllAbstractControlDefaultsExcept,
   testAllControlContainerDefaultsExcept,
   wait,
-} from './test-util';
+} from '../test-util';
 
 function testAllDefaultsExcept(
-  c: ControlContainer,
+  c: AbstractControlContainer,
   ...skipTests: Array<
-    Omit<keyof ControlContainer, 'value' | 'enabledValue' | 'controls'>
+    Omit<keyof AbstractControlContainer, 'value' | 'enabledValue' | 'controls'>
   >
 ) {
   testAllAbstractControlDefaultsExcept(c, ...skipTests);
   testAllControlContainerDefaultsExcept(c, ...skipTests);
 }
 
-export default function runControlContainerTestSuite<
-  T extends ControlContainer
+export default function runAbstractControlContainerBaseTestSuite<
+  T extends AbstractControlContainer
 >(
   name: string,
   createControlContainer: (args?: {
-    options?: IControlContainerArgs<T['data']>;
+    options?: IAbstractControlContainerBaseArgs<T['data']>;
   }) => T
 ) {
   describe(name, () => {
-    let a: ControlContainer;
+    let a: AbstractControlContainer;
 
     beforeEach(() => {
       AbstractControl.eventId(0);
@@ -342,7 +347,7 @@ export default function runControlContainerTestSuite<
     });
 
     describe(`replayState`, () => {
-      let b: ControlContainer;
+      let b: AbstractControlContainer;
 
       beforeEach(() => {
         b = createControlContainer();

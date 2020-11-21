@@ -1,9 +1,10 @@
-import isEqual from 'lodash-es/isEqual';
-import { merge, Subject } from 'rxjs';
-import { skip, take, takeUntil, toArray } from 'rxjs/operators';
-import { AbstractControl, ValidationErrors } from './abstract-control';
-import runControlBaseTestSuite from './control-base-tests';
-import runControlContainerTestSuite from './control-container-base-tests';
+import { Subject } from 'rxjs';
+import {
+  AbstractControl,
+  ValidationErrors,
+} from './abstract-control/abstract-control';
+import runAbstractControlBaseTestSuite from './abstract-control/abstract-control-base-tests';
+import runAbstractControlContainerBaseTestSuite from './abstract-control-container/abstract-control-container-base-tests';
 import { FormControl } from './form-control';
 import { FormGroup } from './form-group';
 import {
@@ -13,16 +14,21 @@ import {
   toControlMatcherEntries,
   testAllAbstractControlDefaultsExcept,
 } from './test-util';
+import runSharedTestSuite from './shared-tests';
 
-runControlContainerTestSuite(
+runAbstractControlContainerBaseTestSuite(
   'FormGroup',
   (args) => new FormGroup({}, args?.options)
 );
 
-runControlBaseTestSuite(
+runAbstractControlBaseTestSuite(
   'FormGroup',
   (args) => new FormGroup({}, args?.options)
 );
+
+runSharedTestSuite('FormGroup', (args) => new FormGroup({}, args?.options), {
+  controlContainer: true,
+});
 
 function testAllDefaultsExcept(
   c: FormGroup<any>,

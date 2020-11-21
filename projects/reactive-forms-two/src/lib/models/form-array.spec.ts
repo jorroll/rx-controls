@@ -1,28 +1,29 @@
-import isEqual from 'lodash-es/isEqual';
-import { merge, Subject } from 'rxjs';
-import { skip, take, takeUntil, toArray } from 'rxjs/operators';
-import { AbstractControl, ValidationErrors } from './abstract-control';
-import runControlBaseTestSuite from './control-base-tests';
+import { AbstractControl } from './abstract-control/abstract-control';
+import runAbstractControlBaseTestSuite from './abstract-control/abstract-control-base-tests';
 import { FormControl } from './form-control';
 import { FormArray } from './form-array';
 import {
   testAllControlContainerDefaultsExcept,
   wait,
-  getControlEventsUntilEnd,
-  toControlMatcherEntries,
   testAllAbstractControlDefaultsExcept,
 } from './test-util';
-import runControlContainerTestSuite from './control-container-base-tests';
+import runAbstractControlContainerBaseTestSuite from './abstract-control-container/abstract-control-container-base-tests';
+import runSharedTestSuite from './shared-tests';
+import { ControlContainer } from '.';
 
-runControlContainerTestSuite(
+runAbstractControlContainerBaseTestSuite(
+  'FormArray',
+  (args) => new FormArray([], args?.options) as ControlContainer
+);
+
+runAbstractControlBaseTestSuite(
   'FormArray',
   (args) => new FormArray([], args?.options)
 );
 
-runControlBaseTestSuite(
-  'FormArray',
-  (args) => new FormArray([], args?.options)
-);
+runSharedTestSuite('FormArray', (args) => new FormArray([], args?.options), {
+  controlContainer: true,
+});
 
 function testAllDefaultsExcept(
   c: FormArray<any>,

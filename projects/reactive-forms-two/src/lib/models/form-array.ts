@@ -1,26 +1,30 @@
-import { AbstractControl, IControlEventOptions } from './abstract-control';
-import { IControlBaseArgs } from './control-base';
-import { ControlContainerBase } from './control-container-base';
 import {
-  ControlContainer,
+  AbstractControl,
+  IControlEventOptions,
+} from './abstract-control/abstract-control';
+import {
+  AbstractControlContainerBase,
+  IAbstractControlContainerBaseArgs,
+} from './abstract-control-container/abstract-control-container-base';
+import {
   ControlsEnabledValue,
   ControlsValue,
   IControlContainerStateChangeEvent,
   IControlContainerStateChange,
   ControlsKey,
-  IControlContainerArgs,
-} from './control-container';
+  AbstractControlContainer,
+} from './abstract-control-container/abstract-control-container';
 import { getSimpleContainerStateChangeEventArgs } from './util';
 import isEqual from 'lodash-es/isEqual';
 
-export type IFormArrayArgs<D> = IControlContainerArgs<D>;
+export type IFormArrayArgs<D> = IAbstractControlContainerBaseArgs<D>;
 
 export class FormArray<
   Controls extends ReadonlyArray<AbstractControl> = ReadonlyArray<
     AbstractControl
   >,
   Data = any
-> extends ControlContainerBase<Controls, Data> {
+> extends AbstractControlContainerBase<Controls, Data> {
   static id = 0;
 
   constructor(
@@ -112,7 +116,9 @@ export class FormArray<
       newValue.push(control.value);
 
       if (control.enabled) {
-        const controlEnabledValue = ControlContainer.isControlContainer(control)
+        const controlEnabledValue = AbstractControlContainer.isControlContainer(
+          control
+        )
           ? control.enabledValue
           : control.value;
 

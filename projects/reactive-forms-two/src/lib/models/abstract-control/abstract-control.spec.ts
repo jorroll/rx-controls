@@ -12,13 +12,13 @@ describe('AbstractControl', () => {
   });
 
   it('isAbstractControl', () => {
-    expect(AbstractControl.isAbstractControl(0)).toBe(false);
-    expect(AbstractControl.isAbstractControl(undefined)).toBe(false);
-    expect(AbstractControl.isAbstractControl(null)).toBe(false);
-    expect(AbstractControl.isAbstractControl(true)).toBe(false);
-    expect(AbstractControl.isAbstractControl('true')).toBe(false);
-    expect(AbstractControl.isAbstractControl({})).toBe(false);
-    expect(AbstractControl.isAbstractControl(AbstractControl)).toBe(false);
+    expect(AbstractControl.isControl(0)).toBe(false);
+    expect(AbstractControl.isControl(undefined)).toBe(false);
+    expect(AbstractControl.isControl(null)).toBe(false);
+    expect(AbstractControl.isControl(true)).toBe(false);
+    expect(AbstractControl.isControl('true')).toBe(false);
+    expect(AbstractControl.isControl({})).toBe(false);
+    expect(AbstractControl.isControl(AbstractControl)).toBe(false);
 
     const control1 = {
       [AbstractControl.INTERFACE]() {
@@ -26,13 +26,13 @@ describe('AbstractControl', () => {
       },
     };
 
-    expect(AbstractControl.isAbstractControl(control1)).toBe(true);
+    expect(AbstractControl.isControl(control1)).toBe(true);
 
     const control2 = {
       [AbstractControl.INTERFACE]: true,
     };
 
-    expect(AbstractControl.isAbstractControl(control2)).toBe(false);
+    expect(AbstractControl.isControl(control2)).toBe(false);
 
     const control3 = {
       [AbstractControl.INTERFACE]() {
@@ -40,6 +40,6 @@ describe('AbstractControl', () => {
       },
     };
 
-    expect(AbstractControl.isAbstractControl(control3)).toBe(false);
+    expect(AbstractControl.isControl(control3)).toBe(false);
   });
 });

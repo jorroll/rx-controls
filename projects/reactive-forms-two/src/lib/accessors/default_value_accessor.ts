@@ -21,7 +21,7 @@ import { ɵgetDOM as getDOM } from '@angular/platform-browser';
 import { distinctUntilChanged, filter, map } from 'rxjs/operators';
 import { setupListeners } from './util';
 import { FormControl } from '../models';
-import { NG_CONTROL_ACCESSOR, ControlAccessor } from './interface';
+import { SW_CONTROL_ACCESSOR, ControlAccessor } from './interface';
 import { isStateChange } from '../models/util';
 import { Subscription } from 'rxjs';
 
@@ -70,10 +70,10 @@ export const COMPOSITION_BUFFER_MODE = new InjectionToken<boolean>(
  * @publicApi
  */
 @Directive({
-  selector: 'input:not([type=checkbox]),textarea,[ngDefaultControl]',
+  selector: 'input:not([type=checkbox]),textarea,[swDefaultControl]',
   providers: [
     {
-      provide: NG_CONTROL_ACCESSOR,
+      provide: SW_CONTROL_ACCESSOR,
       useExisting: forwardRef(() => DefaultValueAccessor),
       multi: true,
     },
@@ -156,7 +156,7 @@ export class DefaultValueAccessor
    * The registered callback function called when an input event occurs on the input element.
    */
   onChange = (_: any) => {
-    // this.control.markChanged(true);
+    this.control.markDirty(true);
     this.control.setValue(_);
   };
 
@@ -165,7 +165,7 @@ export class DefaultValueAccessor
    * The registered callback function called when a blur event occurs on the input element.
    */
   onTouched = () => {
-    // this.control.markTouched(true);
+    this.control.markTouched(true);
   };
 
   /** @internal */

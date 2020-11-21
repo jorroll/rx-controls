@@ -2,12 +2,12 @@ import { OnDestroy, OnChanges, SimpleChange } from '@angular/core';
 import { AbstractControl } from '../models';
 import { IControlValueMapper, IControlAccessorEvent } from './interface';
 import { map, filter } from 'rxjs/operators';
-import { NgBaseDirective } from './base.directive';
+import { SwBaseDirective } from './base.directive';
 import { ControlAccessor } from '../accessors';
 import { concat } from 'rxjs';
 
-export abstract class NgControlDirective<T extends AbstractControl>
-  extends NgBaseDirective<T>
+export abstract class SwControlDirective<T extends AbstractControl>
+  extends SwBaseDirective<T>
   implements ControlAccessor, OnChanges, OnDestroy {
   abstract providedControl: T;
 

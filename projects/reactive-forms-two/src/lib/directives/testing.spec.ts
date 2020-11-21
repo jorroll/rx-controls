@@ -3,8 +3,8 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { FormControl, FormGroup } from '../models';
 import { ReactiveFormsModule2 } from './form.module';
 import {
-  NG_CONTROL_ACCESSOR,
-  NG_CONTROL_CONTAINER_ACCESSOR,
+  SW_CONTROL_ACCESSOR,
+  // SW_CONTROL_CONTAINER_ACCESSOR,
 } from '../accessors/interface';
 
 import { render, screen, fireEvent } from '@testing-library/angular';
@@ -15,7 +15,7 @@ import { wait } from '../models/test-util';
 @Component({
   selector: 'my-test-component',
   template: `
-    <input [ngFormControl]="control" [ngFormControlValueMapper]="valueMapper" />
+    <input [swFormControl]="control" [swFormControlValueMapper]="valueMapper" />
   `,
 })
 export class SimpleValueMapperTestComponent {
@@ -62,34 +62,34 @@ describe('SimpleValueMapperTestComponent', () => {
 @Component({
   selector: 'my-test-component',
   template: `
-    <div ngFormGroupName="name">
-      <input ngFormControlName="firstName" />
-      <input ngFormControlName="lastName" />
+    <div swFormGroupName="name">
+      <input swFormControlName="firstName" />
+      <input swFormControlName="lastName" />
     </div>
 
     <input
-      ngFormControlName="birthdate"
-      [ngFormControlValueMapper]="valueMapper"
+      swFormControlName="birthdate"
+      [swFormControlValueMapper]="valueMapper"
     />
 
-    <div ngFormGroupName="relative">
-      <div ngFormGroupName="name">
-        <input [ngFormControl]="alternateRelativeFirstNameControl" />
-        <input ngFormControlName="lastName" />
+    <div swFormGroupName="relative">
+      <div swFormGroupName="name">
+        <input [swFormControl]="alternateRelativeFirstNameControl" />
+        <input swFormControlName="lastName" />
       </div>
     </div>
   `,
   providers: [
     {
-      provide: NG_CONTROL_ACCESSOR,
+      provide: SW_CONTROL_ACCESSOR,
       useExisting: forwardRef(() => ComplexValueMapperTestComponent),
       multi: true,
     },
-    {
-      provide: NG_CONTROL_CONTAINER_ACCESSOR,
-      useExisting: forwardRef(() => ComplexValueMapperTestComponent),
-      multi: true,
-    },
+    // {
+    //   provide: SW_CONTROL_CONTAINER_ACCESSOR,
+    //   useExisting: forwardRef(() => ComplexValueMapperTestComponent),
+    //   multi: true,
+    // },
   ],
 })
 export class ComplexValueMapperTestComponent {
@@ -160,29 +160,29 @@ describe('ComplexValueMapperTestComponent', () => {
     expect(component.alternateRelativeFirstNameControl.value).toEqual('Bobby');
 
     const name = container.querySelector(
-      '[ngFormGroupName="name"]'
+      '[swFormGroupName="name"]'
     ) as HTMLDivElement;
 
     const name_firstName = name.querySelector(
-      '[ngFormControlName="firstName"]'
+      '[swFormControlName="firstName"]'
     ) as HTMLInputElement;
 
     expect(name_firstName).toHaveProperty('value', 'John');
 
     const name_lastName = name.querySelector(
-      '[ngFormControlName="lastName"]'
+      '[swFormControlName="lastName"]'
     ) as HTMLInputElement;
 
     expect(name_lastName).toHaveProperty('value', 'Carroll');
 
     const birthdate = container.querySelector(
-      '[ngFormControlName="birthdate"]'
+      '[swFormControlName="birthdate"]'
     ) as HTMLInputElement;
 
     expect(birthdate.value).toEqual(new Date(2020, 0, 1).toISOString());
 
     const relative = container.querySelector(
-      '[ngFormGroupName="relative"]'
+      '[swFormGroupName="relative"]'
     ) as HTMLDivElement;
 
     const relative_firstName = relative.querySelector('input');
@@ -190,7 +190,7 @@ describe('ComplexValueMapperTestComponent', () => {
     expect(relative_firstName).toHaveProperty('value', 'Bobby');
 
     const relative_lastName = relative.querySelector(
-      '[ngFormControlName="lastName"]'
+      '[swFormControlName="lastName"]'
     ) as HTMLInputElement;
 
     expect(relative_lastName).toHaveProperty('value', 'Paul');
@@ -216,7 +216,7 @@ describe('ComplexValueMapperTestComponent', () => {
     });
 
     const birthdate = container.querySelector(
-      '[ngFormControlName="birthdate"]'
+      '[swFormControlName="birthdate"]'
     ) as HTMLInputElement;
 
     expect(birthdate.value).toEqual(newDate.toISOString());
@@ -244,7 +244,7 @@ describe('ComplexValueMapperTestComponent', () => {
     });
 
     const name = container.querySelector(
-      '[ngFormGroupName="name"]'
+      '[swFormGroupName="name"]'
     ) as HTMLDivElement;
 
     const name_firstName = name.querySelector('input');
@@ -286,7 +286,7 @@ describe('ComplexValueMapperTestComponent', () => {
     });
 
     const relative = container.querySelector(
-      '[ngFormGroupName="relative"]'
+      '[swFormGroupName="relative"]'
     ) as HTMLDivElement;
 
     const relative_firstName = relative.querySelector('input');

@@ -1,24 +1,25 @@
-import { AbstractControl } from './abstract-control';
-import { IControlBaseArgs } from './control-base';
-import { ControlContainerBase } from './control-container-base';
+import { AbstractControl } from './abstract-control/abstract-control';
 import {
-  ControlContainer,
+  AbstractControlContainerBase,
+  IAbstractControlContainerBaseArgs,
+} from './abstract-control-container/abstract-control-container-base';
+import {
+  AbstractControlContainer,
   ControlsEnabledValue,
   ControlsValue,
-  IControlContainerArgs,
   IControlContainerStateChange,
   IControlContainerStateChangeEvent,
-} from './control-container';
+} from './abstract-control-container/abstract-control-container';
 import { Mutable, isEqual } from './util';
 
-export type IFormGroupArgs<D> = IControlContainerArgs<D>;
+export type IFormGroupArgs<D> = IAbstractControlContainerBaseArgs<D>;
 
 export class FormGroup<
   Controls extends { [key: string]: AbstractControl } = {
     [key: string]: AbstractControl;
   },
   Data = any
-> extends ControlContainerBase<Controls, Data> {
+> extends AbstractControlContainerBase<Controls, Data> {
   static id = 0;
 
   constructor(
@@ -77,7 +78,7 @@ export class FormGroup<
       if (control.enabled) {
         newEnabledValue[
           key as keyof this['enabledValue']
-        ] = ControlContainer.isControlContainer(control)
+        ] = AbstractControlContainer.isControlContainer(control)
           ? control.enabledValue
           : control.value;
       }

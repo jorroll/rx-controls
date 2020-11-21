@@ -31,7 +31,7 @@ Object.defineProperty(document.body.style, 'transform', {
 
 import {
   AbstractControl,
-  ControlContainer,
+  AbstractControlContainer,
   FormControl,
   FormGroup,
 } from './projects/reactive-forms-two/src/lib/models';
@@ -56,7 +56,7 @@ expect.extend({
       };
     }
 
-    if (!AbstractControl.isAbstractControl(control)) {
+    if (!AbstractControl.isControl(control)) {
       return {
         pass: false,
         message: () =>
@@ -64,7 +64,7 @@ expect.extend({
       };
     }
 
-    if (!AbstractControl.isAbstractControl(received)) {
+    if (!AbstractControl.isControl(received)) {
       return {
         pass: false,
         message: () => `expected abstract control but received ${received}`,
@@ -105,7 +105,9 @@ expect.extend({
         testablePublicProps: testablePrivateFormControlProps,
       });
     } else if (control instanceof FormGroup) {
-      expect(ControlContainer.isControlContainer(received)).toBeTruthy();
+      expect(
+        AbstractControlContainer.isControlContainer(received)
+      ).toBeTruthy();
       expect(received).toBeInstanceOf(FormGroup);
 
       testControlEquality({
@@ -264,7 +266,7 @@ declare global {
 //   'updateErrorsProp',
 // ];
 
-// const publicControlContainerProps: Array<keyof ControlContainer & string> = [
+// const publicControlContainerProps: Array<keyof AbstractControlContainer & string> = [
 //   ...publicAbstractControlProps,
 //   'addControl',
 //   'asyncValidationService',
@@ -309,7 +311,7 @@ declare global {
 //   'setControl',
 //   'setControls',
 //   'size',
-//   // ControlContainer.INTERFACE,
+//   // AbstractControlContainer.INTERFACE,
 // ];
 
 // const privateControlContainerProps: string[] = [
@@ -460,7 +462,7 @@ const testablePrivateAbstractControlProps: Array<
 ];
 
 const testablePublicControlContainerProps: Array<
-  (keyof ControlContainer & string) | { key: string; value: any }
+  (keyof AbstractControlContainer & string) | { key: string; value: any }
 > = [
   ...testablePublicAbstractControlProps,
   'addControl',
@@ -506,7 +508,7 @@ const testablePublicControlContainerProps: Array<
   'setControl',
   'setControls',
   'size',
-  // ControlContainer.INTERFACE,
+  // AbstractControlContainer.INTERFACE,
 ];
 
 const testablePrivateControlContainerProps: Array<

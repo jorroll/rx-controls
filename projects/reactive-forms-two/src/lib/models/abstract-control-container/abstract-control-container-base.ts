@@ -7,9 +7,11 @@ import {
   IControlEventOptions,
   IStateChange,
   ValidationErrors,
-} from './abstract-control';
+  IControlStateChange,
+  IControlStateChangeEvent,
+} from '../abstract-control/abstract-control';
 import {
-  ControlContainer,
+  AbstractControlContainer,
   ControlsValue,
   ControlsEnabledValue,
   IControlContainerStateChangeEvent,
@@ -20,31 +22,31 @@ import {
   IChildControlEvent,
   ControlsKey,
   // IChildControlEvent,
-} from './control-container';
+} from './abstract-control-container';
 import {
-  ControlBase,
-  IControlBaseArgs,
-  IControlStateChange,
-  IControlStateChangeEvent,
-} from './control-base';
+  AbstractControlBase,
+  IAbstractControlBaseArgs,
+} from '../abstract-control/abstract-control-base';
 import {
   getSimpleContainerStateChangeEventArgs,
   isTruthy,
   Mutable,
   pluckOptions,
-} from './util';
+} from '../util';
 import isEqual from 'lodash-es/isEqual';
 
 export type DeepPartial<T> = {
   [P in keyof T]?: T[P] extends object ? DeepPartial<T[P]> : T[P];
 };
 
-export abstract class ControlContainerBase<
+export type IAbstractControlContainerBaseArgs<D> = IAbstractControlBaseArgs<D>;
+
+export abstract class AbstractControlContainerBase<
     Controls extends GenericControlsObject = any,
     Data = any
   >
-  extends ControlBase<ControlsValue<Controls>, Data>
-  implements ControlContainer<Controls, Data> {
+  extends AbstractControlBase<ControlsValue<Controls>, Data>
+  implements AbstractControlContainer<Controls, Data> {
   protected _controls!: Controls;
   get controls() {
     return this._controls;
@@ -251,7 +253,7 @@ export abstract class ControlContainerBase<
   constructor(
     controlId: ControlId,
     controls: Controls,
-    options: IControlBaseArgs<Data> = {}
+    options: IAbstractControlBaseArgs<Data> = {}
   ) {
     super(controlId);
 
@@ -267,7 +269,7 @@ export abstract class ControlContainerBase<
     if (options.pending) this.markPending(options.pending);
   }
 
-  [ControlContainer.INTERFACE]() {
+  [AbstractControlContainer.INTERFACE]() {
     return this;
   }
 
@@ -325,7 +327,7 @@ export abstract class ControlContainerBase<
     else if (args.length === 1) return (this.controls as any)[args[0]];
 
     return args.reduce((prev: AbstractControl | null, curr) => {
-      if (ControlContainer.isControlContainer(prev)) {
+      if (AbstractControlContainer.isControlContainer(prev)) {
         return prev.get(curr);
       }
 
@@ -344,7 +346,7 @@ export abstract class ControlContainerBase<
         throw new Error(`Invalid patchValue key "${key}".`);
       }
 
-      ControlContainer.isControlContainer(c)
+      AbstractControlContainer.isControlContainer(c)
         ? c.patchValue(val, options)
         : ((c as unknown) as AbstractControl).setValue(val, options);
     });
@@ -422,7 +424,7 @@ export abstract class ControlContainerBase<
   ) {
     let key: ControlsKey<Controls>;
 
-    if (AbstractControl.isAbstractControl(name)) {
+    if (AbstractControl.isControl(name)) {
       for (const [k, c] of this.controlsStore) {
         if (c !== name) continue;
 
@@ -930,7 +932,9 @@ export abstract class ControlContainerBase<
     const sideEffects: string[] = [];
 
     if (control.enabled) {
-      const childEnabledValue = ControlContainer.isControlContainer(control)
+      const childEnabledValue = AbstractControlContainer.isControlContainer(
+        control
+      )
         ? control.enabledValue
         : control.value;
 
@@ -1085,7 +1089,9 @@ export abstract class ControlContainerBase<
     const sideEffects: string[] = [];
 
     if (control.enabled) {
-      const childEnabledValue = ControlContainer.isControlContainer(control)
+      const childEnabledValue = AbstractControlContainer.isControlContainer(
+        control
+      )
         ? control.enabledValue
         : control.value;
 

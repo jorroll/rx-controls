@@ -12,11 +12,11 @@ import { ControlAccessor } from '../accessors';
 import { isValueStateChange } from './util';
 // import { isValueStateChange } from './util';
 
-export const NG_CONTROL_DIRECTIVE = new InjectionToken<
-  NgBaseDirective<AbstractControl>
->('NG_CONTROL_DIRECTIVE');
+export const SW_CONTROL_DIRECTIVE = new InjectionToken<
+  SwBaseDirective<AbstractControl>
+>('SW_CONTROL_DIRECTIVE');
 
-export abstract class NgBaseDirective<T extends AbstractControl>
+export abstract class SwBaseDirective<T extends AbstractControl>
   implements ControlAccessor<T>, OnChanges, OnDestroy {
   static id = 0;
   abstract readonly control: T;
@@ -24,7 +24,7 @@ export abstract class NgBaseDirective<T extends AbstractControl>
   valueMapper?: IControlValueMapper;
 
   protected accessorValidatorId = Symbol(
-    `NgDirectiveAccessorValidator-${NgBaseDirective.id++}`
+    `SwDirectiveAccessorValidator-${SwBaseDirective.id++}`
   );
 
   protected onChangesSubscriptions: Subscription[] = [];

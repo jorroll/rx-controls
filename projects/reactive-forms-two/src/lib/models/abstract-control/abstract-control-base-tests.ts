@@ -1,15 +1,20 @@
 import { AbstractControl, ControlId, ValidatorFn } from './abstract-control';
-import { ControlBase, IControlBaseArgs } from './control-base';
-import { testAllAbstractControlDefaultsExcept } from './test-util';
+import {
+  AbstractControlBase,
+  IAbstractControlBaseArgs,
+} from './abstract-control-base';
+import { testAllAbstractControlDefaultsExcept } from '../test-util';
 
 const testAllDefaultsExcept = testAllAbstractControlDefaultsExcept;
 
-export default function runControlBaseTestSuite(
+export default function runAbstractControlBaseTestSuite(
   name: string,
-  createControlBase: (args?: { options?: IControlBaseArgs }) => ControlBase
+  createControlBase: (args?: {
+    options?: IAbstractControlBaseArgs;
+  }) => AbstractControlBase
 ) {
   describe(name, () => {
-    let a: ControlBase;
+    let a: AbstractControlBase;
 
     beforeEach(() => {
       AbstractControl.eventId(0);

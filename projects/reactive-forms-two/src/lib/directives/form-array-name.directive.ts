@@ -4,15 +4,13 @@ import {
   OnChanges,
   Directive,
   Inject,
-  Self,
   SimpleChange,
   SkipSelf,
   Renderer2,
   ElementRef,
   forwardRef,
 } from '@angular/core';
-import { concat } from 'rxjs';
-import { FormControl } from '../models';
+import { FormArray } from '../models';
 import { IControlValueMapper } from './interface';
 import { SW_CONTROL_DIRECTIVE } from './base.directive';
 import {
@@ -20,44 +18,43 @@ import {
   SW_CONTROL_ACCESSOR,
   ControlContainerAccessor,
 } from '../accessors';
-import {
-  resolveControlAccessor,
-  resolveControlContainerAccessor,
-  syncAccessorToControl,
-} from './util';
 import { SwControlNameDirective } from './control-name.directive';
+import { resolveControlContainerAccessor } from './util';
 
 @Directive({
-  selector: '[swFormControlName]:not([formControl])',
-  exportAs: 'swForm',
+  selector: '[ngFormArrayName]',
+  exportAs: 'ngForm',
   providers: [
     {
       provide: SW_CONTROL_DIRECTIVE,
-      useExisting: forwardRef(() => SwFormControlNameDirective),
+      useExisting: forwardRef(() => SwFormArrayNameDirective),
+    },
+    {
+      provide: SW_CONTROL_ACCESSOR,
+      useExisting: forwardRef(() => SwFormArrayNameDirective),
+      multi: true,
     },
   ],
 })
-export class SwFormControlNameDirective
-  extends SwControlNameDirective<FormControl>
+export class SwFormArrayNameDirective
+  extends SwControlNameDirective<FormArray>
   implements ControlAccessor, OnChanges, OnDestroy {
   static id = 0;
 
-  @Input('swFormControlName') controlName!: string;
-  @Input('swFormControlValueMapper')
+  @Input('ngFormArrayName') controlName!: string;
+  @Input('ngFormArrayValueMapper')
   valueMapper: IControlValueMapper | undefined;
 
-  readonly control = new FormControl<any>({
-    id: Symbol(`NgFormControlNameDirective-${SwFormControlNameDirective.id++}`),
-  });
-
-  readonly accessor: ControlAccessor;
+  readonly control = new FormArray<any>(
+    {},
+    {
+      id: Symbol(`SwFormArrayNameDirective-${SwFormArrayNameDirective.id++}`),
+    }
+  );
 
   protected containerAccessor: ControlContainerAccessor;
 
   constructor(
-    @Self()
-    @Inject(SW_CONTROL_ACCESSOR)
-    accessors: ControlAccessor[],
     @SkipSelf()
     @Inject(SW_CONTROL_ACCESSOR)
     parentAccessors: ControlAccessor[],
@@ -66,32 +63,28 @@ export class SwFormControlNameDirective
   ) {
     super(renderer, el);
 
-    this.accessor = resolveControlAccessor(accessors);
-
     this.containerAccessor = resolveControlContainerAccessor(parentAccessors);
-
-    this.subscriptions.push(syncAccessorToControl(this.accessor, this.control));
   }
 
   ngOnChanges(_: { controlName?: SimpleChange; valueMapper?: SimpleChange }) {
     if (!this.controlName) {
       throw new Error(
-        `NgFormControlNameDirective must be passed a swFormControlName`
+        `SwFormArrayNameDirective must be passed a ngFormArrayName`
       );
     }
 
     this.assertValidValueMapper(
-      'NgFormControlNameDirective#swFormControlValueMapper',
+      'SwFormArrayNameDirective#ngFormControlValueMapper',
       this.valueMapper
     );
 
     super.ngOnChanges(_);
   }
 
-  protected validateProvidedControl(control: any): control is FormControl {
-    if (!(control instanceof FormControl)) {
+  protected validateProvidedControl(control: any): control is FormArray {
+    if (!(control instanceof FormArray)) {
       throw new Error(
-        'NgFormControlNameDirective must link to an instance of FormControl'
+        'SwFormArrayNameDirective must link to an instance of FormArray'
       );
     }
 

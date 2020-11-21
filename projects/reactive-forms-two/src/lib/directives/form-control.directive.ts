@@ -11,40 +11,40 @@ import {
   Input,
 } from '@angular/core';
 import { FormControl } from '../models';
-import { NG_CONTROL_DIRECTIVE } from './base.directive';
+import { SW_CONTROL_DIRECTIVE } from './base.directive';
 import { resolveControlAccessor, syncAccessorToControl } from './util';
-import { ControlAccessor, NG_CONTROL_ACCESSOR } from '../accessors';
-import { NgControlDirective } from './control.directive';
+import { ControlAccessor, SW_CONTROL_ACCESSOR } from '../accessors';
+import { SwControlDirective } from './control.directive';
 import { IControlValueMapper } from './interface';
 import { concat } from 'rxjs';
 
 @Directive({
-  selector: '[ngFormControl]:not([formControl])',
+  selector: '[swFormControl]:not([formControl])',
   exportAs: 'ngForm',
   providers: [
     {
-      provide: NG_CONTROL_DIRECTIVE,
-      useExisting: forwardRef(() => NgFormControlDirective),
+      provide: SW_CONTROL_DIRECTIVE,
+      useExisting: forwardRef(() => SwFormControlDirective),
     },
   ],
 })
-export class NgFormControlDirective
-  extends NgControlDirective<FormControl>
+export class SwFormControlDirective
+  extends SwControlDirective<FormControl>
   implements ControlAccessor, OnChanges, OnDestroy {
   static id = 0;
-  @Input('ngFormControl') providedControl!: FormControl;
-  @Input('ngFormControlValueMapper')
+  @Input('swFormControl') providedControl!: FormControl;
+  @Input('swFormControlValueMapper')
   valueMapper: IControlValueMapper | undefined;
 
   readonly control = new FormControl<any>(null, {
-    id: Symbol(`NgFormControlDirective-${NgFormControlDirective.id++}`),
+    id: Symbol(`SwFormControlDirective-${SwFormControlDirective.id++}`),
   });
 
   readonly accessor: ControlAccessor;
 
   constructor(
     @Self()
-    @Inject(NG_CONTROL_ACCESSOR)
+    @Inject(SW_CONTROL_ACCESSOR)
     accessors: ControlAccessor[],
     renderer: Renderer2,
     el: ElementRef
@@ -61,11 +61,11 @@ export class NgFormControlDirective
     valueMapper?: SimpleChange;
   }) {
     if (!this.providedControl) {
-      throw new Error(`NgFormControlDirective must be passed a ngFormControl`);
+      throw new Error(`SwFormControlDirective must be passed a swFormControl`);
     }
 
     this.assertValidValueMapper(
-      'NgFormControlDirective#ngFormControlValueMapper',
+      'SwFormControlDirective#swFormControlValueMapper',
       this.valueMapper
     );
 

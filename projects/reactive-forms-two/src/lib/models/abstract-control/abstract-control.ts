@@ -1,14 +1,20 @@
-import { Observable, Subject, queueScheduler, Subscription } from 'rxjs';
+import { Observable, Subject, queueScheduler } from 'rxjs';
+
+// *****************************
+// Misc Types
+// *****************************
+
+export type ControlId = string | symbol;
+
+export type ValidatorFn = (control: AbstractControl) => ValidationErrors | null;
 
 export interface ValidationErrors {
   [key: string]: any;
 }
 
-export type ValidatorFn = (control: AbstractControl) => ValidationErrors | null;
-
-export type ControlId = string | symbol;
-
-export type IStateChange<V = unknown> = (old: V) => V;
+// *****************************
+// ControlEvent interfaces
+// *****************************
 
 export interface IControlEventArgs {
   eventId?: number;
@@ -43,6 +49,37 @@ export interface IControlValidationEvent<V> extends IControlEvent {
   value: V;
 }
 
+export type IStateChange<V = unknown> = (old: V) => V;
+
+export interface IControlStateChange<V, D> {
+  value?: IStateChange<V>;
+  disabled?: IStateChange<boolean>;
+  touched?: IStateChange<boolean>;
+  dirty?: IStateChange<boolean>;
+  readonly?: IStateChange<boolean>;
+  submitted?: IStateChange<boolean>;
+  errorsStore?: IStateChange<ReadonlyMap<ControlId, ValidationErrors>>;
+  validatorStore?: IStateChange<ReadonlyMap<ControlId, ValidatorFn>>;
+  registeredValidators?: IStateChange<ReadonlySet<ControlId>>;
+  registeredAsyncValidators?: IStateChange<ReadonlySet<ControlId>>;
+  runningValidation?: IStateChange<ReadonlySet<ControlId>>;
+  runningAsyncValidation?: IStateChange<ReadonlySet<ControlId>>;
+  pendingStore?: IStateChange<ReadonlySet<ControlId>>;
+  parent?: IStateChange<AbstractControl | null>;
+  data?: IStateChange<D>;
+  [key: string]: unknown;
+}
+
+export interface IControlStateChangeEvent<V, D> extends IControlEvent {
+  type: 'StateChange';
+  change: IControlStateChange<V, D>;
+  sideEffects: string[]; // array of other props that have changed;
+}
+
+// *****************************
+// AbstractControl interface
+// *****************************
+
 /**
  * ControlSource is a special rxjs Subject which never
  * completes.
@@ -55,12 +92,6 @@ export class ControlSource<T> extends Subject<T> {
     queueScheduler.schedule((state) => super.next(state), 0, value);
   }
 }
-
-// export class AsyncControlSource<T> extends ControlSource<T> {
-//   asObservable() {
-//     return super.asObservable().pipe(subscribeOn(asyncScheduler));
-//   }
-// }
 
 export namespace AbstractControl {
   export const INTERFACE = Symbol('@@AbstractControlInterface');
@@ -76,9 +107,7 @@ export namespace AbstractControl {
     return (_eventId = reset ?? _eventId + 1);
   }
 
-  export function isAbstractControl(
-    object?: unknown
-  ): object is AbstractControl {
+  export function isControl(object?: unknown): object is AbstractControl {
     return (
       typeof object === 'object' &&
       typeof (object as any)?.[AbstractControl.INTERFACE] === 'function' &&
@@ -620,25 +649,3 @@ export interface AbstractControl<Value = any, Data = any> {
     options?: IControlEventOptions
   ): void;
 }
-
-// export interface AsyncAbstractControl<Value = any, Data = any>
-//   extends AbstractControl<Value, Data> {
-//   /**
-//    * **Warning!** Do not use this property unless you know what you are doing.
-//    *
-//    * A control's `source` is the source of truth for the control. Events emitted
-//    * by the source are used to update the control's values. By passing events to
-//    * this control's source, you can programmatically control every aspect of
-//    * of this control.
-//    *
-//    * Never subscribe to the source directly. If you want to receive events for
-//    * this control, subscribe to the `events` observable.
-//    */
-//   source: AsyncControlSource<IControlEventArgs>;
-
-//   setValue(value: Value, options?: IControlEventOptions): Promise<void>;
-
-//   patchValue(value: any, options?: IControlEventOptions): Promise<void>;
-
-//   clone(): AsyncAbstractControl<Value, Data>;
-// }

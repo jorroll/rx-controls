@@ -1,8 +1,11 @@
-import { ControlBase, IControlBaseArgs } from './control-base';
+import {
+  AbstractControlBase,
+  IAbstractControlBaseArgs,
+} from './abstract-control/abstract-control-base';
 
-export type IFormControlArgs<D> = IControlBaseArgs<D>;
+export type IFormControlArgs<D> = IAbstractControlBaseArgs<D>;
 
-export class FormControl<V = any, D = any> extends ControlBase<V, D> {
+export class FormControl<V = any, D = any> extends AbstractControlBase<V, D> {
   static id = 0;
 
   protected _value!: V;

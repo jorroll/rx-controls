@@ -1,4 +1,7 @@
-import { IControlEvent, IControlEventOptions } from './abstract-control';
+import {
+  IControlEvent,
+  IControlEventOptions,
+} from './abstract-control/abstract-control';
 import { pluckOptions } from './util';
 
 // describe('isMapEqual', () => {

@@ -5,13 +5,25 @@ import {
   ControlId,
   ValidationErrors,
   ValidatorFn,
-} from './abstract-control';
-import runControlBaseTestSuite from './control-base-tests';
+} from './abstract-control/abstract-control';
+import runAbstractControlBaseTestSuite from './abstract-control/abstract-control-base-tests';
 import { FormControl } from './form-control';
 import { FormGroup } from './form-group';
+import runSharedTestSuite from './shared-tests';
 import { testAllAbstractControlDefaultsExcept, wait } from './test-util';
 
-runControlBaseTestSuite('FormControl', () => new FormControl());
+runAbstractControlBaseTestSuite(
+  'FormControl',
+  (args) => new FormControl(null, args?.options)
+);
+
+runSharedTestSuite(
+  'FormControl',
+  (args) => new FormControl(null, args?.options),
+  {
+    controlContainer: false,
+  }
+);
 
 function testAllDefaultsExcept(
   c: FormControl,

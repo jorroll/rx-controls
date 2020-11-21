@@ -1,20 +1,16 @@
 import {
   AbstractControl,
-  ControlId,
   IControlEvent,
   IControlEventOptions,
   IStateChange,
   ValidationErrors,
-} from './abstract-control';
-import {
-  IControlBaseArgs,
   IControlStateChange,
   IControlStateChangeEvent,
-} from './control-base';
+} from '../abstract-control/abstract-control';
 
-export type IControlContainerArgs<D> = IControlBaseArgs<D>;
-
-export type ContainerControls<C> = C extends ControlContainer<infer Controls>
+export type ContainerControls<C> = C extends AbstractControlContainer<
+  infer Controls
+>
   ? Controls
   : unknown;
 
@@ -27,7 +23,7 @@ export type GenericControlsObject =
 export type ControlsKey<
   Controls extends GenericControlsObject
 > = Controls extends ReadonlyArray<any>
-  ? number
+  ? keyof Controls & number
   : Controls extends object
   ? // the `& string` is needed or else
     // ControlsKey<{[key: string]: AbstractControl}> is type string | number
@@ -82,7 +78,7 @@ export type ControlsEnabledValue<
   ? {
       readonly [Key in ControlsKey<
         Controls
-      >]: Controls[Key] extends ControlContainer
+      >]: Controls[Key] extends AbstractControlContainer
         ? Controls[Key]['enabledValue']
         : Controls[Key] extends AbstractControl
         ? Controls[Key]['value']
@@ -92,7 +88,7 @@ export type ControlsEnabledValue<
       {
         readonly [Key in ControlsKey<
           Controls
-        >]: Controls[Key] extends ControlContainer
+        >]: Controls[Key] extends AbstractControlContainer
           ? Controls[Key]['enabledValue']
           : Controls[Key] extends AbstractControl
           ? Controls[Key]['value']
@@ -100,19 +96,22 @@ export type ControlsEnabledValue<
       }
     >;
 
-export namespace ControlContainer {
-  export const INTERFACE = Symbol('@@ControlContainerInterface');
+export namespace AbstractControlContainer {
+  export const INTERFACE = Symbol('@@AbstractControlContainerInterface');
 
-  export function isControlContainer(object?: any): object is ControlContainer {
+  export function isControlContainer(
+    object?: any
+  ): object is AbstractControlContainer {
     return (
-      AbstractControl.isAbstractControl(object) &&
-      typeof (object as any)[ControlContainer.INTERFACE] === 'function' &&
-      (object as any)[ControlContainer.INTERFACE]() === object
+      AbstractControl.isControl(object) &&
+      typeof (object as any)[AbstractControlContainer.INTERFACE] ===
+        'function' &&
+      (object as any)[AbstractControlContainer.INTERFACE]() === object
     );
   }
 }
 
-export interface ControlContainer<
+export interface AbstractControlContainer<
   Controls extends GenericControlsObject = any,
   Data = any
 > extends AbstractControl<ControlsValue<Controls>, Data> {
@@ -212,7 +211,7 @@ export interface ControlContainer<
   /** Contains a merged object with all the child control errors or null */
   readonly childrenErrors: ValidationErrors | null;
 
-  [ControlContainer.INTERFACE](): this;
+  [AbstractControlContainer.INTERFACE](): this;
 
   get<A extends ControlsKey<Controls>>(a: A): Controls[A];
   get<
@@ -296,5 +295,5 @@ export interface ControlContainer<
   markChildrenSubmitted(value: boolean, options?: IControlEventOptions): void;
   markChildrenPending(value: boolean, options?: IControlEventOptions): void;
 
-  clone(): ControlContainer<Controls, Data>;
+  clone(): AbstractControlContainer<Controls, Data>;
 }

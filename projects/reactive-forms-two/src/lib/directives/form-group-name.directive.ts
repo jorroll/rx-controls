@@ -12,42 +12,43 @@ import {
 } from '@angular/core';
 import { FormGroup } from '../models';
 import { IControlValueMapper } from './interface';
-import { NG_CONTROL_DIRECTIVE } from './base.directive';
+import { SW_CONTROL_DIRECTIVE } from './base.directive';
 import {
   ControlAccessor,
-  NG_CONTROL_CONTAINER_ACCESSOR,
+  SW_CONTROL_ACCESSOR,
   ControlContainerAccessor,
 } from '../accessors';
-import { NgControlNameDirective } from './control-name.directive';
+import { SwControlNameDirective } from './control-name.directive';
+import { resolveControlContainerAccessor } from './util';
 
 @Directive({
-  selector: '[ngFormGroupName]',
-  exportAs: 'ngForm',
+  selector: '[swFormGroupName]',
+  exportAs: 'swForm',
   providers: [
     {
-      provide: NG_CONTROL_DIRECTIVE,
-      useExisting: forwardRef(() => NgFormGroupNameDirective),
+      provide: SW_CONTROL_DIRECTIVE,
+      useExisting: forwardRef(() => SwFormGroupNameDirective),
     },
     {
-      provide: NG_CONTROL_CONTAINER_ACCESSOR,
-      useExisting: forwardRef(() => NgFormGroupNameDirective),
+      provide: SW_CONTROL_ACCESSOR,
+      useExisting: forwardRef(() => SwFormGroupNameDirective),
       multi: true,
     },
   ],
 })
-export class NgFormGroupNameDirective
-  extends NgControlNameDirective<FormGroup>
+export class SwFormGroupNameDirective
+  extends SwControlNameDirective<FormGroup>
   implements ControlAccessor, OnChanges, OnDestroy {
   static id = 0;
 
-  @Input('ngFormGroupName') controlName!: string;
-  @Input('ngFormGroupValueMapper')
+  @Input('swFormGroupName') controlName!: string;
+  @Input('swFormGroupValueMapper')
   valueMapper: IControlValueMapper | undefined;
 
   readonly control = new FormGroup<any>(
     {},
     {
-      id: Symbol(`NgFormGroupNameDirective-${NgFormGroupNameDirective.id++}`),
+      id: Symbol(`SwFormGroupNameDirective-${SwFormGroupNameDirective.id++}`),
     }
   );
 
@@ -55,25 +56,25 @@ export class NgFormGroupNameDirective
 
   constructor(
     @SkipSelf()
-    @Inject(NG_CONTROL_CONTAINER_ACCESSOR)
-    containerAccessors: ControlContainerAccessor[],
+    @Inject(SW_CONTROL_ACCESSOR)
+    parentAccessors: ControlAccessor[],
     renderer: Renderer2,
     el: ElementRef
   ) {
     super(renderer, el);
 
-    this.containerAccessor = containerAccessors[0];
+    this.containerAccessor = resolveControlContainerAccessor(parentAccessors);
   }
 
   ngOnChanges(_: { controlName?: SimpleChange; valueMapper?: SimpleChange }) {
     if (!this.controlName) {
       throw new Error(
-        `NgFormGroupNameDirective must be passed a ngFormControlName`
+        `SwFormGroupNameDirective must be passed a swFormControlName`
       );
     }
 
     this.assertValidValueMapper(
-      'NgFormGroupNameDirective#ngFormControlValueMapper',
+      'SwFormGroupNameDirective#swFormControlValueMapper',
       this.valueMapper
     );
 
@@ -83,7 +84,7 @@ export class NgFormGroupNameDirective
   protected validateProvidedControl(control: any): control is FormGroup {
     if (!(control instanceof FormGroup)) {
       throw new Error(
-        'NgFormGroupNameDirective must link to an instance of FormGroup'
+        'SwFormGroupNameDirective must link to an instance of FormGroup'
       );
     }
 

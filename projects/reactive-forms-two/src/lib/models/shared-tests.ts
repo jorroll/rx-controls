@@ -4,19 +4,24 @@ import {
   AbstractControl,
   ControlId,
   ValidationErrors,
-} from './abstract-control';
-import { ControlBase, IControlBaseArgs } from './control-base';
+} from './abstract-control/abstract-control';
+import {
+  AbstractControlBase,
+  IAbstractControlBaseArgs,
+} from './abstract-control/abstract-control-base';
 import { getControlEventsUntilEnd, setExistingErrors } from './test-util';
 
-export default function runSharedBaseTestSuite(
+export default function runSharedTestSuite(
   name: string,
-  createControlBase: (args?: { options?: IControlBaseArgs }) => ControlBase,
+  createControlBase: (args?: {
+    options?: IAbstractControlBaseArgs;
+  }) => AbstractControlBase,
   options: { controlContainer?: boolean } = {}
 ) {
   const IS_CONTROL_CONTAINER_TEST = !!options.controlContainer;
 
   describe(name, () => {
-    let a: ControlBase;
+    let a: AbstractControlBase;
 
     beforeEach(() => {
       AbstractControl.eventId(0);
@@ -24,7 +29,7 @@ export default function runSharedBaseTestSuite(
     });
 
     describe('observe', () => {
-      function observeControlUntilEnd<T extends ControlBase>(
+      function observeControlUntilEnd<T extends AbstractControlBase>(
         control: T,
         prop: keyof T,
         options: { end?: Subject<void>; ignoreNoEmit?: boolean } = {}
@@ -335,7 +340,7 @@ export default function runSharedBaseTestSuite(
     });
 
     describe('observeChanges', () => {
-      function observeControlChangesUntilEnd<T extends ControlBase>(
+      function observeControlChangesUntilEnd<T extends AbstractControlBase>(
         control: T,
         prop: keyof T,
         options: { end?: Subject<void>; ignoreNoEmit?: boolean } = {}
@@ -1173,7 +1178,7 @@ export default function runSharedBaseTestSuite(
       ? ['errors', 'containerErrors']
       : ['errors'];
 
-    let a: ControlBase;
+    let a: AbstractControlBase;
 
     beforeEach(() => {
       AbstractControl.eventId(0);

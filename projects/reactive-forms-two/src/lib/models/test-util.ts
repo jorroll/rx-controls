@@ -4,9 +4,9 @@ import {
   AbstractControl,
   ControlId,
   ValidationErrors,
-} from './abstract-control';
-import { ControlBase } from './control-base';
-import { ControlContainer } from './control-container';
+} from './abstract-control/abstract-control';
+import { AbstractControlBase } from './abstract-control/abstract-control-base';
+import { AbstractControlContainer } from './abstract-control-container/abstract-control-container';
 
 export function wait(ms: number) {
   return new Promise((res) => setTimeout(res, ms));
@@ -86,7 +86,7 @@ export function testAllAbstractControlDefaultsExcept<C extends AbstractControl>(
 }
 
 export function testAllControlContainerDefaultsExcept<
-  C extends ControlContainer
+  C extends AbstractControlContainer
 >(
   c: C,
   ...skipTests: Array<Omit<keyof C, 'value' | 'enabledValue' | 'controls'>>
@@ -223,7 +223,7 @@ export function toControlMatcherEntries(controls: {
 }
 
 export function setExistingErrors(
-  control: ControlBase,
+  control: AbstractControlBase,
   errors: ValidationErrors | null,
   errorsStore: ReadonlyMap<ControlId, ValidationErrors>
 ) {
@@ -233,7 +233,7 @@ export function setExistingErrors(
   c._errors = errors;
   c._status = errors ? 'INVALID' : 'VALID';
 
-  if (ControlContainer.isControlContainer(control)) {
+  if (AbstractControlContainer.isControlContainer(control)) {
     c._combinedErrors = errors;
   }
 }

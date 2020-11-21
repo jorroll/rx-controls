@@ -2,12 +2,12 @@ import { Input, OnDestroy, OnChanges, SimpleChange } from '@angular/core';
 import { AbstractControl } from '../models';
 import { IControlValueMapper, IControlAccessorEvent } from './interface';
 import { map, filter } from 'rxjs/operators';
-import { NgBaseDirective } from './base.directive';
+import { SwBaseDirective } from './base.directive';
 import { ControlAccessor, ControlContainerAccessor } from '../accessors';
 import { concat, Subscription } from 'rxjs';
 
-export abstract class NgControlNameDirective<T extends AbstractControl>
-  extends NgBaseDirective<T>
+export abstract class SwControlNameDirective<T extends AbstractControl>
+  extends SwBaseDirective<T>
   implements ControlAccessor, OnChanges, OnDestroy {
   abstract controlName: string;
 
@@ -21,7 +21,7 @@ export abstract class NgControlNameDirective<T extends AbstractControl>
   ngOnChanges(_: { controlName?: SimpleChange; valueMapper?: SimpleChange }) {
     if (!this.controlName) {
       throw new Error(
-        `NgFormControlNameDirective must be passed a ngFormControlName`
+        `SwFormControlNameDirective must be passed a ngFormControlName`
       );
     }
 

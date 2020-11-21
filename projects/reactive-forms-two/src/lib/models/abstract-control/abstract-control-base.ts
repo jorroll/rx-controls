@@ -1,34 +1,25 @@
 import {
   AbstractControl,
-  ControlId,
   ControlSource,
-  IControlEventArgs,
-  IControlEventOptions,
-  IControlEvent,
   ValidatorFn,
-  IStateChange,
-  IControlValidationEvent,
   ValidationErrors,
+  ControlId,
+  IControlEvent,
+  IControlEventOptions,
+  IControlStateChangeEvent,
+  IControlStateChange,
+  IControlValidationEvent,
+  IControlEventArgs,
 } from './abstract-control';
-import {
-  defer,
-  from,
-  merge,
-  Observable,
-  of,
-  queueScheduler,
-  Subscriber,
-  Subscription,
-} from 'rxjs';
+import { defer, from, Observable, Subscriber, Subscription } from 'rxjs';
 import {
   pluckOptions,
   isTruthy,
   isEqual,
   getSimpleStateChangeEventArgs,
-} from './util';
+} from '../util';
 import {
   map,
-  take,
   filter,
   share,
   finalize,
@@ -36,35 +27,9 @@ import {
   distinctUntilChanged,
   skip,
   shareReplay,
-  tap,
 } from 'rxjs/operators';
 
-export interface IControlStateChange<V, D> {
-  value?: IStateChange<V>;
-  disabled?: IStateChange<boolean>;
-  touched?: IStateChange<boolean>;
-  dirty?: IStateChange<boolean>;
-  readonly?: IStateChange<boolean>;
-  submitted?: IStateChange<boolean>;
-  errorsStore?: IStateChange<ReadonlyMap<ControlId, ValidationErrors>>;
-  validatorStore?: IStateChange<ReadonlyMap<ControlId, ValidatorFn>>;
-  registeredValidators?: IStateChange<ReadonlySet<ControlId>>;
-  registeredAsyncValidators?: IStateChange<ReadonlySet<ControlId>>;
-  runningValidation?: IStateChange<ReadonlySet<ControlId>>;
-  runningAsyncValidation?: IStateChange<ReadonlySet<ControlId>>;
-  pendingStore?: IStateChange<ReadonlySet<ControlId>>;
-  parent?: IStateChange<AbstractControl | null>;
-  data?: IStateChange<D>;
-  [key: string]: unknown;
-}
-
-export interface IControlStateChangeEvent<V, D> extends IControlEvent {
-  type: 'StateChange';
-  change: IControlStateChange<V, D>;
-  sideEffects: string[]; // array of other props that have changed;
-}
-
-export interface IControlBaseArgs<Data = any> {
+export interface IAbstractControlBaseArgs<Data = any> {
   data?: Data;
   id?: ControlId;
   disabled?: boolean;
@@ -106,7 +71,7 @@ function replacer(key: string, value: unknown) {
     value instanceof Observable
   ) {
     return value.constructor.name;
-  } else if (key === '_parent' && AbstractControl.isAbstractControl(value)) {
+  } else if (key === '_parent' && AbstractControl.isControl(value)) {
     return value.constructor.name;
   } else if (typeof value === 'symbol') {
     return value.toString();
@@ -119,7 +84,7 @@ function replacer(key: string, value: unknown) {
 
 let errorEventLog: IControlEvent[] = [];
 
-export abstract class ControlBase<Value = any, Data = any>
+export abstract class AbstractControlBase<Value = any, Data = any>
   implements AbstractControl<Value, Data> {
   id: ControlId;
 
