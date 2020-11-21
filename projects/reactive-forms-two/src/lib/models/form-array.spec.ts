@@ -9,11 +9,11 @@ import {
 } from './test-util';
 import runAbstractControlContainerBaseTestSuite from './abstract-control-container/abstract-control-container-base-tests';
 import runSharedTestSuite from './shared-tests';
-import { ControlContainer } from '.';
+import { AbstractControlContainer } from './abstract-control-container/abstract-control-container';
 
 runAbstractControlContainerBaseTestSuite(
   'FormArray',
-  (args) => new FormArray([], args?.options) as ControlContainer
+  (args) => new FormArray([], args?.options) as AbstractControlContainer
 );
 
 runAbstractControlBaseTestSuite(
