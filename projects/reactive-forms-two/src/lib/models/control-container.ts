@@ -6,7 +6,13 @@ import {
   IStateChange,
   ValidationErrors,
 } from './abstract-control';
-import { IControlStateChange, IControlStateChangeEvent } from './control-base';
+import {
+  IControlBaseArgs,
+  IControlStateChange,
+  IControlStateChangeEvent,
+} from './control-base';
+
+export type IControlContainerArgs<D> = IControlBaseArgs<D>;
 
 export type ContainerControls<C> = C extends ControlContainer<infer Controls>
   ? Controls
@@ -22,9 +28,11 @@ export type ControlsKey<
   Controls extends GenericControlsObject
 > = Controls extends ReadonlyArray<any>
   ? number
-  : // the `& string` is needed or else
+  : Controls extends object
+  ? // the `& string` is needed or else
     // ControlsKey<{[key: string]: AbstractControl}> is type string | number
-    keyof Controls & string;
+    keyof Controls & string
+  : any;
 
 export interface IControlContainerStateChange<
   Controls extends GenericControlsObject,

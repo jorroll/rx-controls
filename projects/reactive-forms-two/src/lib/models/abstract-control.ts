@@ -538,6 +538,15 @@ export interface AbstractControl<Value = any, Data = any> {
     options?: IControlEventOptions
   ): void;
 
+  setValidators(
+    value:
+      | ValidatorFn
+      | ValidatorFn[]
+      | ReadonlyMap<ControlId, ValidatorFn>
+      | null,
+    options?: IControlEventOptions
+  ): void;
+
   validationService(
     source: ControlId,
     options?: IControlEventOptions

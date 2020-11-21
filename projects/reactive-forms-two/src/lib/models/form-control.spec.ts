@@ -13,6 +13,17 @@ import { testAllAbstractControlDefaultsExcept, wait } from './test-util';
 
 runControlBaseTestSuite('FormControl', () => new FormControl());
 
+function testAllDefaultsExcept(
+  c: FormControl,
+  ...skipTests: Array<keyof FormControl>
+) {
+  testAllAbstractControlDefaultsExcept(c, ...skipTests);
+
+  if (!skipTests.includes('value')) {
+    expect(c.value).toEqual(null);
+  }
+}
+
 describe('FormControl', () => {
   beforeEach(() => {
     AbstractControl.eventId(0);
@@ -20,7 +31,7 @@ describe('FormControl', () => {
 
   describe('initialization', () => {
     it('defaults', () => {
-      testAllAbstractControlDefaultsExcept(new FormControl());
+      testAllDefaultsExcept(new FormControl());
     });
 
     describe('options', () => {
@@ -31,7 +42,7 @@ describe('FormControl', () => {
 
         expect(c.value).toEqual('one');
 
-        testAllAbstractControlDefaultsExcept(c, 'value');
+        testAllDefaultsExcept(c, 'value');
       });
 
       it('id', () => {
@@ -40,7 +51,7 @@ describe('FormControl', () => {
         });
 
         expect(c.id).toEqual('one');
-        testAllAbstractControlDefaultsExcept(c, 'id');
+        testAllDefaultsExcept(c, 'id');
       });
 
       it('data', () => {
@@ -49,7 +60,7 @@ describe('FormControl', () => {
         });
 
         expect(c.data).toEqual('one');
-        testAllAbstractControlDefaultsExcept(c, 'data');
+        testAllDefaultsExcept(c, 'data');
       });
 
       it('disabled', () => {
@@ -60,12 +71,7 @@ describe('FormControl', () => {
         expect(c.enabled).toEqual(false);
         expect(c.disabled).toEqual(true);
         expect(c.status).toEqual('DISABLED');
-        testAllAbstractControlDefaultsExcept(
-          c,
-          'enabled',
-          'disabled',
-          'status'
-        );
+        testAllDefaultsExcept(c, 'enabled', 'disabled', 'status');
 
         c = new FormControl(null, {
           disabled: false,
@@ -74,12 +80,7 @@ describe('FormControl', () => {
         expect(c.enabled).toEqual(true);
         expect(c.disabled).toEqual(false);
         expect(c.status).toEqual('VALID');
-        testAllAbstractControlDefaultsExcept(
-          c,
-          'enabled',
-          'disabled',
-          'status'
-        );
+        testAllDefaultsExcept(c, 'enabled', 'disabled', 'status');
       });
 
       it('dirty', () => {
@@ -88,14 +89,14 @@ describe('FormControl', () => {
         });
 
         expect(c.dirty).toEqual(true);
-        testAllAbstractControlDefaultsExcept(c, 'dirty');
+        testAllDefaultsExcept(c, 'dirty');
 
         c = new FormControl(null, {
           dirty: false,
         });
 
         expect(c.dirty).toEqual(false);
-        testAllAbstractControlDefaultsExcept(c, 'dirty');
+        testAllDefaultsExcept(c, 'dirty');
       });
 
       it('readonly', () => {
@@ -104,14 +105,14 @@ describe('FormControl', () => {
         });
 
         expect(c.readonly).toEqual(true);
-        testAllAbstractControlDefaultsExcept(c, 'readonly');
+        testAllDefaultsExcept(c, 'readonly');
 
         c = new FormControl(null, {
           readonly: false,
         });
 
         expect(c.readonly).toEqual(false);
-        testAllAbstractControlDefaultsExcept(c, 'readonly');
+        testAllDefaultsExcept(c, 'readonly');
       });
 
       it('submitted', () => {
@@ -120,14 +121,14 @@ describe('FormControl', () => {
         });
 
         expect(c.submitted).toEqual(true);
-        testAllAbstractControlDefaultsExcept(c, 'submitted');
+        testAllDefaultsExcept(c, 'submitted');
 
         c = new FormControl(null, {
           submitted: false,
         });
 
         expect(c.submitted).toEqual(false);
-        testAllAbstractControlDefaultsExcept(c, 'submitted');
+        testAllDefaultsExcept(c, 'submitted');
       });
 
       it('errors', () => {
@@ -140,7 +141,7 @@ describe('FormControl', () => {
         expect(c.valid).toEqual(false);
         expect(c.invalid).toEqual(true);
         expect(c.status).toEqual('INVALID');
-        testAllAbstractControlDefaultsExcept(
+        testAllDefaultsExcept(
           c,
           'errors',
           'errorsStore',
@@ -158,7 +159,7 @@ describe('FormControl', () => {
         expect(c.valid).toEqual(false);
         expect(c.invalid).toEqual(true);
         expect(c.status).toEqual('INVALID');
-        testAllAbstractControlDefaultsExcept(
+        testAllDefaultsExcept(
           c,
           'errors',
           'errorsStore',
@@ -174,7 +175,7 @@ describe('FormControl', () => {
         expect(c.valid).toEqual(true);
         expect(c.invalid).toEqual(false);
         expect(c.status).toEqual('VALID');
-        testAllAbstractControlDefaultsExcept(
+        testAllDefaultsExcept(
           c,
           'errors',
           'errorsStore',
@@ -199,7 +200,7 @@ describe('FormControl', () => {
         expect(c.errors).toEqual(null);
         expect(c.errorsStore).toEqual(new Map());
         expect(c.status).toEqual('VALID');
-        testAllAbstractControlDefaultsExcept(
+        testAllDefaultsExcept(
           c,
           'validator',
           'validatorStore',
@@ -223,7 +224,7 @@ describe('FormControl', () => {
         expect(c.errors).toEqual({ error: true });
         expect(c.errorsStore).toEqual(new Map([[c.id, { error: true }]]));
         expect(c.status).toEqual('INVALID');
-        testAllAbstractControlDefaultsExcept(
+        testAllDefaultsExcept(
           c,
           'validator',
           'validatorStore',
@@ -256,7 +257,7 @@ describe('FormControl', () => {
         expect(c.errors).toEqual({ error: true });
         expect(c.errorsStore).toEqual(new Map([[c.id, { error: true }]]));
         expect(c.status).toEqual('INVALID');
-        testAllAbstractControlDefaultsExcept(
+        testAllDefaultsExcept(
           c,
           'validator',
           'validatorStore',
@@ -276,7 +277,7 @@ describe('FormControl', () => {
         expect(c.errors).toEqual(null);
         expect(c.errorsStore).toEqual(new Map());
         expect(c.status).toEqual('VALID');
-        testAllAbstractControlDefaultsExcept(
+        testAllDefaultsExcept(
           c,
           'validator',
           'validatorStore',
@@ -296,12 +297,7 @@ describe('FormControl', () => {
         expect(c.pending).toEqual(true);
         expect(c.pendingStore).toEqual(new Set([c.id]));
         expect(c.status).toEqual('PENDING');
-        testAllAbstractControlDefaultsExcept(
-          c,
-          'pending',
-          'pendingStore',
-          'status'
-        );
+        testAllDefaultsExcept(c, 'pending', 'pendingStore', 'status');
 
         c = new FormControl(null, {
           pending: new Set(['one']),
@@ -310,12 +306,7 @@ describe('FormControl', () => {
         expect(c.pending).toEqual(true);
         expect(c.pendingStore).toEqual(new Set(['one']));
         expect(c.status).toEqual('PENDING');
-        testAllAbstractControlDefaultsExcept(
-          c,
-          'pending',
-          'pendingStore',
-          'status'
-        );
+        testAllDefaultsExcept(c, 'pending', 'pendingStore', 'status');
 
         c = new FormControl(null, {
           pending: false,
@@ -324,12 +315,7 @@ describe('FormControl', () => {
         expect(c.pending).toEqual(false);
         expect(c.pendingStore).toEqual(new Set());
         expect(c.status).toEqual('VALID');
-        testAllAbstractControlDefaultsExcept(
-          c,
-          'pending',
-          'pendingStore',
-          'status'
-        );
+        testAllDefaultsExcept(c, 'pending', 'pendingStore', 'status');
       });
     });
   });

@@ -8,11 +8,12 @@ import {
   IControlContainerStateChangeEvent,
   IControlContainerStateChange,
   ControlsKey,
+  IControlContainerArgs,
 } from './control-container';
 import { getSimpleContainerStateChangeEventArgs } from './util';
 import isEqual from 'lodash-es/isEqual';
 
-export type IFormArrayArgs<D> = IControlBaseArgs<D>;
+export type IFormArrayArgs<D> = IControlContainerArgs<D>;
 
 export class FormArray<
   Controls extends ReadonlyArray<AbstractControl> = ReadonlyArray<

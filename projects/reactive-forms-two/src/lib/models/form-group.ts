@@ -5,12 +5,13 @@ import {
   ControlContainer,
   ControlsEnabledValue,
   ControlsValue,
+  IControlContainerArgs,
   IControlContainerStateChange,
   IControlContainerStateChangeEvent,
 } from './control-container';
 import { Mutable, isEqual } from './util';
 
-export type IFormGroupArgs<D> = IControlBaseArgs<D>;
+export type IFormGroupArgs<D> = IControlContainerArgs<D>;
 
 export class FormGroup<
   Controls extends { [key: string]: AbstractControl } = {

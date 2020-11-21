@@ -14,12 +14,8 @@ export function wait(ms: number) {
 
 export function testAllAbstractControlDefaultsExcept<C extends AbstractControl>(
   c: C,
-  ...skipTests: Array<keyof C>
+  ...skipTests: Array<Omit<keyof C, 'value'>>
 ): void {
-  if (!skipTests.includes('value')) {
-    expect(c.value).toEqual(null);
-  }
-
   if (!skipTests.includes('id')) {
     expect(typeof c.id).toEqual('symbol');
   }
@@ -95,11 +91,6 @@ export function testAllControlContainerDefaultsExcept<
   c: C,
   ...skipTests: Array<Omit<keyof C, 'value' | 'enabledValue' | 'controls'>>
 ): void {
-  testAllAbstractControlDefaultsExcept(
-    c,
-    ...['value' as const, ...(skipTests as Array<keyof AbstractControl>)]
-  );
-
   if (!skipTests.includes('childDirty')) {
     expect(c.childDirty).toEqual(false);
   }
