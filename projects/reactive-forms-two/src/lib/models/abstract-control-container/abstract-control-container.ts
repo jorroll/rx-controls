@@ -147,6 +147,15 @@ export interface AbstractControlContainer<
   /** Will return true if *all* enabled child control's are invalid */
   readonly childrenInvalid: boolean;
 
+  /** Will return true if `containerEnabled` and `childEnabled` */
+  readonly enabled: boolean;
+  /** Will return true if the `ControlContainer` is enabled. */
+  readonly containerEnabled: boolean;
+  /** Will return true if *any* child control is enabled */
+  readonly childEnabled: boolean;
+  /** Will return true if *all* child control's are enabled */
+  readonly childrenEnabled: boolean;
+
   /** Will return true if `containerDisabled` or `childrenDisabled` */
   readonly disabled: boolean;
   /** Will return true if the `ControlContainer` is disabled. */

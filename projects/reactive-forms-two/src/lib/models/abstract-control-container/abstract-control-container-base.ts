@@ -107,6 +107,24 @@ export abstract class AbstractControlContainerBase<
     return this._childrenInvalid;
   }
 
+  // ENABLED
+
+  get enabled() {
+    return !this.disabled;
+  }
+
+  get containerEnabled() {
+    return !this.containerDisabled;
+  }
+
+  get childEnabled() {
+    return !this.childrenDisabled;
+  }
+
+  get childrenEnabled() {
+    return !this.childDisabled;
+  }
+
   // DISABLED
 
   get disabled() {
