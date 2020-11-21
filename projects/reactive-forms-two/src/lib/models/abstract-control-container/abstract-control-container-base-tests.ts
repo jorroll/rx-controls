@@ -161,7 +161,7 @@ export default function runAbstractControlContainerBaseTestSuite<
 
             testAllDefaultsExcept(
               a,
-              'errorsStore:',
+              'errorsStore',
               'errors',
               'containerErrors',
               'valid',
@@ -190,7 +190,7 @@ export default function runAbstractControlContainerBaseTestSuite<
 
             testAllDefaultsExcept(
               a,
-              'errorsStore:',
+              'errorsStore',
               'errors',
               'containerErrors',
               'valid',
@@ -236,6 +236,8 @@ export default function runAbstractControlContainerBaseTestSuite<
           it('ValidatorFn[]', () => {
             validators = [() => null, () => ({ anError: true })];
 
+            a = createControlContainer({ options: { validators } });
+
             expect(a).toImplementObject({
               errorsStore: new Map([[a.id, { anError: true }]]),
               errors: { anError: true },
@@ -251,7 +253,7 @@ export default function runAbstractControlContainerBaseTestSuite<
 
             testAllDefaultsExcept(
               a,
-              'errorsStore:',
+              'errorsStore',
               'errors',
               'containerErrors',
               'valid',
@@ -290,7 +292,7 @@ export default function runAbstractControlContainerBaseTestSuite<
 
             testAllDefaultsExcept(
               a,
-              'errorsStore:',
+              'errorsStore',
               'errors',
               'containerErrors',
               'valid',
@@ -316,11 +318,18 @@ export default function runAbstractControlContainerBaseTestSuite<
 
             expect(a).toImplementObject({
               pending: true,
+              containerPending: true,
               pendingStore: new Set([a.id]),
               status: 'PENDING',
             });
 
-            testAllDefaultsExcept(a, 'status', 'pending', 'pendingStore');
+            testAllDefaultsExcept(
+              a,
+              'status',
+              'pending',
+              'containerPending',
+              'pendingStore'
+            );
           });
 
           it('pendingStore', () => {
@@ -330,11 +339,18 @@ export default function runAbstractControlContainerBaseTestSuite<
 
             expect(a).toImplementObject({
               pending: true,
+              containerPending: true,
               pendingStore: new Set(['one']),
               status: 'PENDING',
             });
 
-            testAllDefaultsExcept(a, 'status', 'pending', 'pendingStore');
+            testAllDefaultsExcept(
+              a,
+              'status',
+              'pending',
+              'containerPending',
+              'pendingStore'
+            );
           });
 
           it('false', () => {

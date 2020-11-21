@@ -99,7 +99,8 @@ describe('FormGroup', () => {
           'enabledValue',
           'controls',
           'controlsStore',
-          'size'
+          'size',
+          'parent'
         );
 
         expect(b.controls).toEqual(bControls);
