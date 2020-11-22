@@ -7,8 +7,9 @@ import {
 import { AbstractControlContainer } from './abstract-control-container';
 import { IAbstractControlContainerBaseArgs } from './abstract-control-container-base';
 import {
+  getControlEventsUntilEnd,
   testAllAbstractControlDefaultsExcept,
-  testAllControlContainerDefaultsExcept,
+  testAllAbstractControlContainerDefaultsExcept,
   wait,
 } from '../test-util';
 
@@ -19,7 +20,7 @@ function testAllDefaultsExcept(
   >
 ) {
   testAllAbstractControlDefaultsExcept(c, ...skipTests);
-  testAllControlContainerDefaultsExcept(c, ...skipTests);
+  testAllAbstractControlContainerDefaultsExcept(c, ...skipTests);
 }
 
 export default function runAbstractControlContainerBaseTestSuite<
@@ -27,6 +28,7 @@ export default function runAbstractControlContainerBaseTestSuite<
 >(
   name: string,
   createControlContainer: (args?: {
+    children?: number;
     options?: IAbstractControlContainerBaseArgs<T['data']>;
   }) => T
 ) {
@@ -379,7 +381,7 @@ export default function runAbstractControlContainerBaseTestSuite<
             idOfOriginatingEvent: expect.any(Number),
             source: a.id,
             change,
-            sideEffects: [],
+            changedProps: [],
             meta: {},
           };
         }
@@ -443,6 +445,354 @@ export default function runAbstractControlContainerBaseTestSuite<
         state.subscribe(b.source);
 
         expect(b.errors).toEqual(a.errors);
+      });
+    });
+
+    describe('with 1 child', () => {
+      let b: AbstractControlContainer;
+      let child1: AbstractControl;
+
+      beforeEach(() => {
+        b = createControlContainer({ children: 1 });
+        child1 = b.get(0);
+      });
+
+      describe.only('markTouched', () => {
+        it('on enabled child', async () => {
+          const [promise1, end] = getControlEventsUntilEnd(b);
+
+          child1.markTouched(true);
+
+          end.next();
+          end.complete();
+
+          expect(b).toImplementObject({
+            touched: true,
+            childTouched: true,
+            childrenTouched: true,
+          });
+
+          testAllDefaultsExcept(
+            b,
+            'touched',
+            'childTouched',
+            'childrenTouched',
+            'parent'
+          );
+
+          const [event1, event2] = await promise1;
+
+          expect(event1).toEqual({
+            type: 'ChildStateChange',
+            eventId: expect.any(Number),
+            idOfOriginatingEvent: expect.any(Number),
+            source: b.id,
+            meta: {},
+            key: expect.anything(),
+            childEvent: {
+              type: 'StateChange',
+              eventId: expect.any(Number),
+              idOfOriginatingEvent: expect.any(Number),
+              source: child1.id,
+              meta: {},
+              change: {
+                touched: expect.any(Function),
+              },
+              changedProps: [],
+            },
+            changedProps: expect.arrayContaining([
+              'touched',
+              'childTouched',
+              'childrenTouched',
+            ]),
+          });
+
+          expect(event2).toEqual(undefined);
+        });
+
+        it('on disabled child', async () => {
+          child1.markDisabled(true);
+
+          const [promise1, end] = getControlEventsUntilEnd(b);
+
+          child1.markTouched(true);
+
+          end.next();
+          end.complete();
+
+          expect(b).toImplementObject({
+            disabled: true,
+            childDisabled: true,
+            childrenDisabled: true,
+            enabled: false,
+            childEnabled: false,
+            childrenEnabled: false,
+            // status: 'DISABLED',
+          });
+
+          testAllDefaultsExcept(
+            b,
+            'parent',
+            'disabled',
+            'childDisabled',
+            'childrenDisabled',
+            'enabled',
+            'childEnabled',
+            'childrenEnabled',
+            'status'
+          );
+
+          const [event1, event2] = await promise1;
+
+          expect(event1).toEqual({
+            type: 'ChildStateChange',
+            eventId: expect.any(Number),
+            idOfOriginatingEvent: expect.any(Number),
+            source: b.id,
+            meta: {},
+            key: expect.anything(),
+            childEvent: {
+              type: 'StateChange',
+              eventId: expect.any(Number),
+              idOfOriginatingEvent: expect.any(Number),
+              source: child1.id,
+              meta: {},
+              change: {
+                touched: expect.any(Function),
+              },
+              changedProps: [],
+            },
+            changedProps: [],
+          });
+
+          expect(event2).toEqual(undefined);
+        });
+
+        it('on child that is then disabled', async () => {
+          const [promise1, end] = getControlEventsUntilEnd(b);
+
+          child1.markTouched(true);
+          child1.markDisabled(true);
+
+          end.next();
+          end.complete();
+
+          expect(b).toImplementObject({
+            disabled: true,
+            childDisabled: true,
+            childrenDisabled: true,
+            enabled: false,
+            childEnabled: false,
+            childrenEnabled: false,
+            status: 'DISABLED',
+          });
+
+          testAllDefaultsExcept(
+            b,
+            'parent',
+            'disabled',
+            'childDisabled',
+            'childrenDisabled',
+            'enabled',
+            'childEnabled',
+            'childrenEnabled',
+            'status'
+          );
+
+          const [event1, event2, event3] = await promise1;
+
+          expect(event1).toEqual({
+            type: 'ChildStateChange',
+            eventId: expect.any(Number),
+            idOfOriginatingEvent: expect.any(Number),
+            source: b.id,
+            meta: {},
+            key: expect.anything(),
+            childEvent: {
+              type: 'StateChange',
+              eventId: expect.any(Number),
+              idOfOriginatingEvent: expect.any(Number),
+              source: child1.id,
+              meta: {},
+              change: {
+                touched: expect.any(Function),
+              },
+              changedProps: [],
+            },
+            changedProps: expect.arrayContaining([
+              'touched',
+              'childTouched',
+              'childrenTouched',
+            ]),
+          });
+
+          console.log('event2', event2);
+
+          expect(event2).toEqual({
+            type: 'ChildStateChange',
+            eventId: expect.any(Number),
+            idOfOriginatingEvent: expect.any(Number),
+            source: b.id,
+            meta: {},
+            key: expect.anything(),
+            childEvent: {
+              type: 'StateChange',
+              eventId: expect.any(Number),
+              idOfOriginatingEvent: expect.any(Number),
+              source: child1.id,
+              meta: {},
+              change: {
+                disabled: expect.any(Function),
+              },
+              changedProps: ['status'],
+            },
+            changedProps: expect.arrayContaining([
+              'disabled',
+              'childDisabled',
+              'childrenDisabled',
+              'enabled',
+              'childEnabled',
+              'childrenEnabled',
+              'status',
+              'touched',
+              'childTouched',
+              'childrenTouched',
+            ]),
+          });
+
+          expect(event3).toEqual(undefined);
+        });
+      });
+    });
+
+    describe('with 2 children', () => {
+      let b: AbstractControlContainer;
+      let child1: AbstractControl;
+      let child2: AbstractControl;
+
+      beforeEach(() => {
+        b = createControlContainer({ children: 2 });
+        child1 = b.get(0);
+        child2 = b.get(1);
+
+        child2.markDisabled(true);
+      });
+
+      describe('markTouched', () => {
+        it('on enabled child', async () => {
+          const [promise1, end] = getControlEventsUntilEnd(a);
+
+          child1.markTouched(true);
+
+          end.next();
+          end.complete();
+
+          expect(a).toImplementObject({
+            touched: true,
+            childTouched: true,
+            childrenTouched: true,
+          });
+
+          const [event1] = await promise1;
+
+          expect(event1).toEqual({
+            type: 'ChildStateChange',
+            eventId: expect.any(Number),
+            idOfOriginatingEvent: expect.any(Number),
+            source: b.id,
+            meta: {},
+            key: expect.anything(),
+            childEvent: {
+              type: 'StateChange',
+              eventId: expect.any(Number),
+              idOfOriginatingEvent: expect.any(Number),
+              source: child1.id,
+              meta: {},
+              change: {
+                touched: expect.any(Function),
+              },
+              changedProps: [],
+            },
+            changedProps: expect.arrayContaining([
+              'touched',
+              'childTouched',
+              'childrenTouched',
+            ]),
+          });
+        });
+
+        it('on disabled child', async () => {
+          child1.markDisabled(true);
+
+          const [promise1, end] = getControlEventsUntilEnd(b);
+
+          child1.markTouched(true);
+
+          end.next();
+          end.complete();
+
+          expect(b).toImplementObject({
+            disabled: true,
+            childDisabled: true,
+            childrenDisabled: true,
+            enabled: false,
+            childEnabled: false,
+            childrenEnabled: false,
+            status: 'DISABLED',
+          });
+
+          testAllDefaultsExcept(
+            b,
+            'parent',
+            'disabled',
+            'childDisabled',
+            'childrenDisabled',
+            'enabled',
+            'childEnabled',
+            'childrenEnabled',
+            'status'
+          );
+
+          const [event1] = await promise1;
+
+          expect(event1).toEqual(undefined);
+        });
+
+        it('on child that is then disabled', async () => {
+          // const [promise1, end] = getControlEventsUntilEnd(b);
+
+          child1.markTouched(true);
+          child1.markDisabled(true);
+
+          // end.next();
+          // end.complete();
+
+          expect(b).toImplementObject({
+            disabled: true,
+            childDisabled: true,
+            childrenDisabled: true,
+            enabled: false,
+            childEnabled: false,
+            childrenEnabled: false,
+            status: 'DISABLED',
+          });
+
+          testAllDefaultsExcept(
+            b,
+            'parent',
+            'disabled',
+            'childDisabled',
+            'childrenDisabled',
+            'enabled',
+            'childEnabled',
+            'childrenEnabled',
+            'status'
+          );
+
+          // const [event1] = await promise1;
+
+          // expect(event1).toEqual(undefined);
+        });
       });
     });
   });

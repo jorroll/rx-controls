@@ -393,7 +393,7 @@ describe('FormControl', () => {
           change: {
             value: expect.any(Function),
           },
-          sideEffects: [],
+          changedProps: [],
         });
       });
 
@@ -481,7 +481,7 @@ describe('FormControl', () => {
         change: {
           value: expect.any(Function),
         },
-        sideEffects: [],
+        changedProps: [],
       });
 
       expect(two).toEqual({
@@ -502,7 +502,7 @@ describe('FormControl', () => {
         change: {
           errorsStore: expect.any(Function),
         },
-        sideEffects: ['errors', 'status'],
+        changedProps: ['errors', 'status'],
       });
 
       // expect(five).toEqual({
@@ -581,7 +581,7 @@ describe('FormControl', () => {
           eventId: expect.any(Number),
           idOfOriginatingEvent: expect.any(Number),
           source: a.id,
-          sideEffects: [],
+          changedProps: [],
           meta: {},
           change: changes[i],
         });

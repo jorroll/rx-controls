@@ -525,7 +525,7 @@ export abstract class AbstractControlContainerBase<
             eventId: eventId = AbstractControl.eventId(),
             idOfOriginatingEvent: eventId,
             change,
-            sideEffects: [],
+            changedProps: [],
           })
         )
       ),
@@ -565,7 +565,7 @@ export abstract class AbstractControlContainerBase<
               this['value'][ControlsKey<Controls>],
               Data
             >,
-            sideEffects: [],
+            changedProps: [],
             meta: {},
           };
 
@@ -639,7 +639,7 @@ export abstract class AbstractControlContainerBase<
     }
   ): IControlContainerStateChangeEvent<Controls, Data> | null {
     if (event.controlContainerValueChange?.id === this.id) {
-      const sideEffects = this.runValidation(pluckOptions(event));
+      const changedProps = this.runValidation(pluckOptions(event));
 
       if (
         !isEqual(
@@ -647,10 +647,10 @@ export abstract class AbstractControlContainerBase<
           event.controlContainerValueChange.originalEnabledValue
         )
       ) {
-        sideEffects.push('enabledValue');
+        changedProps.push('enabledValue');
       }
 
-      const newEvent = { ...event, sideEffects };
+      const newEvent = { ...event, changedProps };
 
       delete newEvent.controlContainerValueChange;
 
@@ -710,7 +710,7 @@ export abstract class AbstractControlContainerBase<
           change: {
             value: () => value,
           },
-          sideEffects: [],
+          changedProps: [],
           controlContainerValueChangeId: this.id,
         },
         event
@@ -879,38 +879,38 @@ export abstract class AbstractControlContainerBase<
     // If the event was created by a child of this control
     // bubbling up, re-emit it after handling side effects
     if (event.source === this.id) {
-      const sideEffects: string[] = [];
-      const cse = event.childEvent.sideEffects;
+      const changedProps: string[] = [];
+      const cse = event.childEvent.changedProps;
 
       if (cse.includes('disabled')) {
-        sideEffects.push(...updateChildrenProps(this, 'Disabled'));
+        changedProps.push(...updateChildrenProps(this, 'Disabled'));
       }
 
       if (cse.includes('readonly')) {
-        sideEffects.push(...updateChildrenProps(this, 'Readonly'));
+        changedProps.push(...updateChildrenProps(this, 'Readonly'));
       }
 
       if (cse.includes('pending')) {
-        sideEffects.push(...updateChildrenProps(this, 'Pending'));
+        changedProps.push(...updateChildrenProps(this, 'Pending'));
       }
 
       if (cse.includes('touched')) {
-        sideEffects.push(...updateChildrenProps(this, 'Touched'));
+        changedProps.push(...updateChildrenProps(this, 'Touched'));
       }
 
       if (cse.includes('dirty')) {
-        sideEffects.push(...updateChildrenProps(this, 'Dirty'));
+        changedProps.push(...updateChildrenProps(this, 'Dirty'));
       }
 
       if (cse.includes('submitted')) {
-        sideEffects.push(...updateChildrenProps(this, 'Submitted'));
+        changedProps.push(...updateChildrenProps(this, 'Submitted'));
       }
 
       if (cse.includes('errors')) {
-        this.updateChildrenErrors(sideEffects);
+        this.updateChildrenErrors(changedProps);
       }
 
-      return { ...event, sideEffects };
+      return { ...event, changedProps };
     }
 
     // Else, just pass the wrapped event downward
@@ -947,7 +947,7 @@ export abstract class AbstractControlContainerBase<
 
     this._value = newValue as ControlsValue<Controls>;
 
-    const sideEffects: string[] = [];
+    const changedProps: string[] = [];
 
     if (control.enabled) {
       const childEnabledValue = AbstractControlContainer.isControlContainer(
@@ -964,7 +964,7 @@ export abstract class AbstractControlContainerBase<
 
       this._enabledValue = enabledValue;
 
-      sideEffects.push('enabledValue');
+      changedProps.push('enabledValue');
     }
 
     if (event.childEvent.controlContainerValueChangeId === this.id) {
@@ -973,14 +973,14 @@ export abstract class AbstractControlContainerBase<
       return null;
     }
 
-    sideEffects.push(...this.runValidation(event.childEvent));
+    changedProps.push(...this.runValidation(event.childEvent));
 
     return {
       ...event.childEvent,
       change: {
         value: newChange,
       },
-      sideEffects,
+      changedProps: changedProps,
     };
   }
 
@@ -988,19 +988,19 @@ export abstract class AbstractControlContainerBase<
     _control: Controls[ControlsKey<Controls>],
     event: IChildControlStateChangeEvent<Controls, Data>
   ): IChildControlStateChangeEvent<Controls, Data> | null {
-    const sideEffects = updateChildrenProps(this, 'Disabled');
+    const changedProps = updateChildrenProps(this, 'Disabled');
 
     // TODO: refactor this into something more efficient...
-    sideEffects.push(...updateChildrenProps(this, 'Dirty'));
-    sideEffects.push(...updateChildrenProps(this, 'Invalid'));
-    sideEffects.push(...updateChildrenProps(this, 'Pending'));
-    sideEffects.push(...updateChildrenProps(this, 'Readonly'));
-    sideEffects.push(...updateChildrenProps(this, 'Submitted'));
-    sideEffects.push(...updateChildrenProps(this, 'Touched'));
+    changedProps.push(...updateChildrenProps(this, 'Dirty'));
+    changedProps.push(...updateChildrenProps(this, 'Invalid'));
+    changedProps.push(...updateChildrenProps(this, 'Pending'));
+    changedProps.push(...updateChildrenProps(this, 'Readonly'));
+    changedProps.push(...updateChildrenProps(this, 'Submitted'));
+    changedProps.push(...updateChildrenProps(this, 'Touched'));
 
     return {
       ...event,
-      sideEffects,
+      changedProps,
     };
   }
 
@@ -1010,7 +1010,7 @@ export abstract class AbstractControlContainerBase<
   ): IChildControlStateChangeEvent<Controls, Data> | null {
     return {
       ...event,
-      sideEffects: ((control as unknown) as AbstractControl).enabled
+      changedProps: ((control as unknown) as AbstractControl).enabled
         ? updateChildrenProps(this, 'Touched')
         : [],
     };
@@ -1022,7 +1022,7 @@ export abstract class AbstractControlContainerBase<
   ): IChildControlStateChangeEvent<Controls, Data> | null {
     return {
       ...event,
-      sideEffects: ((control as unknown) as AbstractControl).enabled
+      changedProps: ((control as unknown) as AbstractControl).enabled
         ? updateChildrenProps(this, 'Dirty')
         : [],
     };
@@ -1034,7 +1034,7 @@ export abstract class AbstractControlContainerBase<
   ): IChildControlStateChangeEvent<Controls, Data> | null {
     return {
       ...event,
-      sideEffects: ((control as unknown) as AbstractControl).enabled
+      changedProps: ((control as unknown) as AbstractControl).enabled
         ? updateChildrenProps(this, 'Readonly')
         : [],
     };
@@ -1046,7 +1046,7 @@ export abstract class AbstractControlContainerBase<
   ): IChildControlStateChangeEvent<Controls, Data> | null {
     return {
       ...event,
-      sideEffects: ((control as unknown) as AbstractControl).enabled
+      changedProps: ((control as unknown) as AbstractControl).enabled
         ? updateChildrenProps(this, 'Submitted')
         : [],
     };
@@ -1056,13 +1056,13 @@ export abstract class AbstractControlContainerBase<
     _control: Controls[ControlsKey<Controls>],
     event: IChildControlStateChangeEvent<Controls, Data>
   ): IChildControlStateChangeEvent<Controls, Data> | null {
-    const sideEffects: string[] = [];
+    const changedProps: string[] = [];
 
-    this.updateChildrenErrors(sideEffects);
+    this.updateChildrenErrors(changedProps);
 
     return {
       ...event,
-      sideEffects,
+      changedProps,
     };
   }
 
@@ -1072,7 +1072,7 @@ export abstract class AbstractControlContainerBase<
   ): IChildControlStateChangeEvent<Controls, Data> | null {
     return {
       ...event,
-      sideEffects: ((control as unknown) as AbstractControl).enabled
+      changedProps: ((control as unknown) as AbstractControl).enabled
         ? updateChildrenProps(this, 'Invalid')
         : [],
     };
@@ -1084,7 +1084,7 @@ export abstract class AbstractControlContainerBase<
   ): IChildControlStateChangeEvent<Controls, Data> | null {
     return {
       ...event,
-      sideEffects: ((control as unknown) as AbstractControl).enabled
+      changedProps: ((control as unknown) as AbstractControl).enabled
         ? updateChildrenProps(this, 'Pending')
         : [],
     };
@@ -1099,13 +1099,13 @@ export abstract class AbstractControlContainerBase<
       >;
     }
   ): IControlContainerStateChangeEvent<Controls, Data> | null {
-    const childSideEffects = event.childEvent.sideEffects;
+    const childChangedProps = event.childEvent.changedProps;
     const control = (_control as unknown) as AbstractControl;
 
     if (
       !(
-        childSideEffects.includes('value') ||
-        (childSideEffects.includes('enabledValue') && control.enabled)
+        childChangedProps.includes('value') ||
+        (childChangedProps.includes('enabledValue') && control.enabled)
       )
     ) {
       return null;
@@ -1126,7 +1126,7 @@ export abstract class AbstractControlContainerBase<
 
     this._value = newValue;
 
-    const sideEffects: string[] = [];
+    const changedProps: string[] = [];
 
     if (control.enabled) {
       const childEnabledValue = AbstractControlContainer.isControlContainer(
@@ -1143,19 +1143,19 @@ export abstract class AbstractControlContainerBase<
 
       this._enabledValue = newEnabledValue;
 
-      sideEffects.push('enabledValue');
+      changedProps.push('enabledValue');
     }
 
-    sideEffects.push(...this.runValidation(event.childEvent));
+    changedProps.push(...this.runValidation(event.childEvent));
 
     return {
       ...event.childEvent,
       change: { value: change },
-      sideEffects,
+      changedProps: changedProps,
     };
   }
 
-  protected updateChildrenErrors(sideEffects: string[]) {
+  protected updateChildrenErrors(changedProps: string[]) {
     const prevChildrenErrors = this._childrenErrors;
     const prevCombinedErrors = this._combinedErrors;
 
@@ -1180,20 +1180,20 @@ export abstract class AbstractControlContainerBase<
       this._combinedErrors = { ...this._childrenErrors, ...this._errors };
     }
 
-    sideEffects.push(...updateChildrenProps(this, 'Invalid'));
+    changedProps.push(...updateChildrenProps(this, 'Invalid'));
 
     if (!isEqual(this._childrenErrors, prevChildrenErrors)) {
-      sideEffects.push('childrenErrors');
+      changedProps.push('childrenErrors');
     }
 
     if (!isEqual(this._combinedErrors, prevCombinedErrors)) {
-      sideEffects.push('errors');
+      changedProps.push('errors');
 
       const oldStatus = this.status;
       this._status = this.getControlStatus();
 
       if (!isEqual(oldStatus, this._status)) {
-        sideEffects.push('status');
+        changedProps.push('status');
       }
     }
   }
@@ -1202,8 +1202,8 @@ export abstract class AbstractControlContainerBase<
     T extends this['value'] | this['enabledValue']
   >(value: T): T;
 
-  protected updateErrorsProp(sideEffects: string[]) {
-    super.updateErrorsProp(sideEffects);
+  protected updateErrorsProp(changedProps: string[]) {
+    super.updateErrorsProp(changedProps);
 
     if (this._childrenErrors || this._errors) {
       this._combinedErrors = { ...this._childrenErrors, ...this._errors };
@@ -1211,7 +1211,7 @@ export abstract class AbstractControlContainerBase<
       this._combinedErrors = null;
     }
 
-    sideEffects.push('containerErrors');
+    changedProps.push('containerErrors');
   }
 }
 
@@ -1223,7 +1223,7 @@ function updateContainerProp<
   const newEvent = event();
 
   if (that[prop] !== oldVal) {
-    newEvent?.sideEffects.push(prop);
+    newEvent?.changedProps.push(prop);
   }
 
   return newEvent;
@@ -1244,7 +1244,7 @@ function updateChildrenProps(
     | 'Invalid'
     | 'Pending'
 ) {
-  const sideEffects: string[] = [];
+  const changedProps: string[] = [];
   const regProp = prop.toLowerCase();
   const childrenProp = `_children${prop}`;
   const childProp = `_child${prop}`;
@@ -1270,16 +1270,23 @@ function updateChildrenProps(
   }
 
   if (that[childrenProp] !== prevChildren) {
-    sideEffects.push(childrenProp.slice(1));
+    changedProps.push(childrenProp.slice(1));
   }
 
   if (that[childProp] !== prevChild) {
-    sideEffects.push(childProp.slice(1));
+    changedProps.push(childProp.slice(1));
   }
 
   if (that[regProp] !== prevCombined) {
-    sideEffects.push(regProp);
+    changedProps.push(regProp);
   }
 
-  return sideEffects;
+  const oldStatus = that._status;
+  that._status = that.getControlStatus();
+
+  if (!isEqual(oldStatus, that._status)) {
+    changedProps.push('status');
+  }
+
+  return changedProps;
 }

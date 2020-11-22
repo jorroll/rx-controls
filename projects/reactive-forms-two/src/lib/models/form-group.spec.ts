@@ -8,18 +8,26 @@ import runAbstractControlContainerBaseTestSuite from './abstract-control-contain
 import { FormControl } from './form-control';
 import { FormGroup } from './form-group';
 import {
-  testAllControlContainerDefaultsExcept,
+  testAllAbstractControlContainerDefaultsExcept,
   wait,
   getControlEventsUntilEnd,
   toControlMatcherEntries,
   testAllAbstractControlDefaultsExcept,
 } from './test-util';
 import runSharedTestSuite from './shared-tests';
+import { AbstractControlContainer } from './abstract-control-container/abstract-control-container';
 
-runAbstractControlContainerBaseTestSuite(
-  'FormGroup',
-  (args) => new FormGroup({}, args?.options)
-);
+runAbstractControlContainerBaseTestSuite('FormGroup', (args = {}) => {
+  const c = new FormGroup<{ [key: string]: AbstractControl }>({}, args.options);
+
+  if (args.children) {
+    for (let i = 0; i < args.children; i++) {
+      c.addControl(`${i}`, new FormControl(i));
+    }
+  }
+
+  return c as AbstractControlContainer;
+});
 
 runAbstractControlBaseTestSuite(
   'FormGroup',
@@ -35,7 +43,7 @@ function testAllDefaultsExcept(
   ...skipTests: Array<keyof FormGroup>
 ) {
   testAllAbstractControlDefaultsExcept(c, ...skipTests);
-  testAllControlContainerDefaultsExcept(c, ...skipTests);
+  testAllAbstractControlContainerDefaultsExcept(c, ...skipTests);
 
   if (!skipTests.includes('value')) {
     expect(c.value).toEqual({});
@@ -360,7 +368,7 @@ describe('FormGroup', () => {
         change: {
           value: expect.any(Function),
         },
-        sideEffects: ['enabledValue'],
+        changedProps: ['enabledValue'],
         meta: {},
       });
 
@@ -390,7 +398,7 @@ describe('FormGroup', () => {
         change: {
           value: expect.any(Function),
         },
-        sideEffects: ['enabledValue'],
+        changedProps: ['enabledValue'],
         meta: {},
       });
 

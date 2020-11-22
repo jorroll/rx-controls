@@ -141,7 +141,7 @@ export class FormArray<
     return {
       ...event,
       change: { controlsStore: change },
-      sideEffects: ['value', 'enabledValue', ...this.runValidation(event)],
+      changedProps: ['value', 'enabledValue', ...this.runValidation(event)],
     };
   }
 

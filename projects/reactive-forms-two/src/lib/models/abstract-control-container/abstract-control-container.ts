@@ -63,7 +63,7 @@ export interface IChildControlStateChangeEvent<
         D
       >
     | IChildControlStateChangeEvent<Controls, D>;
-  sideEffects: string[];
+  changedProps: string[];
 }
 
 export type ControlsValue<Controls extends GenericControlsObject> = {

@@ -3,7 +3,7 @@ import runAbstractControlBaseTestSuite from './abstract-control/abstract-control
 import { FormControl } from './form-control';
 import { FormArray } from './form-array';
 import {
-  testAllControlContainerDefaultsExcept,
+  testAllAbstractControlContainerDefaultsExcept,
   wait,
   testAllAbstractControlDefaultsExcept,
 } from './test-util';
@@ -11,10 +11,17 @@ import runAbstractControlContainerBaseTestSuite from './abstract-control-contain
 import runSharedTestSuite from './shared-tests';
 import { AbstractControlContainer } from './abstract-control-container/abstract-control-container';
 
-runAbstractControlContainerBaseTestSuite(
-  'FormArray',
-  (args) => new FormArray([], args?.options) as AbstractControlContainer
-);
+runAbstractControlContainerBaseTestSuite('FormArray', (args = {}) => {
+  const c = new FormArray<AbstractControl[]>([], args.options);
+
+  if (args.children) {
+    for (let i = 0; i < args.children; i++) {
+      c.push(new FormControl(i));
+    }
+  }
+
+  return c as AbstractControlContainer;
+});
 
 runAbstractControlBaseTestSuite(
   'FormArray',
@@ -30,7 +37,7 @@ function testAllDefaultsExcept(
   ...skipTests: Array<keyof FormArray>
 ) {
   testAllAbstractControlDefaultsExcept(c, ...skipTests);
-  testAllControlContainerDefaultsExcept(c, ...skipTests);
+  testAllAbstractControlContainerDefaultsExcept(c, ...skipTests);
 
   if (!skipTests.includes('value')) {
     expect(c.value).toEqual([]);

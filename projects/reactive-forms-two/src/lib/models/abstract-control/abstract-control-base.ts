@@ -1023,7 +1023,7 @@ export abstract class AbstractControlBase<Value = any, Data = any>
         idOfOriginatingEvent: eventId,
         type: 'StateChange',
         change,
-        sideEffects: [],
+        changedProps: [],
       }))
     );
   }
@@ -1067,7 +1067,7 @@ export abstract class AbstractControlBase<Value = any, Data = any>
   }
 
   protected runValidation(_options?: IControlEventOptions): string[] {
-    const sideEffects: string[] = [];
+    const changedProps: string[] = [];
     const options = { ..._options, source: this.id };
 
     if (this._validator) {
@@ -1083,9 +1083,9 @@ export abstract class AbstractControlBase<Value = any, Data = any>
       }
 
       if (!isEqual(oldErrorsStore, this._errorsStore)) {
-        sideEffects.push('errorsStore');
+        changedProps.push('errorsStore');
 
-        this.updateErrorsProp(sideEffects);
+        this.updateErrorsProp(changedProps);
       }
     }
 
@@ -1135,7 +1135,7 @@ export abstract class AbstractControlBase<Value = any, Data = any>
       );
     }
 
-    return sideEffects;
+    return changedProps;
   }
 
   protected processEvent(
@@ -1245,7 +1245,7 @@ export abstract class AbstractControlBase<Value = any, Data = any>
     return {
       ...event,
       change: { value: change },
-      sideEffects: this.runValidation(event),
+      changedProps: this.runValidation(event),
     };
   }
 
@@ -1266,7 +1266,7 @@ export abstract class AbstractControlBase<Value = any, Data = any>
     return {
       ...event,
       change: { disabled: change },
-      sideEffects: ['status'],
+      changedProps: ['status'],
     };
   }
 
@@ -1286,7 +1286,7 @@ export abstract class AbstractControlBase<Value = any, Data = any>
     return {
       ...event,
       change: { touched: change },
-      sideEffects: [],
+      changedProps: [],
     };
   }
 
@@ -1306,7 +1306,7 @@ export abstract class AbstractControlBase<Value = any, Data = any>
     return {
       ...event,
       change: { dirty: change },
-      sideEffects: [],
+      changedProps: [],
     };
   }
 
@@ -1326,7 +1326,7 @@ export abstract class AbstractControlBase<Value = any, Data = any>
     return {
       ...event,
       change: { readonly: change },
-      sideEffects: [],
+      changedProps: [],
     };
   }
 
@@ -1346,7 +1346,7 @@ export abstract class AbstractControlBase<Value = any, Data = any>
     return {
       ...event,
       change: { submitted: change },
-      sideEffects: [],
+      changedProps: [],
     };
   }
 
@@ -1363,14 +1363,14 @@ export abstract class AbstractControlBase<Value = any, Data = any>
 
     this._errorsStore = newErrorsStore;
 
-    const sideEffects: string[] = [];
+    const changedProps: string[] = [];
 
-    this.updateErrorsProp(sideEffects);
+    this.updateErrorsProp(changedProps);
 
     return {
       ...event,
       change: { errorsStore: change },
-      sideEffects,
+      changedProps: changedProps,
     };
   }
 
@@ -1388,7 +1388,7 @@ export abstract class AbstractControlBase<Value = any, Data = any>
     this._validatorStore = newValidatorStore;
 
     const oldErrorsStore = this._errorsStore;
-    const sideEffects = ['validator', 'errorsStore'];
+    const changedProps = ['validator', 'errorsStore'];
 
     if (this._validatorStore.size === 0) {
       this._validator = null;
@@ -1422,13 +1422,13 @@ export abstract class AbstractControlBase<Value = any, Data = any>
     }
 
     if (this._errorsStore !== oldErrorsStore) {
-      this.updateErrorsProp(sideEffects);
+      this.updateErrorsProp(changedProps);
     }
 
     return {
       ...event,
       change: { validatorStore: change },
-      sideEffects,
+      changedProps: changedProps,
     };
   }
 
@@ -1559,21 +1559,21 @@ export abstract class AbstractControlBase<Value = any, Data = any>
     if (isEqual(this._pendingStore, newPendingStore)) return null;
 
     const newPending = newPendingStore.size > 0;
-    const sideEffects = newPending === this._pending ? [] : ['pending'];
+    const changedProps = newPending === this._pending ? [] : ['pending'];
     this._pendingStore = newPendingStore;
     this._pending = newPending;
 
     const newStatus = this.getControlStatus();
 
     if (newStatus !== this._status) {
-      sideEffects.push('status');
+      changedProps.push('status');
       this._status = newStatus;
     }
 
     return {
       ...event,
       change: { pendingStore: change },
-      sideEffects,
+      changedProps: changedProps,
     };
   }
 
@@ -1596,7 +1596,7 @@ export abstract class AbstractControlBase<Value = any, Data = any>
     return {
       ...event,
       change: { parent: change },
-      sideEffects: [],
+      changedProps: [],
     };
   }
 
@@ -1620,12 +1620,12 @@ export abstract class AbstractControlBase<Value = any, Data = any>
     return {
       ...event,
       change: { data: change },
-      sideEffects: [],
+      changedProps: [],
     };
   }
 
-  protected updateErrorsProp(sideEffects: string[]) {
-    sideEffects.push('errors');
+  protected updateErrorsProp(changedProps: string[]) {
+    changedProps.push('errors');
 
     if (this._errorsStore.size === 0) {
       this._errors = null;
@@ -1642,7 +1642,7 @@ export abstract class AbstractControlBase<Value = any, Data = any>
     const newStatus = this.getControlStatus();
 
     if (newStatus !== this._status) {
-      sideEffects.push('status');
+      changedProps.push('status');
       this._status = newStatus;
     }
   }

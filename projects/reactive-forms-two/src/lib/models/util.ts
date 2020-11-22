@@ -85,7 +85,7 @@ export function getSimpleStateChangeEventArgs<V, D>(
   return {
     type: 'StateChange' as const,
     change,
-    sideEffects: [],
+    changedProps: [],
   };
 }
 
@@ -97,7 +97,7 @@ export const getSimpleContainerStateChangeEventArgs: <
 ) => {
   type: 'StateChange';
   change: IControlContainerStateChange<Controls, D>;
-  sideEffects: never[];
+  changedProps: never[];
 } = getSimpleStateChangeEventArgs;
 
 // export function mapIsProperty(a: Map<any, any>) {
