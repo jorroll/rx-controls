@@ -93,6 +93,10 @@ export function testAllAbstractControlContainerDefaultsExcept<
     Omit<keyof C, 'value' | 'enabledValue' | 'controls' | 'controlsStore'>
   >
 ): void {
+  if (!skipTests.includes('childEnabled')) {
+    expect(c.childEnabled).toEqual(true);
+  }
+
   if (!skipTests.includes('childDirty')) {
     expect(c.childDirty).toEqual(false);
   }
@@ -123,6 +127,10 @@ export function testAllAbstractControlContainerDefaultsExcept<
 
   if (!skipTests.includes('childValid')) {
     expect(c.childValid).toEqual(true);
+  }
+
+  if (!skipTests.includes('childrenEnabled')) {
+    expect(c.childrenEnabled).toEqual(true);
   }
 
   if (!skipTests.includes('childrenDirty')) {
@@ -159,6 +167,10 @@ export function testAllAbstractControlContainerDefaultsExcept<
 
   if (!skipTests.includes('childrenValid')) {
     expect(c.childrenValid).toEqual(true);
+  }
+
+  if (!skipTests.includes('containerEnabled')) {
+    expect(c.containerEnabled).toEqual(true);
   }
 
   if (!skipTests.includes('containerDirty')) {

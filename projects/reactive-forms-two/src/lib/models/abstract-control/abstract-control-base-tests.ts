@@ -3,7 +3,10 @@ import {
   AbstractControlBase,
   IAbstractControlBaseArgs,
 } from './abstract-control-base';
-import { testAllAbstractControlDefaultsExcept } from '../test-util';
+import {
+  getControlEventsUntilEnd,
+  testAllAbstractControlDefaultsExcept,
+} from '../test-util';
 
 const testAllDefaultsExcept = testAllAbstractControlDefaultsExcept;
 
@@ -43,17 +46,22 @@ export default function runAbstractControlBaseTestSuite(
         it('disabled', () => {
           a = createControlBase({ options: { disabled: true } });
 
-          expect(a.enabled).toEqual(false);
-          expect(a.disabled).toEqual(true);
-          expect(a.status).toEqual('DISABLED');
+          expect(a).toImplementObject({
+            enabled: false,
+            disabled: true,
+            status: 'DISABLED',
+          });
+
           testAllDefaultsExcept(a, 'enabled', 'disabled', 'status');
 
           a = createControlBase({ options: { disabled: false } });
 
-          expect(a.enabled).toEqual(true);
-          expect(a.disabled).toEqual(false);
-          expect(a.status).toEqual('VALID');
-          testAllDefaultsExcept(a, 'enabled', 'disabled', 'status');
+          expect(a).toImplementObject({
+            enabled: true,
+            disabled: false,
+          });
+
+          testAllDefaultsExcept(a, 'enabled', 'disabled');
         });
 
         it('dirty', () => {

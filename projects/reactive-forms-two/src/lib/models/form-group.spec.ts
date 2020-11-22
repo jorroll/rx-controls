@@ -368,7 +368,7 @@ describe('FormGroup', () => {
         change: {
           value: expect.any(Function),
         },
-        changedProps: ['enabledValue'],
+        changedProps: ['value', 'enabledValue'],
         meta: {},
       });
 
@@ -398,7 +398,7 @@ describe('FormGroup', () => {
         change: {
           value: expect.any(Function),
         },
-        changedProps: ['enabledValue'],
+        changedProps: ['value', 'enabledValue'],
         meta: {},
       });
 

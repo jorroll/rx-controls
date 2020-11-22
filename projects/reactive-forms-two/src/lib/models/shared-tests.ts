@@ -653,9 +653,13 @@ export default function runSharedTestSuite(
 
         const [event1] = await promise1;
 
-        const changedProps = IS_CONTROL_CONTAINER_TEST
-          ? ['containerTouched']
-          : [];
+        const changedProps = ['touched'];
+
+        if (IS_CONTROL_CONTAINER_TEST) {
+          expect(a).toImplementObject({ containerTouched: true });
+
+          changedProps.push('containerTouched');
+        }
 
         expect(event1).toEqual({
           type: 'StateChange',
@@ -666,7 +670,7 @@ export default function runSharedTestSuite(
           change: {
             touched: expect.any(Function),
           },
-          changedProps,
+          changedProps: expect.arrayContaining(changedProps),
         });
       });
 
@@ -681,6 +685,10 @@ export default function runSharedTestSuite(
         expect(a).toImplementObject({
           touched: false,
         });
+
+        if (IS_CONTROL_CONTAINER_TEST) {
+          expect(a).toImplementObject({ containerTouched: false });
+        }
 
         const [event1] = await promise1;
 
@@ -703,9 +711,12 @@ export default function runSharedTestSuite(
 
         const [event1] = await promise1;
 
-        const changedProps = IS_CONTROL_CONTAINER_TEST
-          ? ['containerDirty']
-          : [];
+        const changedProps = ['dirty'];
+
+        if (IS_CONTROL_CONTAINER_TEST) {
+          expect(a).toImplementObject({ containerDirty: true });
+          changedProps.push('containerDirty');
+        }
 
         expect(event1).toEqual({
           type: 'StateChange',
@@ -716,7 +727,7 @@ export default function runSharedTestSuite(
           change: {
             dirty: expect.any(Function),
           },
-          changedProps,
+          changedProps: expect.arrayContaining(changedProps),
         });
       });
 
@@ -731,6 +742,10 @@ export default function runSharedTestSuite(
         expect(a).toImplementObject({
           dirty: false,
         });
+
+        if (IS_CONTROL_CONTAINER_TEST) {
+          expect(a).toImplementObject({ containerDirty: false });
+        }
 
         const [event1] = await promise1;
 
@@ -753,9 +768,12 @@ export default function runSharedTestSuite(
 
         const [event1] = await promise1;
 
-        const changedProps = IS_CONTROL_CONTAINER_TEST
-          ? ['containerReadonly']
-          : [];
+        const changedProps = ['readonly'];
+
+        if (IS_CONTROL_CONTAINER_TEST) {
+          expect(a).toImplementObject({ containerReadonly: true });
+          changedProps.push('containerReadonly');
+        }
 
         expect(event1).toEqual({
           type: 'StateChange',
@@ -766,7 +784,7 @@ export default function runSharedTestSuite(
           change: {
             readonly: expect.any(Function),
           },
-          changedProps,
+          changedProps: expect.arrayContaining(changedProps),
         });
       });
 
@@ -781,6 +799,10 @@ export default function runSharedTestSuite(
         expect(a).toImplementObject({
           readonly: false,
         });
+
+        if (IS_CONTROL_CONTAINER_TEST) {
+          expect(a).toImplementObject({ containerReadonly: false });
+        }
 
         const [event1] = await promise1;
 
@@ -799,14 +821,22 @@ export default function runSharedTestSuite(
 
         expect(a).toImplementObject({
           disabled: true,
+          enabled: false,
           status: 'DISABLED',
         });
 
         const [event1] = await promise1;
 
-        const changedProps = IS_CONTROL_CONTAINER_TEST
-          ? ['containerDisabled']
-          : [];
+        const changedProps = ['status', 'enabled', 'disabled'];
+
+        if (IS_CONTROL_CONTAINER_TEST) {
+          expect(a).toImplementObject({
+            containerDisabled: true,
+            containerEnabled: false,
+          });
+
+          changedProps.push('containerEnabled', 'containerDisabled');
+        }
 
         expect(event1).toEqual({
           type: 'StateChange',
@@ -817,7 +847,7 @@ export default function runSharedTestSuite(
           change: {
             disabled: expect.any(Function),
           },
-          changedProps: expect.arrayContaining([...changedProps, 'status']),
+          changedProps: expect.arrayContaining(changedProps),
         });
       });
 
@@ -831,8 +861,16 @@ export default function runSharedTestSuite(
 
         expect(a).toImplementObject({
           disabled: false,
+          enabled: true,
           status: 'VALID',
         });
+
+        if (IS_CONTROL_CONTAINER_TEST) {
+          expect(a).toImplementObject({
+            containerDisabled: false,
+            containerEnabled: true,
+          });
+        }
 
         const [event1] = await promise1;
 
@@ -855,9 +893,12 @@ export default function runSharedTestSuite(
 
         const [event1] = await promise1;
 
-        const changedProps = IS_CONTROL_CONTAINER_TEST
-          ? ['containerSubmitted']
-          : [];
+        const changedProps = ['submitted'];
+
+        if (IS_CONTROL_CONTAINER_TEST) {
+          expect(a).toImplementObject({ containerSubmitted: true });
+          changedProps.push('containerSubmitted');
+        }
 
         expect(event1).toEqual({
           type: 'StateChange',
@@ -868,7 +909,7 @@ export default function runSharedTestSuite(
           change: {
             submitted: expect.any(Function),
           },
-          changedProps,
+          changedProps: expect.arrayContaining(changedProps),
         });
       });
 
@@ -883,6 +924,10 @@ export default function runSharedTestSuite(
         expect(a).toImplementObject({
           submitted: false,
         });
+
+        if (IS_CONTROL_CONTAINER_TEST) {
+          expect(a).toImplementObject({ containerSubmitted: false });
+        }
 
         const [event1] = await promise1;
 
@@ -908,9 +953,12 @@ export default function runSharedTestSuite(
 
           const [event1] = await promise1;
 
-          const changedProps = IS_CONTROL_CONTAINER_TEST
-            ? ['containerPending']
-            : [];
+          const changedProps = ['status', 'pending'];
+
+          if (IS_CONTROL_CONTAINER_TEST) {
+            expect(a).toImplementObject({ containerPending: true });
+            changedProps.push('containerPending');
+          }
 
           expect(event1).toEqual({
             type: 'StateChange',
@@ -921,11 +969,7 @@ export default function runSharedTestSuite(
             change: {
               pendingStore: expect.any(Function),
             },
-            changedProps: expect.arrayContaining([
-              ...changedProps,
-              'pending',
-              'status',
-            ]),
+            changedProps: expect.arrayContaining(changedProps),
           });
         });
 
@@ -942,6 +986,10 @@ export default function runSharedTestSuite(
             pendingStore: new Set(),
             status: 'VALID',
           });
+
+          if (IS_CONTROL_CONTAINER_TEST) {
+            expect(a).toImplementObject({ containerPending: false });
+          }
 
           const [event1] = await promise1;
 
@@ -968,9 +1016,12 @@ export default function runSharedTestSuite(
 
           const [event1] = await promise1;
 
-          const changedProps = IS_CONTROL_CONTAINER_TEST
-            ? ['containerPending']
-            : [];
+          const changedProps = ['status', 'pending'];
+
+          if (IS_CONTROL_CONTAINER_TEST) {
+            expect(a).toImplementObject({ containerPending: true });
+            changedProps.push('containerPending');
+          }
 
           expect(event1).toEqual({
             type: 'StateChange',
@@ -981,11 +1032,7 @@ export default function runSharedTestSuite(
             change: {
               pendingStore: expect.any(Function),
             },
-            changedProps: expect.arrayContaining([
-              ...changedProps,
-              'pending',
-              'status',
-            ]),
+            changedProps: expect.arrayContaining(changedProps),
           });
         });
       });
@@ -1015,7 +1062,7 @@ export default function runSharedTestSuite(
           change: {
             parent: expect.any(Function),
           },
-          changedProps: [],
+          changedProps: expect.arrayContaining(['parent']),
         });
       });
     });
@@ -1046,7 +1093,7 @@ export default function runSharedTestSuite(
           change: {
             data: expect.any(Function),
           },
-          changedProps: [],
+          changedProps: expect.arrayContaining(['data']),
         });
       });
 
@@ -1077,7 +1124,7 @@ export default function runSharedTestSuite(
           change: {
             data: expect.any(Function),
           },
-          changedProps: [],
+          changedProps: expect.arrayContaining(['data']),
         });
       });
     });
@@ -1178,10 +1225,6 @@ export default function runSharedTestSuite(
   });
 
   describe(name, () => {
-    const ERRORS_SIDE_EFFECTS = IS_CONTROL_CONTAINER_TEST
-      ? ['errors', 'containerErrors']
-      : ['errors'];
-
     let a: AbstractControlBase;
 
     beforeEach(() => {
@@ -1217,6 +1260,22 @@ export default function runSharedTestSuite(
 
           const [event1] = await promise1;
 
+          const changedProps = [
+            'status',
+            'errors',
+            'errorsStore',
+            'valid',
+            'invalid',
+          ];
+
+          if (IS_CONTROL_CONTAINER_TEST) {
+            changedProps.push(
+              'containerErrors',
+              'containerValid',
+              'containerInvalid'
+            );
+          }
+
           expect(event1).toEqual({
             type: 'StateChange',
             eventId: expect.any(Number),
@@ -1226,10 +1285,7 @@ export default function runSharedTestSuite(
             change: {
               errorsStore: expect.any(Function),
             },
-            changedProps: expect.arrayContaining([
-              ...ERRORS_SIDE_EFFECTS,
-              'status',
-            ]),
+            changedProps: expect.arrayContaining(changedProps),
           });
         });
 
@@ -1265,6 +1321,12 @@ export default function runSharedTestSuite(
 
           const [event1] = await promise1;
 
+          const changedProps = ['errors', 'errorsStore'];
+
+          if (IS_CONTROL_CONTAINER_TEST) {
+            changedProps.push('containerErrors');
+          }
+
           expect(event1).toEqual({
             type: 'StateChange',
             eventId: expect.any(Number),
@@ -1274,7 +1336,7 @@ export default function runSharedTestSuite(
             change: {
               errorsStore: expect.any(Function),
             },
-            changedProps: expect.arrayContaining(ERRORS_SIDE_EFFECTS),
+            changedProps: expect.arrayContaining(changedProps),
           });
         });
 
@@ -1309,6 +1371,12 @@ export default function runSharedTestSuite(
 
           const [event1] = await promise1;
 
+          const changedProps = ['errors', 'errorsStore'];
+
+          if (IS_CONTROL_CONTAINER_TEST) {
+            changedProps.push('containerErrors');
+          }
+
           expect(event1).toEqual({
             type: 'StateChange',
             eventId: expect.any(Number),
@@ -1318,7 +1386,7 @@ export default function runSharedTestSuite(
             change: {
               errorsStore: expect.any(Function),
             },
-            changedProps: expect.arrayContaining([...ERRORS_SIDE_EFFECTS]),
+            changedProps: expect.arrayContaining(changedProps),
           });
         });
 
@@ -1348,6 +1416,22 @@ export default function runSharedTestSuite(
 
           const [event1] = await promise1;
 
+          const changedProps = [
+            'status',
+            'errors',
+            'errorsStore',
+            'valid',
+            'invalid',
+          ];
+
+          if (IS_CONTROL_CONTAINER_TEST) {
+            changedProps.push(
+              'containerErrors',
+              'containerValid',
+              'containerInvalid'
+            );
+          }
+
           expect(event1).toEqual({
             type: 'StateChange',
             eventId: expect.any(Number),
@@ -1357,7 +1441,7 @@ export default function runSharedTestSuite(
             change: {
               errorsStore: expect.any(Function),
             },
-            changedProps: expect.arrayContaining([...ERRORS_SIDE_EFFECTS]),
+            changedProps: expect.arrayContaining(changedProps),
           });
         });
       });
@@ -1388,6 +1472,22 @@ export default function runSharedTestSuite(
 
           const [event1] = await promise1;
 
+          const changedProps = [
+            'status',
+            'errors',
+            'errorsStore',
+            'valid',
+            'invalid',
+          ];
+
+          if (IS_CONTROL_CONTAINER_TEST) {
+            changedProps.push(
+              'containerErrors',
+              'containerValid',
+              'containerInvalid'
+            );
+          }
+
           expect(event1).toEqual({
             type: 'StateChange',
             eventId: expect.any(Number),
@@ -1397,10 +1497,7 @@ export default function runSharedTestSuite(
             change: {
               errorsStore: expect.any(Function),
             },
-            changedProps: expect.arrayContaining([
-              ...ERRORS_SIDE_EFFECTS,
-              'status',
-            ]),
+            changedProps: expect.arrayContaining(changedProps),
           });
         });
       });
@@ -1450,6 +1547,22 @@ export default function runSharedTestSuite(
 
           const [event1] = await promise1;
 
+          const changedProps = [
+            'status',
+            'errors',
+            'errorsStore',
+            'valid',
+            'invalid',
+          ];
+
+          if (IS_CONTROL_CONTAINER_TEST) {
+            changedProps.push(
+              'containerErrors',
+              'containerValid',
+              'containerInvalid'
+            );
+          }
+
           expect(event1).toEqual({
             type: 'StateChange',
             eventId: expect.any(Number),
@@ -1459,10 +1572,7 @@ export default function runSharedTestSuite(
             change: {
               errorsStore: expect.any(Function),
             },
-            changedProps: expect.arrayContaining([
-              ...ERRORS_SIDE_EFFECTS,
-              'status',
-            ]),
+            changedProps: expect.arrayContaining(changedProps),
           });
         });
 
@@ -1542,6 +1652,22 @@ export default function runSharedTestSuite(
 
           const [event1] = await promise1;
 
+          const changedProps = [
+            'status',
+            'errors',
+            'errorsStore',
+            'valid',
+            'invalid',
+          ];
+
+          if (IS_CONTROL_CONTAINER_TEST) {
+            changedProps.push(
+              'containerErrors',
+              'containerValid',
+              'containerInvalid'
+            );
+          }
+
           expect(event1).toEqual({
             type: 'StateChange',
             eventId: expect.any(Number),
@@ -1551,10 +1677,7 @@ export default function runSharedTestSuite(
             change: {
               errorsStore: expect.any(Function),
             },
-            changedProps: expect.arrayContaining([
-              ...ERRORS_SIDE_EFFECTS,
-              'status',
-            ]),
+            changedProps: expect.arrayContaining(changedProps),
           });
         });
 
@@ -1585,6 +1708,12 @@ export default function runSharedTestSuite(
 
           const [event1] = await promise1;
 
+          const changedProps = ['errors', 'errorsStore'];
+
+          if (IS_CONTROL_CONTAINER_TEST) {
+            changedProps.push('containerErrors');
+          }
+
           expect(event1).toEqual({
             type: 'StateChange',
             eventId: expect.any(Number),
@@ -1594,7 +1723,7 @@ export default function runSharedTestSuite(
             change: {
               errorsStore: expect.any(Function),
             },
-            changedProps: expect.arrayContaining(ERRORS_SIDE_EFFECTS),
+            changedProps: expect.arrayContaining(changedProps),
           });
         });
 
@@ -1621,6 +1750,22 @@ export default function runSharedTestSuite(
 
           const [event1] = await promise1;
 
+          const changedProps = [
+            'status',
+            'errors',
+            'errorsStore',
+            'valid',
+            'invalid',
+          ];
+
+          if (IS_CONTROL_CONTAINER_TEST) {
+            changedProps.push(
+              'containerErrors',
+              'containerValid',
+              'containerInvalid'
+            );
+          }
+
           expect(event1).toEqual({
             type: 'StateChange',
             eventId: expect.any(Number),
@@ -1630,10 +1775,7 @@ export default function runSharedTestSuite(
             change: {
               errorsStore: expect.any(Function),
             },
-            changedProps: expect.arrayContaining([
-              ...ERRORS_SIDE_EFFECTS,
-              'status',
-            ]),
+            changedProps: expect.arrayContaining(changedProps),
           });
         });
 
@@ -1711,6 +1853,22 @@ export default function runSharedTestSuite(
 
           const [event1] = await promise1;
 
+          const changedProps = [
+            'status',
+            'errors',
+            'errorsStore',
+            'valid',
+            'invalid',
+          ];
+
+          if (IS_CONTROL_CONTAINER_TEST) {
+            changedProps.push(
+              'containerErrors',
+              'containerValid',
+              'containerInvalid'
+            );
+          }
+
           expect(event1).toEqual({
             type: 'StateChange',
             eventId: expect.any(Number),
@@ -1720,10 +1878,7 @@ export default function runSharedTestSuite(
             change: {
               errorsStore: expect.any(Function),
             },
-            changedProps: expect.arrayContaining([
-              ...ERRORS_SIDE_EFFECTS,
-              'status',
-            ]),
+            changedProps: expect.arrayContaining(changedProps),
           });
         });
 
@@ -1764,6 +1919,12 @@ export default function runSharedTestSuite(
 
           const [event1] = await promise1;
 
+          const changedProps = ['errors', 'errorsStore'];
+
+          if (IS_CONTROL_CONTAINER_TEST) {
+            changedProps.push('containerErrors');
+          }
+
           expect(event1).toEqual({
             type: 'StateChange',
             eventId: expect.any(Number),
@@ -1773,7 +1934,7 @@ export default function runSharedTestSuite(
             change: {
               errorsStore: expect.any(Function),
             },
-            changedProps: expect.arrayContaining(ERRORS_SIDE_EFFECTS),
+            changedProps: expect.arrayContaining(changedProps),
           });
         });
 
@@ -1802,6 +1963,12 @@ export default function runSharedTestSuite(
 
           const [event1] = await promise1;
 
+          const changedProps = ['errors', 'errorsStore'];
+
+          if (IS_CONTROL_CONTAINER_TEST) {
+            changedProps.push('containerErrors');
+          }
+
           expect(event1).toEqual({
             type: 'StateChange',
             eventId: expect.any(Number),
@@ -1811,7 +1978,7 @@ export default function runSharedTestSuite(
             change: {
               errorsStore: expect.any(Function),
             },
-            changedProps: expect.arrayContaining(ERRORS_SIDE_EFFECTS),
+            changedProps: expect.arrayContaining(changedProps),
           });
         });
 
@@ -1843,6 +2010,12 @@ export default function runSharedTestSuite(
 
           const [event1] = await promise1;
 
+          const changedProps = ['errors', 'errorsStore'];
+
+          if (IS_CONTROL_CONTAINER_TEST) {
+            changedProps.push('containerErrors');
+          }
+
           expect(event1).toEqual({
             type: 'StateChange',
             eventId: expect.any(Number),
@@ -1852,7 +2025,7 @@ export default function runSharedTestSuite(
             change: {
               errorsStore: expect.any(Function),
             },
-            changedProps: expect.arrayContaining(ERRORS_SIDE_EFFECTS),
+            changedProps: expect.arrayContaining(changedProps),
           });
         });
       });

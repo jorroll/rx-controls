@@ -639,7 +639,10 @@ export abstract class AbstractControlContainerBase<
     }
   ): IControlContainerStateChangeEvent<Controls, Data> | null {
     if (event.controlContainerValueChange?.id === this.id) {
-      const changedProps = this.runValidation(pluckOptions(event));
+      const changedProps = [
+        'value',
+        ...this.runValidation(pluckOptions(event)),
+      ];
 
       if (
         !isEqual(
@@ -732,9 +735,15 @@ export abstract class AbstractControlContainerBase<
   protected processStateChange_Disabled(
     event: IControlContainerStateChangeEvent<Controls, Data>
   ): IControlContainerStateChangeEvent<Controls, Data> | null {
-    return updateContainerProp(this, 'containerDisabled', () =>
+    const newEvent = updateContainerProp(this, 'containerDisabled', () =>
       super.processStateChange_Disabled(event)
     );
+
+    if (newEvent?.changedProps.includes('containerDisabled')) {
+      newEvent.changedProps.push('containerEnabled');
+    }
+
+    return newEvent;
   }
 
   protected processStateChange_Touched(
@@ -883,7 +892,7 @@ export abstract class AbstractControlContainerBase<
       const cse = event.childEvent.changedProps;
 
       if (cse.includes('disabled')) {
-        changedProps.push(...updateChildrenProps(this, 'Disabled'));
+        changedProps.push(...updateDisabledProp(this));
       }
 
       if (cse.includes('readonly')) {
@@ -908,6 +917,13 @@ export abstract class AbstractControlContainerBase<
 
       if (cse.includes('errors')) {
         this.updateChildrenErrors(changedProps);
+      } else if (
+        cse.some(
+          (v) =>
+            v === 'invalid' || v === 'childInvalid' || v === 'childrenInvalid'
+        )
+      ) {
+        changedProps.push(...updateInvalidProp(this));
       }
 
       return { ...event, changedProps };
@@ -947,7 +963,7 @@ export abstract class AbstractControlContainerBase<
 
     this._value = newValue as ControlsValue<Controls>;
 
-    const changedProps: string[] = [];
+    const changedProps = ['value'];
 
     if (control.enabled) {
       const childEnabledValue = AbstractControlContainer.isControlContainer(
@@ -980,7 +996,7 @@ export abstract class AbstractControlContainerBase<
       change: {
         value: newChange,
       },
-      changedProps: changedProps,
+      changedProps,
     };
   }
 
@@ -988,11 +1004,11 @@ export abstract class AbstractControlContainerBase<
     _control: Controls[ControlsKey<Controls>],
     event: IChildControlStateChangeEvent<Controls, Data>
   ): IChildControlStateChangeEvent<Controls, Data> | null {
-    const changedProps = updateChildrenProps(this, 'Disabled');
+    const changedProps = updateDisabledProp(this);
 
     // TODO: refactor this into something more efficient...
     changedProps.push(...updateChildrenProps(this, 'Dirty'));
-    changedProps.push(...updateChildrenProps(this, 'Invalid'));
+    changedProps.push(...updateInvalidProp(this));
     changedProps.push(...updateChildrenProps(this, 'Pending'));
     changedProps.push(...updateChildrenProps(this, 'Readonly'));
     changedProps.push(...updateChildrenProps(this, 'Submitted'));
@@ -1073,7 +1089,7 @@ export abstract class AbstractControlContainerBase<
     return {
       ...event,
       changedProps: ((control as unknown) as AbstractControl).enabled
-        ? updateChildrenProps(this, 'Invalid')
+        ? updateInvalidProp(this)
         : [],
     };
   }
@@ -1126,7 +1142,7 @@ export abstract class AbstractControlContainerBase<
 
     this._value = newValue;
 
-    const changedProps: string[] = [];
+    const changedProps = ['value'];
 
     if (control.enabled) {
       const childEnabledValue = AbstractControlContainer.isControlContainer(
@@ -1151,7 +1167,7 @@ export abstract class AbstractControlContainerBase<
     return {
       ...event.childEvent,
       change: { value: change },
-      changedProps: changedProps,
+      changedProps,
     };
   }
 
@@ -1180,7 +1196,7 @@ export abstract class AbstractControlContainerBase<
       this._combinedErrors = { ...this._childrenErrors, ...this._errors };
     }
 
-    changedProps.push(...updateChildrenProps(this, 'Invalid'));
+    changedProps.push(...updateInvalidProp(this));
 
     if (!isEqual(this._childrenErrors, prevChildrenErrors)) {
       changedProps.push('childrenErrors');
@@ -1203,7 +1219,20 @@ export abstract class AbstractControlContainerBase<
   >(value: T): T;
 
   protected updateErrorsProp(changedProps: string[]) {
-    super.updateErrorsProp(changedProps);
+    const oldInvalid = this.invalid;
+    const oldContainerInvalid = this.containerInvalid;
+
+    if (this._errorsStore.size === 0) {
+      this._errors = null;
+    } else {
+      this._errors = Array.from(this._errorsStore).reduce<ValidationErrors>(
+        (p, [, v]) => ({
+          ...p,
+          ...v,
+        }),
+        {}
+      );
+    }
 
     if (this._childrenErrors || this._errors) {
       this._combinedErrors = { ...this._childrenErrors, ...this._errors };
@@ -1211,7 +1240,22 @@ export abstract class AbstractControlContainerBase<
       this._combinedErrors = null;
     }
 
-    changedProps.push('containerErrors');
+    changedProps.push('errors', 'containerErrors');
+
+    if (oldInvalid !== this.invalid) {
+      changedProps.push('valid', 'invalid');
+    }
+
+    if (oldContainerInvalid !== this.containerInvalid) {
+      changedProps.push('containerValid', 'containerInvalid');
+    }
+
+    const newStatus = this.getControlStatus();
+
+    if (newStatus !== this._status) {
+      changedProps.push('status');
+      this._status = newStatus;
+    }
   }
 }
 
@@ -1229,20 +1273,9 @@ function updateContainerProp<
   return newEvent;
 }
 
-/**
- * NEED TO UPDATE THIS TO ONLY COUNT ENABLED CHILDREN!!!!!
- */
-
 function updateChildrenProps(
   that: any,
-  prop:
-    | 'Disabled'
-    | 'Dirty'
-    | 'Readonly'
-    | 'Touched'
-    | 'Submitted'
-    | 'Invalid'
-    | 'Pending'
+  prop: 'Dirty' | 'Readonly' | 'Touched' | 'Submitted' | 'Pending'
 ) {
   const changedProps: string[] = [];
   const regProp = prop.toLowerCase();
@@ -1253,12 +1286,9 @@ function updateChildrenProps(
   const prevChild = that[childProp];
   const prevCombined = that[regProp];
 
-  let controls = Array.from<AbstractControl>(that._controlsStore.values());
-
-  if (prop !== 'Disabled') {
-    // TODO: refactor this into something more efficient
-    controls = controls.filter((c) => c.enabled);
-  }
+  const controls = Array.from<AbstractControl>(
+    that.controlsStore.values()
+  ).filter((c) => c.enabled);
 
   that[childrenProp] =
     controls.length > 0 && controls.every((c: any) => c[regProp]);
@@ -1281,10 +1311,88 @@ function updateChildrenProps(
     changedProps.push(regProp);
   }
 
-  const oldStatus = that._status;
+  if (prop === 'Pending') {
+    const oldStatus = that._status;
+    that._status = that.getControlStatus();
+
+    if (!isEqual(oldStatus, that._status)) {
+      changedProps.push('status');
+    }
+  }
+
+  return changedProps;
+}
+
+function updateDisabledProp(that: any) {
+  const changedProps: string[] = [];
+
+  const prevChildren = that.childrenDisabled;
+  const prevChild = that.childDisabled;
+  const prevCombined = that.disabled;
+
+  const controls = Array.from<AbstractControl>(that.controlsStore.values());
+
+  that._childrenDisabled =
+    controls.length > 0 && controls.every((c: any) => c.disabled);
+
+  that._childDisabled =
+    that.childrenDisabled || controls.some((c: any) => c.disabled);
+
+  if (that.childrenDisabled !== prevChildren) {
+    changedProps.push('childrenDisabled', 'childEnabled');
+  }
+
+  if (that.childDisabled !== prevChild) {
+    changedProps.push('childDisabled', 'childrenEnabled');
+  }
+
+  if (that.disabled !== prevCombined) {
+    changedProps.push('disabled', 'enabled');
+  }
+
+  const oldStatus = that.status;
   that._status = that.getControlStatus();
 
-  if (!isEqual(oldStatus, that._status)) {
+  if (!isEqual(oldStatus, that.status)) {
+    changedProps.push('status');
+  }
+
+  return changedProps;
+}
+
+function updateInvalidProp(that: any) {
+  const changedProps: string[] = [];
+
+  const prevChildren = that.childrenInvalid;
+  const prevChild = that.childInvalid;
+  const prevCombined = that.invalid;
+
+  const controls = Array.from<AbstractControl>(
+    that.controlsStore.values()
+  ).filter((c) => c.enabled);
+
+  that._childrenInvalid =
+    controls.length > 0 && controls.every((c: any) => c.invalid);
+
+  that._childInvalid =
+    that.childrenInvalid || controls.some((c: any) => c.invalid);
+
+  if (that.childrenInvalid !== prevChildren) {
+    changedProps.push('childrenInvalid', 'childValid');
+  }
+
+  if (that.childInvalid !== prevChild) {
+    changedProps.push('childInvalid', 'childrenValid');
+  }
+
+  if (that.invalid !== prevCombined) {
+    changedProps.push('invalid', 'valid');
+  }
+
+  const oldStatus = that.status;
+  that._status = that.getControlStatus();
+
+  if (!isEqual(oldStatus, that.status)) {
     changedProps.push('status');
   }
 

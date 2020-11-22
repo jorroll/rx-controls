@@ -73,7 +73,8 @@ export interface IControlStateChange<V, D> {
 export interface IControlStateChangeEvent<V, D> extends IControlEvent {
   type: 'StateChange';
   change: IControlStateChange<V, D>;
-  changedProps: string[]; // array of other props that have changed;
+  /** Array of props that have changed */
+  changedProps: string[];
 }
 
 // *****************************

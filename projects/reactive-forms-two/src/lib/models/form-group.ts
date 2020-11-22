@@ -94,7 +94,12 @@ export class FormGroup<
     return {
       ...event,
       change: { controlsStore: change },
-      changedProps: ['value', 'enabledValue', ...this.runValidation(event)],
+      changedProps: [
+        'controlsStore',
+        'value',
+        'enabledValue',
+        ...this.runValidation(event),
+      ],
     };
   }
 

@@ -393,7 +393,7 @@ describe('FormControl', () => {
           change: {
             value: expect.any(Function),
           },
-          changedProps: [],
+          changedProps: ['value'],
         });
       });
 
@@ -481,7 +481,7 @@ describe('FormControl', () => {
         change: {
           value: expect.any(Function),
         },
-        changedProps: [],
+        changedProps: ['value'],
       });
 
       expect(two).toEqual({
@@ -502,7 +502,11 @@ describe('FormControl', () => {
         change: {
           errorsStore: expect.any(Function),
         },
-        changedProps: ['errors', 'status'],
+        changedProps: expect.arrayContaining([
+          'errorsStore',
+          'errors',
+          'status',
+        ]),
       });
 
       // expect(five).toEqual({

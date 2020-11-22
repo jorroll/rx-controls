@@ -1245,7 +1245,7 @@ export abstract class AbstractControlBase<Value = any, Data = any>
     return {
       ...event,
       change: { value: change },
-      changedProps: this.runValidation(event),
+      changedProps: ['value', ...this.runValidation(event)],
     };
   }
 
@@ -1266,7 +1266,7 @@ export abstract class AbstractControlBase<Value = any, Data = any>
     return {
       ...event,
       change: { disabled: change },
-      changedProps: ['status'],
+      changedProps: ['disabled', 'enabled', 'status'],
     };
   }
 
@@ -1286,7 +1286,7 @@ export abstract class AbstractControlBase<Value = any, Data = any>
     return {
       ...event,
       change: { touched: change },
-      changedProps: [],
+      changedProps: ['touched'],
     };
   }
 
@@ -1306,7 +1306,7 @@ export abstract class AbstractControlBase<Value = any, Data = any>
     return {
       ...event,
       change: { dirty: change },
-      changedProps: [],
+      changedProps: ['dirty'],
     };
   }
 
@@ -1326,7 +1326,7 @@ export abstract class AbstractControlBase<Value = any, Data = any>
     return {
       ...event,
       change: { readonly: change },
-      changedProps: [],
+      changedProps: ['readonly'],
     };
   }
 
@@ -1346,7 +1346,7 @@ export abstract class AbstractControlBase<Value = any, Data = any>
     return {
       ...event,
       change: { submitted: change },
-      changedProps: [],
+      changedProps: ['submitted'],
     };
   }
 
@@ -1363,14 +1363,14 @@ export abstract class AbstractControlBase<Value = any, Data = any>
 
     this._errorsStore = newErrorsStore;
 
-    const changedProps: string[] = [];
+    const changedProps = ['errorsStore'];
 
     this.updateErrorsProp(changedProps);
 
     return {
       ...event,
       change: { errorsStore: change },
-      changedProps: changedProps,
+      changedProps,
     };
   }
 
@@ -1388,7 +1388,7 @@ export abstract class AbstractControlBase<Value = any, Data = any>
     this._validatorStore = newValidatorStore;
 
     const oldErrorsStore = this._errorsStore;
-    const changedProps = ['validator', 'errorsStore'];
+    const changedProps = ['validatorStore', 'validator', 'errorsStore'];
 
     if (this._validatorStore.size === 0) {
       this._validator = null;
@@ -1428,7 +1428,7 @@ export abstract class AbstractControlBase<Value = any, Data = any>
     return {
       ...event,
       change: { validatorStore: change },
-      changedProps: changedProps,
+      changedProps,
     };
   }
 
@@ -1559,7 +1559,13 @@ export abstract class AbstractControlBase<Value = any, Data = any>
     if (isEqual(this._pendingStore, newPendingStore)) return null;
 
     const newPending = newPendingStore.size > 0;
-    const changedProps = newPending === this._pending ? [] : ['pending'];
+
+    const changedProps = ['pendingStore'];
+
+    if (newPending !== this._pending) {
+      changedProps.push('pending');
+    }
+
     this._pendingStore = newPendingStore;
     this._pending = newPending;
 
@@ -1573,7 +1579,7 @@ export abstract class AbstractControlBase<Value = any, Data = any>
     return {
       ...event,
       change: { pendingStore: change },
-      changedProps: changedProps,
+      changedProps,
     };
   }
 
@@ -1596,7 +1602,7 @@ export abstract class AbstractControlBase<Value = any, Data = any>
     return {
       ...event,
       change: { parent: change },
-      changedProps: [],
+      changedProps: ['parent'],
     };
   }
 
@@ -1620,12 +1626,12 @@ export abstract class AbstractControlBase<Value = any, Data = any>
     return {
       ...event,
       change: { data: change },
-      changedProps: [],
+      changedProps: ['data'],
     };
   }
 
   protected updateErrorsProp(changedProps: string[]) {
-    changedProps.push('errors');
+    const oldInvalid = this.invalid;
 
     if (this._errorsStore.size === 0) {
       this._errors = null;
@@ -1637,6 +1643,12 @@ export abstract class AbstractControlBase<Value = any, Data = any>
         }),
         {}
       );
+    }
+
+    changedProps.push('errors');
+
+    if (oldInvalid !== this.invalid) {
+      changedProps.push('valid', 'invalid');
     }
 
     const newStatus = this.getControlStatus();
