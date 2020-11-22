@@ -39,41 +39,41 @@ export abstract class SwBaseDirective<T extends AbstractControl>
     // an `<ng-container>` element.
     if (!(this.el.nativeElement instanceof HTMLElement)) return;
 
-    // this.subscriptions.push(
-    //   this.control
-    //     .observe('touched', { ignoreNoEmit: true })
-    //     .subscribe((touched) => {
-    //       if (touched) {
-    //         this.renderer.addClass(this.el.nativeElement, 'sw-touched');
-    //         this.renderer.removeClass(this.el.nativeElement, 'sw-untouched');
-    //       } else {
-    //         this.renderer.addClass(this.el.nativeElement, 'sw-untouched');
-    //         this.renderer.removeClass(this.el.nativeElement, 'sw-touched');
-    //       }
-    //     }),
-    //   this.control
-    //     .observe('submitted', { ignoreNoEmit: true })
-    //     .subscribe((submitted) => {
-    //       if (submitted) {
-    //         this.renderer.addClass(this.el.nativeElement, 'sw-submitted');
-    //         this.renderer.removeClass(this.el.nativeElement, 'sw-unsubmitted');
-    //       } else {
-    //         this.renderer.addClass(this.el.nativeElement, 'sw-unsubmitted');
-    //         this.renderer.removeClass(this.el.nativeElement, 'sw-submitted');
-    //       }
-    //     }),
-    //   this.control
-    //     .observe('changed', { ignoreNoEmit: true })
-    //     .subscribe((changed) => {
-    //       if (changed) {
-    //         this.renderer.addClass(this.el.nativeElement, 'sw-changed');
-    //         this.renderer.removeClass(this.el.nativeElement, 'sw-unchanged');
-    //       } else {
-    //         this.renderer.addClass(this.el.nativeElement, 'sw-unchanged');
-    //         this.renderer.removeClass(this.el.nativeElement, 'sw-changed');
-    //       }
-    //     })
-    // );
+    this.subscriptions.push(
+      this.control
+        .observe('touched', { ignoreNoEmit: true })
+        .subscribe((touched) => {
+          if (touched) {
+            this.renderer.addClass(this.el.nativeElement, 'sw-touched');
+            this.renderer.removeClass(this.el.nativeElement, 'sw-untouched');
+          } else {
+            this.renderer.addClass(this.el.nativeElement, 'sw-untouched');
+            this.renderer.removeClass(this.el.nativeElement, 'sw-touched');
+          }
+        }),
+      this.control
+        .observe('submitted', { ignoreNoEmit: true })
+        .subscribe((submitted) => {
+          if (submitted) {
+            this.renderer.addClass(this.el.nativeElement, 'sw-submitted');
+            this.renderer.removeClass(this.el.nativeElement, 'sw-unsubmitted');
+          } else {
+            this.renderer.addClass(this.el.nativeElement, 'sw-unsubmitted');
+            this.renderer.removeClass(this.el.nativeElement, 'sw-submitted');
+          }
+        }),
+      this.control
+        .observe('dirty', { ignoreNoEmit: true })
+        .subscribe((dirty) => {
+          if (dirty) {
+            this.renderer.addClass(this.el.nativeElement, 'sw-dirty');
+            this.renderer.removeClass(this.el.nativeElement, 'sw-unchanged');
+          } else {
+            this.renderer.addClass(this.el.nativeElement, 'sw-unchanged');
+            this.renderer.removeClass(this.el.nativeElement, 'sw-dirty');
+          }
+        })
+    );
   }
 
   ngOnDestroy() {
