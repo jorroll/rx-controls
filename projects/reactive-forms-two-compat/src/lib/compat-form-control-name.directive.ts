@@ -14,7 +14,6 @@ import {
 } from '@angular/core';
 
 import {
-  AbstractControl,
   ControlContainerAccessor,
   ControlAccessor,
   FormControl,
@@ -45,7 +44,7 @@ import { CompatFormControl } from './compat-form-control';
 })
 export class CompatFormControlNameDirective
   extends ControlNameDirective<FormControl>
-  implements ControlAccessor<FormControl>, OnChanges, OnDestroy {
+  implements ControlAccessor<FormControl>, OnChanges {
   static id = 0;
 
   @Input('swFormControlName') controlName!: string;
@@ -123,24 +122,4 @@ export class CompatFormControlNameDirective
 
     return true;
   }
-
-  // ngOnChanges(_: { controlName?: SimpleChange }) {
-  //   if (!this.controlName) {
-  //     throw new Error(
-  //       `NgCompatFormControlNameDirective must be passed a ngFormControlName`
-  //     );
-  //   }
-
-  //   super.ngOnChanges(_);
-  // }
-
-  // protected validateProvidedControl(control: any): control is FormControl {
-  //   if (!(control instanceof FormControl)) {
-  //     throw new Error(
-  //       'NgCompatFormControlNameDirective must link to an instance of FormControl'
-  //     );
-  //   }
-
-  //   return true;
-  // }
 }

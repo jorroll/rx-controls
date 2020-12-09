@@ -11,6 +11,12 @@ import { render, screen, fireEvent } from '@testing-library/angular';
 import userEvent from '@testing-library/user-event';
 import { IControlValueMapper } from './interface';
 import { wait } from '../models/test-util';
+import { TestSingleChild } from './test-utils';
+import { FormControlDirective } from './form-control.directive';
+
+const beforeEachFn = TestSingleChild.buildBeforeEachFn({
+  declarations: [FormControlDirective],
+});
 
 @Component({
   selector: 'my-test-component',
@@ -19,44 +25,37 @@ import { wait } from '../models/test-util';
 export class NoProvidedControlComponent {}
 
 describe('NoProvidedControlComponent', () => {
-  let container: HTMLElement;
-  let fixture: ComponentFixture<NoProvidedControlComponent>;
-  let component: NoProvidedControlComponent;
+  const o: TestSingleChild.TestArgs<
+    NoProvidedControlComponent,
+    HTMLInputElement,
+    'input'
+  > = {} as any;
 
-  beforeEach(async () => {
-    ({ container, fixture } = await render(NoProvidedControlComponent, {
-      imports: [ReactiveFormsModuleTwo],
-    }));
-
-    component = fixture.componentInstance;
-  });
+  beforeEach(beforeEachFn(NoProvidedControlComponent, 'input', o));
 
   it('initializes', () => {
-    const input = container.querySelector('input')!;
-    expect(input.value).toEqual('');
-    expect(input.className).toContain('sw-untouched');
-    expect(input.className).toContain('sw-not-submitted');
-    expect(input.className).toContain('sw-pristine');
+    expect(o.input.value).toEqual('');
+    expect(o.input.className).toContain('sw-untouched');
+    expect(o.input.className).toContain('sw-not-submitted');
+    expect(o.input.className).toContain('sw-pristine');
   });
 
   it('applies css on touch', () => {
-    const input = container.querySelector('input')!;
-    input.focus();
-    input.blur();
-    expect(input.className).toContain('sw-touched');
-    expect(input.className).toContain('sw-not-submitted');
-    expect(input.className).toContain('sw-pristine');
+    o.input.focus();
+    expect(o.input.className).toContain('sw-untouched');
+    o.input.blur();
+    expect(o.input.className).toContain('sw-touched');
+    expect(o.input.className).toContain('sw-not-submitted');
+    expect(o.input.className).toContain('sw-pristine');
   });
 
   it('applies css on input', () => {
-    const input = container.querySelector('input')!;
+    userEvent.type(o.input, 'hi');
 
-    userEvent.type(input, 'hi');
-
-    expect(input.value).toContain('hi');
-    expect(input.className).toContain('sw-untouched');
-    expect(input.className).toContain('sw-not-submitted');
-    expect(input.className).toContain('sw-dirty');
+    expect(o.input.value).toContain('hi');
+    expect(o.input.className).toContain('sw-untouched');
+    expect(o.input.className).toContain('sw-not-submitted');
+    expect(o.input.className).toContain('sw-dirty');
   });
 });
 
@@ -76,33 +75,25 @@ export class SimpleValueMapperComponent {
 }
 
 describe('SimpleValueMapperComponent', () => {
-  let container: HTMLElement;
-  let fixture: ComponentFixture<SimpleValueMapperComponent>;
-  let component: SimpleValueMapperComponent;
+  const o: TestSingleChild.TestArgs<
+    SimpleValueMapperComponent,
+    HTMLInputElement,
+    'input'
+  > = {} as any;
 
-  beforeEach(async () => {
-    ({ container, fixture } = await render(SimpleValueMapperComponent, {
-      imports: [ReactiveFormsModuleTwo],
-    }));
-
-    component = fixture.componentInstance;
-  });
+  beforeEach(beforeEachFn(SimpleValueMapperComponent, 'input', o));
 
   it('initializes', () => {
-    const input = container.querySelector('input')!;
-
-    expect(input.value).toEqual(component.control.value!.toISOString());
+    expect(o.input.value).toEqual(o.component.control.value!.toISOString());
   });
 
   it('updates', () => {
-    const input = container.querySelector('input')!;
-
     const newDate = new Date(2021, 1, 1);
 
-    userEvent.clear(input);
-    userEvent.paste(input, newDate.toISOString());
+    userEvent.clear(o.input);
+    userEvent.paste(o.input, newDate.toISOString());
 
-    expect(component.control.value).toEqual(newDate);
-    expect(input.value).toEqual(newDate.toISOString());
+    expect(o.component.control.value).toEqual(newDate);
+    expect(o.input.value).toEqual(newDate.toISOString());
   });
 });

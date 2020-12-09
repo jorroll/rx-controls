@@ -11,6 +11,20 @@ import { render, screen, fireEvent } from '@testing-library/angular';
 import userEvent from '@testing-library/user-event';
 import { IControlValueMapper } from './interface';
 import { wait } from '../models/test-util';
+import { TestMultiChild } from './test-utils';
+import { FormGroupDirective } from './form-group.directive';
+import { FormControlDirective } from './form-control.directive';
+import { FormControlNameDirective } from './form-control-name.directive';
+import { FormGroupNameDirective } from './form-group-name.directive';
+
+const beforeEachFn = TestMultiChild.buildBeforeEachFn({
+  declarations: [
+    // FormGroupDirective,
+    FormGroupNameDirective,
+    FormControlDirective,
+    FormControlNameDirective,
+  ],
+});
 
 @Component({
   selector: 'my-test-component',
@@ -38,11 +52,6 @@ import { wait } from '../models/test-util';
       useExisting: forwardRef(() => ComplexValueMapperTestComponent),
       multi: true,
     },
-    // {
-    //   provide: SW_CONTROL_CONTAINER_ACCESSOR,
-    //   useExisting: forwardRef(() => ComplexValueMapperTestComponent),
-    //   multi: true,
-    // },
   ],
 })
 export class ComplexValueMapperTestComponent {
@@ -83,20 +92,12 @@ export class ComplexValueMapperTestComponent {
 }
 
 describe('ComplexValueMapperTestComponent', () => {
-  let container: HTMLElement;
-  let fixture: ComponentFixture<ComplexValueMapperTestComponent>;
-  let component: ComplexValueMapperTestComponent;
+  const o: TestMultiChild.TestArgs<ComplexValueMapperTestComponent> = {} as any;
 
-  beforeEach(async () => {
-    ({ container, fixture } = await render(ComplexValueMapperTestComponent, {
-      imports: [ReactiveFormsModuleTwo],
-    }));
-
-    component = fixture.componentInstance;
-  });
+  beforeEach(beforeEachFn(ComplexValueMapperTestComponent, o));
 
   it('initializes', () => {
-    expect(component.control.value).toEqual({
+    expect(o.component.control.value).toEqual({
       name: {
         firstName: 'John',
         lastName: 'Carroll',
@@ -110,9 +111,11 @@ describe('ComplexValueMapperTestComponent', () => {
       },
     });
 
-    expect(component.alternateRelativeFirstNameControl.value).toEqual('Bobby');
+    expect(o.component.alternateRelativeFirstNameControl.value).toEqual(
+      'Bobby'
+    );
 
-    const name = container.querySelector(
+    const name = o.container.querySelector(
       '[swFormGroupName="name"]'
     ) as HTMLDivElement;
 
@@ -128,13 +131,13 @@ describe('ComplexValueMapperTestComponent', () => {
 
     expect(name_lastName).toHaveProperty('value', 'Carroll');
 
-    const birthdate = container.querySelector(
+    const birthdate = o.container.querySelector(
       '[swFormControlName="birthdate"]'
     ) as HTMLInputElement;
 
     expect(birthdate.value).toEqual(new Date(2020, 0, 1).toISOString());
 
-    const relative = container.querySelector(
+    const relative = o.container.querySelector(
       '[swFormGroupName="relative"]'
     ) as HTMLDivElement;
 
@@ -152,9 +155,9 @@ describe('ComplexValueMapperTestComponent', () => {
   it('updateBirthdate', () => {
     const newDate = new Date(1919, 0, 1);
 
-    component.updateBirthdate(newDate);
+    o.component.updateBirthdate(newDate);
 
-    expect(component.control.value).toEqual({
+    expect(o.component.control.value).toEqual({
       name: {
         firstName: 'John',
         lastName: 'Carroll',
@@ -168,7 +171,7 @@ describe('ComplexValueMapperTestComponent', () => {
       },
     });
 
-    const birthdate = container.querySelector(
+    const birthdate = o.container.querySelector(
       '[swFormControlName="birthdate"]'
     ) as HTMLInputElement;
 
@@ -176,13 +179,13 @@ describe('ComplexValueMapperTestComponent', () => {
   });
 
   it('updateFirstName', async () => {
-    component.updateFirstName('Cassidy');
+    o.component.updateFirstName('Cassidy');
 
-    expect(component.control.get('name').get('firstName').value).toEqual(
+    expect(o.component.control.get('name').get('firstName').value).toEqual(
       'Cassidy'
     );
 
-    expect(component.control.value).toEqual({
+    expect(o.component.control.value).toEqual({
       name: {
         firstName: 'Cassidy',
         lastName: 'Carroll',
@@ -196,7 +199,7 @@ describe('ComplexValueMapperTestComponent', () => {
       },
     });
 
-    const name = container.querySelector(
+    const name = o.container.querySelector(
       '[swFormGroupName="name"]'
     ) as HTMLDivElement;
 
@@ -204,7 +207,7 @@ describe('ComplexValueMapperTestComponent', () => {
 
     expect(name_firstName).toHaveProperty('value', 'Cassidy');
 
-    component.control.patchValue({
+    o.component.control.patchValue({
       name: {
         firstName: 'Bill',
       },
@@ -212,7 +215,7 @@ describe('ComplexValueMapperTestComponent', () => {
 
     await wait(0); // without this, errors inside the event loop are silently suppressed
 
-    expect(component.control.get('name').get('firstName').value).toEqual(
+    expect(o.component.control.get('name').get('firstName').value).toEqual(
       'Bill'
     );
 
@@ -220,11 +223,11 @@ describe('ComplexValueMapperTestComponent', () => {
   });
 
   it('updateRelativeFirstName', async () => {
-    component.updateRelativeFirstName('Jack');
+    o.component.updateRelativeFirstName('Jack');
 
-    expect(component.alternateRelativeFirstNameControl.value).toEqual('Jack');
+    expect(o.component.alternateRelativeFirstNameControl.value).toEqual('Jack');
 
-    expect(component.control.value).toEqual({
+    expect(o.component.control.value).toEqual({
       name: {
         firstName: 'John',
         lastName: 'Carroll',
@@ -238,7 +241,7 @@ describe('ComplexValueMapperTestComponent', () => {
       },
     });
 
-    const relative = container.querySelector(
+    const relative = o.container.querySelector(
       '[swFormGroupName="relative"]'
     ) as HTMLDivElement;
 
@@ -246,7 +249,7 @@ describe('ComplexValueMapperTestComponent', () => {
 
     expect(relative_firstName).toHaveProperty('value', 'Jack');
 
-    component.control.patchValue({
+    o.component.control.patchValue({
       relative: {
         name: {
           firstName: 'Bill',
@@ -256,12 +259,12 @@ describe('ComplexValueMapperTestComponent', () => {
 
     await wait(0); // without this, errors inside the event loop are silently suppressed
 
-    expect(component.alternateRelativeFirstNameControl.value).toEqual('Jack');
+    expect(o.component.alternateRelativeFirstNameControl.value).toEqual('Jack');
     expect(relative_firstName).toHaveProperty('value', 'Jack');
   });
 
   it('error if trying to add child control to a new FormGroup', () => {
-    const firstName = component.control.get('name').get('firstName');
+    const firstName = o.component.control.get('name').get('firstName');
 
     const form = new FormGroup();
 

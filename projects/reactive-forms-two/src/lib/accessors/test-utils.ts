@@ -10,7 +10,7 @@ export type BuildTestArgs<
   E extends HTMLElement,
   S extends string
 > = {
-  container: HTMLElement;
+  container: Element;
   fixture: ComponentFixture<T>;
   component: T;
   accessor: A;
@@ -30,7 +30,7 @@ export function buildBeforeEachFn<
   return function beforeEachFn<T extends { accessor: A }>(
     ctor: Type<T>,
     options: {
-      container: HTMLElement;
+      container: Element;
       fixture: ComponentFixture<T>;
       component: T;
       accessor: A;

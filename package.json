@@ -14,7 +14,7 @@
     "test": "ng test",
     "lint": "ng lint"
   },
-  "dependencies": {
+  "devDependencies": {
     "@angular/animations": "~10.1.6",
     "@angular/common": "~10.1.6",
     "@angular/compiler": "~10.1.6",
@@ -26,9 +26,7 @@
     "lodash-es": "^4.17.15",
     "rxjs": "~6.6.0",
     "tslib": "^2.0.0",
-    "zone.js": "~0.10.2"
-  },
-  "devDependencies": {
+    "zone.js": "~0.10.2",
     "@angular-builders/jest": "10.0.1",
     "@angular-devkit/build-angular": "~0.1001.7",
     "@angular/cli": "~10.1.7",
