@@ -3,5 +3,6 @@
   "dest": "./build",
   "lib": {
     "entryFile": "src/public-api.ts"
-  }
+  },
+  "whitelistedNonPeerDependencies": ["tslib", "lodash-es"]
 }
