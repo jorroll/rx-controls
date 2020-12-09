@@ -18,7 +18,7 @@ import {
   SW_CONTROL_ACCESSOR,
   ControlContainerAccessor,
 } from '../accessors/interface';
-import { SwControlNameDirective } from './control-name.directive';
+import { ControlNameDirective } from './control-name.directive';
 import { resolveControlContainerAccessor } from './util';
 
 @Directive({
@@ -27,17 +27,17 @@ import { resolveControlContainerAccessor } from './util';
   providers: [
     {
       provide: SW_CONTROL_DIRECTIVE,
-      useExisting: forwardRef(() => SwFormGroupNameDirective),
+      useExisting: forwardRef(() => FormGroupNameDirective),
     },
     {
       provide: SW_CONTROL_ACCESSOR,
-      useExisting: forwardRef(() => SwFormGroupNameDirective),
+      useExisting: forwardRef(() => FormGroupNameDirective),
       multi: true,
     },
   ],
 })
-export class SwFormGroupNameDirective
-  extends SwControlNameDirective<FormGroup>
+export class FormGroupNameDirective
+  extends ControlNameDirective<FormGroup>
   implements ControlAccessor, OnChanges, OnDestroy {
   static id = 0;
 
@@ -48,7 +48,7 @@ export class SwFormGroupNameDirective
   readonly control = new FormGroup<any>(
     {},
     {
-      id: Symbol(`SwFormGroupNameDirective-${SwFormGroupNameDirective.id++}`),
+      id: Symbol(`SwFormGroupNameDirective-${FormGroupNameDirective.id++}`),
     }
   );
 

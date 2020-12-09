@@ -18,7 +18,7 @@ import {
   SW_CONTROL_ACCESSOR,
   ControlAccessor,
 } from '../accessors/interface';
-import { SwControlDirective } from './control.directive';
+import { ControlDirective } from './control.directive';
 import { IControlValueMapper } from './interface';
 import { concat } from 'rxjs';
 
@@ -28,17 +28,17 @@ import { concat } from 'rxjs';
   providers: [
     {
       provide: SW_CONTROL_DIRECTIVE,
-      useExisting: forwardRef(() => SwFormGroupDirective),
+      useExisting: forwardRef(() => FormGroupDirective),
     },
     {
       provide: SW_CONTROL_ACCESSOR,
-      useExisting: forwardRef(() => SwFormGroupDirective),
+      useExisting: forwardRef(() => FormGroupDirective),
       multi: true,
     },
   ],
 })
-export class SwFormGroupDirective
-  extends SwControlDirective<FormGroup>
+export class FormGroupDirective
+  extends ControlDirective<FormGroup>
   implements OnChanges {
   static id = 0;
   @Input('swFormGroup') providedControl!: FormGroup;
@@ -65,7 +65,7 @@ export class SwFormGroupDirective
       this.control = new FormGroup<any>(
         {},
         {
-          id: Symbol(`SwFormGroupDirective-${SwFormGroupDirective.id++}`),
+          id: Symbol(`SwFormGroupDirective-${FormGroupDirective.id++}`),
         }
       );
     }

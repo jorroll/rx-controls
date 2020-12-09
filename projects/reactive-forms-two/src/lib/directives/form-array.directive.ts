@@ -18,7 +18,7 @@ import {
   SW_CONTROL_ACCESSOR,
   ControlAccessor,
 } from '../accessors/interface';
-import { SwControlDirective } from './control.directive';
+import { ControlDirective } from './control.directive';
 import { IControlValueMapper } from './interface';
 import { concat } from 'rxjs';
 
@@ -28,17 +28,17 @@ import { concat } from 'rxjs';
   providers: [
     {
       provide: SW_CONTROL_DIRECTIVE,
-      useExisting: forwardRef(() => SwFormArrayDirective),
+      useExisting: forwardRef(() => FormArrayDirective),
     },
     {
       provide: SW_CONTROL_ACCESSOR,
-      useExisting: forwardRef(() => SwFormArrayDirective),
+      useExisting: forwardRef(() => FormArrayDirective),
       multi: true,
     },
   ],
 })
-export class SwFormArrayDirective
-  extends SwControlDirective<FormArray>
+export class FormArrayDirective
+  extends ControlDirective<FormArray>
   implements OnChanges {
   static id = 0;
   @Input('swFormArray') providedControl!: FormArray;
@@ -63,7 +63,7 @@ export class SwFormArrayDirective
       this.control = accessor.control as FormArray;
     } else {
       this.control = new FormArray<any>([], {
-        id: Symbol(`SwFormArrayDirective-${SwFormArrayDirective.id++}`),
+        id: Symbol(`SwFormArrayDirective-${FormArrayDirective.id++}`),
       });
     }
   }

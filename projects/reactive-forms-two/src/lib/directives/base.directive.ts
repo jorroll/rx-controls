@@ -14,7 +14,7 @@ import { IControlStateChangeEvent } from '../models/abstract-control/abstract-co
 import { filter } from 'rxjs/operators';
 import { IChildControlStateChangeEvent } from '../models/abstract-control-container/abstract-control-container';
 
-export abstract class SwBaseDirective<T extends AbstractControl>
+export abstract class BaseDirective<T extends AbstractControl>
   implements ControlAccessor<T>, OnChanges, OnDestroy {
   static id = 0;
   abstract readonly control: T;
@@ -22,7 +22,7 @@ export abstract class SwBaseDirective<T extends AbstractControl>
   valueMapper?: IControlValueMapper;
 
   protected accessorValidatorId = Symbol(
-    `SwDirectiveAccessorValidator-${SwBaseDirective.id++}`
+    `SwDirectiveAccessorValidator-${BaseDirective.id++}`
   );
 
   protected onChangesSubscriptions: Subscription[] = [];

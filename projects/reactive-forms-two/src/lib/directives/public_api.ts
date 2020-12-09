@@ -1,16 +1,16 @@
 export {
   SW_CONTROL_DIRECTIVE,
   IControlValueMapper,
-  IControlAccessorControlEvent as IControlAccessorEvent,
+  IControlAccessorControlEvent,
 } from './interface';
 
-export { SwFormArrayNameDirective } from './form-array-name.directive';
-export { SwFormArrayDirective } from './form-array.directive';
+export { FormArrayNameDirective } from './form-array-name.directive';
+export { FormArrayDirective } from './form-array.directive';
 
-export { SwFormControlNameDirective } from './form-control-name.directive';
-export { SwFormControlDirective } from './form-control.directive';
+export { FormControlNameDirective } from './form-control-name.directive';
+export { FormControlDirective } from './form-control.directive';
 
-export { SwFormGroupNameDirective } from './form-group-name.directive';
-export { SwFormGroupDirective } from './form-group.directive';
+export { FormGroupNameDirective } from './form-group-name.directive';
+export { FormGroupDirective } from './form-group.directive';
 
 export { ReactiveFormsModuleTwo } from './form.module';

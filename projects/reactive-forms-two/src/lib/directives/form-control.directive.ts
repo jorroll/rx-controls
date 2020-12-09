@@ -14,7 +14,7 @@ import { AbstractControl, FormControl } from '../models';
 import { SW_CONTROL_DIRECTIVE } from './interface';
 import { resolveControlAccessor, syncAccessorToControl } from './util';
 import { ControlAccessor, SW_CONTROL_ACCESSOR } from '../accessors/interface';
-import { SwControlDirective } from './control.directive';
+import { ControlDirective } from './control.directive';
 import { IControlValueMapper } from './interface';
 import { concat } from 'rxjs';
 
@@ -24,12 +24,12 @@ import { concat } from 'rxjs';
   providers: [
     {
       provide: SW_CONTROL_DIRECTIVE,
-      useExisting: forwardRef(() => SwFormControlDirective),
+      useExisting: forwardRef(() => FormControlDirective),
     },
   ],
 })
-export class SwFormControlDirective<T extends AbstractControl = AbstractControl>
-  extends SwControlDirective<T>
+export class FormControlDirective<T extends AbstractControl = AbstractControl>
+  extends ControlDirective<T>
   implements ControlAccessor, OnChanges, OnDestroy {
   static id = 0;
   @Input('swFormControl') providedControl: T | undefined;

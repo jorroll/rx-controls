@@ -18,7 +18,7 @@ import {
   SW_CONTROL_ACCESSOR,
   ControlContainerAccessor,
 } from '../accessors/interface';
-import { SwControlNameDirective } from './control-name.directive';
+import { ControlNameDirective } from './control-name.directive';
 import { resolveControlContainerAccessor } from './util';
 
 @Directive({
@@ -27,17 +27,17 @@ import { resolveControlContainerAccessor } from './util';
   providers: [
     {
       provide: SW_CONTROL_DIRECTIVE,
-      useExisting: forwardRef(() => SwFormArrayNameDirective),
+      useExisting: forwardRef(() => FormArrayNameDirective),
     },
     {
       provide: SW_CONTROL_ACCESSOR,
-      useExisting: forwardRef(() => SwFormArrayNameDirective),
+      useExisting: forwardRef(() => FormArrayNameDirective),
       multi: true,
     },
   ],
 })
-export class SwFormArrayNameDirective
-  extends SwControlNameDirective<FormArray>
+export class FormArrayNameDirective
+  extends ControlNameDirective<FormArray>
   implements ControlAccessor, OnChanges, OnDestroy {
   static id = 0;
 
@@ -48,7 +48,7 @@ export class SwFormArrayNameDirective
   readonly control = new FormArray<any>(
     {},
     {
-      id: Symbol(`SwFormArrayNameDirective-${SwFormArrayNameDirective.id++}`),
+      id: Symbol(`SwFormArrayNameDirective-${FormArrayNameDirective.id++}`),
     }
   );
 

@@ -25,7 +25,7 @@ import {
   resolveControlContainerAccessor,
   syncAccessorToControl,
 } from './util';
-import { SwControlNameDirective } from './control-name.directive';
+import { ControlNameDirective } from './control-name.directive';
 
 @Directive({
   selector: '[swFormControlName]:not([formControl])',
@@ -33,14 +33,14 @@ import { SwControlNameDirective } from './control-name.directive';
   providers: [
     {
       provide: SW_CONTROL_DIRECTIVE,
-      useExisting: forwardRef(() => SwFormControlNameDirective),
+      useExisting: forwardRef(() => FormControlNameDirective),
     },
   ],
 })
-export class SwFormControlNameDirective<
+export class FormControlNameDirective<
     T extends AbstractControl = AbstractControl
   >
-  extends SwControlNameDirective<T>
+  extends ControlNameDirective<T>
   implements ControlAccessor, OnChanges, OnDestroy {
   static id = 0;
 
