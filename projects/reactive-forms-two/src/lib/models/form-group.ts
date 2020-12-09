@@ -11,7 +11,8 @@ import {
   IControlContainerStateChange,
   IControlContainerStateChangeEvent,
 } from './abstract-control-container/abstract-control-container';
-import { Mutable, isEqual } from './util';
+import { Mutable } from './util';
+import { isEqual } from '../util';
 
 export type IFormGroupArgs<D> = IAbstractControlContainerBaseArgs<D>;
 

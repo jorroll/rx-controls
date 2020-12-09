@@ -20,12 +20,7 @@ import {
   Subscriber,
   Subscription,
 } from 'rxjs';
-import {
-  pluckOptions,
-  isTruthy,
-  isEqual,
-  getSimpleStateChangeEventArgs,
-} from '../util';
+import { pluckOptions, isTruthy, getSimpleStateChangeEventArgs } from '../util';
 import {
   map,
   filter,
@@ -36,6 +31,7 @@ import {
   skip,
   shareReplay,
 } from 'rxjs/operators';
+import { isEqual } from '../../util';
 
 export interface IAbstractControlBaseArgs<Data = any> {
   data?: Data;

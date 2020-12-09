@@ -4,7 +4,6 @@ import {
   IControlStateChange,
   IControlStateChangeEvent,
 } from './abstract-control/abstract-control';
-import _isEqual from 'lodash-es/isEqual';
 import {
   GenericControlsObject,
   IControlContainerStateChange,
@@ -94,8 +93,6 @@ export function pluckOptions({
 //   array.splice(i, 1);
 //   return array;
 // }
-
-export const isEqual: <T>(a: T, b: T) => boolean = _isEqual;
 
 export function getSimpleStateChangeEventArgs<V, D>(
   change: IControlStateChange<V, D>

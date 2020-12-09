@@ -15,14 +15,12 @@ import {
   AbstractControlContainer,
 } from './abstract-control-container/abstract-control-container';
 import { getSimpleContainerStateChangeEventArgs } from './util';
-import isEqual from 'lodash-es/isEqual';
+import { isEqual } from '../util';
 
 export type IFormArrayArgs<D> = IAbstractControlContainerBaseArgs<D>;
 
 export class FormArray<
-  Controls extends ReadonlyArray<AbstractControl> = ReadonlyArray<
-    AbstractControl
-  >,
+  Controls extends ReadonlyArray<AbstractControl> = ReadonlyArray<AbstractControl>,
   Data = any
 > extends AbstractControlContainerBase<Controls, Data> {
   static id = 0;
