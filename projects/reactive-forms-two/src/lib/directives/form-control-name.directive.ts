@@ -41,7 +41,7 @@ export class FormControlNameDirective<
     T extends AbstractControl = AbstractControl
   >
   extends ControlNameDirective<T>
-  implements ControlAccessor, OnChanges, OnDestroy {
+  implements ControlAccessor<T>, OnChanges, OnDestroy {
   static id = 0;
 
   @Input('swFormControlName') controlName!: string;

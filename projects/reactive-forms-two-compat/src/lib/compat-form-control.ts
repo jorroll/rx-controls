@@ -1,7 +1,10 @@
 import { FormControl as OldFormControl } from '@angular/forms';
-import { FormControl } from '../models';
+
+import { FormControl, isStateChange } from '@service-work/reactive-forms';
+
 import { filter } from 'rxjs/operators';
-import { isEqual, isStateChange } from '../models/util';
+
+import isEqual from 'lodash-es/isEqual';
 
 export class CompatFormControl extends OldFormControl {
   get id() {

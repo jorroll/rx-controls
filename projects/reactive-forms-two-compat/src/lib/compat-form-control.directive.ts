@@ -13,11 +13,16 @@ import {
 } from '@angular/core';
 
 import {
-  FormControl,
+  AbstractControl,
+  ControlContainerAccessor,
   ControlAccessor,
+  FormControl,
   SW_CONTROL_DIRECTIVE,
-  ɵNgControlDirective,
-} from 'reactive-forms-two';
+  SW_CONTROL_ACCESSOR,
+  ɵControlNameDirective as ControlNameDirective,
+  ɵresolveControlContainerAccessor as resolveControlContainerAccessor,
+  IControlValueMapper,
+} from '@service-work/reactive-forms';
 
 import {
   FormControlDirective,
@@ -33,20 +38,23 @@ import { CompatFormControl } from './compat-form-control';
   providers: [
     {
       provide: SW_CONTROL_DIRECTIVE,
-      useExisting: forwardRef(() => SwCompatFormControlDirective),
+      useExisting: forwardRef(() => CompatFormControlDirective),
     },
   ],
 })
-export class SwCompatFormControlDirective
-  extends ɵNgControlDirective<FormControl>
-  implements ControlAccessor, OnChanges, OnDestroy {
+export class CompatFormControlDirective
+  extends ControlNameDirective<FormControl>
+  implements ControlAccessor<FormControl>, OnChanges, OnDestroy {
   static id = 0;
+
   @Input('swFormControl') providedControl!: FormControl;
+  @Input('swFormControlValueMapper')
+  valueMapper: IControlValueMapper | undefined;
 
   protected ngControl = new CompatFormControl(
     new FormControl(undefined, {
       id: Symbol(
-        `SwCompatFormControlDirective-${SwCompatFormControlDirective.id++}`
+        `SwCompatFormControlDirective-${CompatFormControlDirective.id++}`
       ),
     })
   );
@@ -83,19 +91,37 @@ export class SwCompatFormControlDirective
     this.valueAccessor = this.ngDirective.valueAccessor;
   }
 
-  ngOnChanges(changes: { providedControl?: SimpleChange }) {
-    if (!this.providedControl) {
+  ngOnChanges(_: {
+    providedControl?: SimpleChange;
+    valueMapper?: SimpleChange;
+  }) {
+    if (!AbstractControl.isControl(this.providedControl)) {
       throw new Error(
-        `NgCompatFormControlDirective must be passed a FormControl`
+        `SwFormControlDirective must be passed an instance of (sw)FormControl via swFormControl`
       );
     }
 
-    if (!this.valueAccessor) {
-      throw new Error(
-        `NgCompatFormControlDirective could not find valueAccessor`
-      );
-    }
+    this.assertValidValueMapper(
+      'SwFormControlDirective#swFormControlValueMapper',
+      this.valueMapper
+    );
 
-    super.ngOnChanges(changes);
+    super.ngOnChanges(_);
   }
+
+  // ngOnChanges(changes: { providedControl?: SimpleChange }) {
+  //   if (!this.providedControl) {
+  //     throw new Error(
+  //       `NgCompatFormControlDirective must be passed a FormControl`
+  //     );
+  //   }
+
+  //   if (!this.valueAccessor) {
+  //     throw new Error(
+  //       `NgCompatFormControlDirective could not find valueAccessor`
+  //     );
+  //   }
+
+  //   super.ngOnChanges(changes);
+  // }
 }

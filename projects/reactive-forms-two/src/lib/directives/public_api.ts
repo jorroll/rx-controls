@@ -14,3 +14,7 @@ export { FormGroupNameDirective } from './form-group-name.directive';
 export { FormGroupDirective } from './form-group.directive';
 
 export { ReactiveFormsModuleTwo } from './form.module';
+
+export { ControlNameDirective as ɵControlNameDirective } from './control-name.directive';
+export { ControlDirective as ɵControlDirective } from './control.directive';
+export { resolveControlContainerAccessor as ɵresolveControlContainerAccessor } from './util';

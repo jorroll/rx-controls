@@ -32,3 +32,5 @@ export { IFormControlArgs, FormControl } from './form-control';
 export { IFormGroupArgs, FormGroup } from './form-group';
 
 export { IFormArrayArgs, FormArray } from './form-array';
+
+export { isStateChange } from './util';
