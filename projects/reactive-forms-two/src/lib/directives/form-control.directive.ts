@@ -11,7 +11,7 @@ import {
   Input,
 } from '@angular/core';
 import { AbstractControl, FormControl } from '../models';
-import { SW_CONTROL_DIRECTIVE } from './base.directive';
+import { SW_CONTROL_DIRECTIVE } from './interface';
 import { resolveControlAccessor, syncAccessorToControl } from './util';
 import { ControlAccessor, SW_CONTROL_ACCESSOR } from '../accessors/interface';
 import { SwControlDirective } from './control.directive';
@@ -20,7 +20,7 @@ import { concat } from 'rxjs';
 
 @Directive({
   selector: '[swFormControl]:not([formControl])',
-  exportAs: 'ngForm',
+  exportAs: 'swForm',
   providers: [
     {
       provide: SW_CONTROL_DIRECTIVE,
@@ -28,15 +28,15 @@ import { concat } from 'rxjs';
     },
   ],
 })
-export class SwFormControlDirective
-  extends SwControlDirective<AbstractControl>
+export class SwFormControlDirective<T extends AbstractControl = AbstractControl>
+  extends SwControlDirective<T>
   implements ControlAccessor, OnChanges, OnDestroy {
   static id = 0;
-  @Input('swFormControl') providedControl: AbstractControl | undefined;
+  @Input('swFormControl') providedControl: T | undefined;
   @Input('swFormControlValueMapper')
   valueMapper: IControlValueMapper | undefined;
 
-  readonly control: FormControl;
+  readonly control: T;
   // get control() {
   //   return this.accessor.control as FormControl;
   // }
@@ -56,7 +56,7 @@ export class SwFormControlDirective
   ) {
     super(renderer, el);
 
-    this.control = resolveControlAccessor(accessors).control as FormControl;
+    this.control = resolveControlAccessor(accessors).control as T;
 
     // this.subscriptions.push(syncAccessorToControl(this.accessor, this.control));
   }

@@ -12,7 +12,7 @@ import {
 } from '@angular/core';
 import { FormGroup } from '../models';
 import { IControlValueMapper } from './interface';
-import { SW_CONTROL_DIRECTIVE } from './base.directive';
+import { SW_CONTROL_DIRECTIVE } from './interface';
 import {
   ControlAccessor,
   SW_CONTROL_ACCESSOR,

@@ -28,6 +28,7 @@ import {
   ContainerControls,
   IChildControlEvent,
   ControlsKey,
+  PrivateAbstractControlContainer,
   // IChildControlEvent,
 } from './abstract-control-container';
 import {
@@ -53,7 +54,7 @@ export abstract class AbstractControlContainerBase<
     Data = any
   >
   extends AbstractControlBase<ControlsValue<Controls>, Data>
-  implements AbstractControlContainer<Controls, Data> {
+  implements PrivateAbstractControlContainer<Controls, Data> {
   protected _controls!: Controls;
   get controls() {
     return this._controls;

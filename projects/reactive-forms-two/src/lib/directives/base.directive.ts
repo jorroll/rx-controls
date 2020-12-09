@@ -12,13 +12,7 @@ import { ControlAccessor } from '../accessors/interface';
 import { isStateChangeOrChildStateChange, isValueStateChange } from './util';
 import { IControlStateChangeEvent } from '../models/abstract-control/abstract-control';
 import { filter } from 'rxjs/operators';
-import { isStateChange } from '../models/util';
 import { IChildControlStateChangeEvent } from '../models/abstract-control-container/abstract-control-container';
-// import { isValueStateChange } from './util';
-
-export const SW_CONTROL_DIRECTIVE = new InjectionToken<ControlAccessor>(
-  'SW_CONTROL_DIRECTIVE'
-);
 
 export abstract class SwBaseDirective<T extends AbstractControl>
   implements ControlAccessor<T>, OnChanges, OnDestroy {

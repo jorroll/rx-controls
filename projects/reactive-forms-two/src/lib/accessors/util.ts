@@ -1,9 +1,14 @@
 import { filter, map, distinctUntilChanged } from 'rxjs/operators';
 import { isStateChange } from '../models/util';
-import { ControlAccessor, CONTROL_ACCESSOR_SPECIFICITY } from './interface';
+import {
+  ControlAccessor,
+  ControlContainerAccessor,
+  CONTROL_ACCESSOR_SPECIFICITY,
+} from './interface';
 import { ElementRef, Renderer2 } from '@angular/core';
 import { IControlFocusEvent } from '../models/abstract-control/abstract-control';
 import { NEVER } from 'rxjs';
+import { AbstractControlContainer } from '../models';
 
 export function looseIdentical(a: any, b: any): boolean {
   return (
@@ -137,7 +142,15 @@ export function setupStdControlEventHandlers<T extends ControlAccessor>(
 //     });
 // }
 
-export function selectControlAccessor(accessors: readonly ControlAccessor[]) {
+export function selectControlAccessor<T extends ControlAccessor>(
+  accessors: readonly [T, ...T[]]
+): T;
+export function selectControlAccessor<T extends ControlAccessor>(
+  accessors: readonly T[]
+): T | undefined;
+export function selectControlAccessor<T extends ControlAccessor>(
+  accessors: readonly T[]
+): T | undefined {
   if (accessors.length < 2) return accessors[0];
 
   return accessors.reduce((prev, curr) => {
@@ -160,4 +173,20 @@ export function selectControlAccessor(accessors: readonly ControlAccessor[]) {
       ? prev
       : curr;
   });
+}
+
+export function selectControlContainerAccessor<T extends ControlAccessor>(
+  accessors: readonly [T, ...T[]]
+): Extract<T, ControlContainerAccessor>;
+export function selectControlContainerAccessor<T extends ControlAccessor>(
+  accessors: readonly T[]
+): Extract<T, ControlContainerAccessor> | undefined;
+export function selectControlContainerAccessor<T extends ControlAccessor>(
+  accessors: readonly T[]
+): Extract<T, ControlContainerAccessor> | undefined {
+  const containerAccessors = accessors.filter((acc) =>
+    AbstractControlContainer.isControlContainer(acc.control)
+  ) as Array<Extract<T, ControlContainerAccessor>>;
+
+  return selectControlAccessor(containerAccessors);
 }

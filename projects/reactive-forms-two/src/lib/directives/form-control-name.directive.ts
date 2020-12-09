@@ -12,9 +12,9 @@ import {
   forwardRef,
 } from '@angular/core';
 import { concat } from 'rxjs';
-import { FormControl } from '../models';
+import { AbstractControl, FormControl } from '../models';
 import { IControlValueMapper } from './interface';
-import { SW_CONTROL_DIRECTIVE } from './base.directive';
+import { SW_CONTROL_DIRECTIVE } from './interface';
 import {
   ControlAccessor,
   SW_CONTROL_ACCESSOR,
@@ -37,8 +37,10 @@ import { SwControlNameDirective } from './control-name.directive';
     },
   ],
 })
-export class SwFormControlNameDirective
-  extends SwControlNameDirective<FormControl>
+export class SwFormControlNameDirective<
+    T extends AbstractControl = AbstractControl
+  >
+  extends SwControlNameDirective<T>
   implements ControlAccessor, OnChanges, OnDestroy {
   static id = 0;
 
@@ -46,7 +48,7 @@ export class SwFormControlNameDirective
   @Input('swFormControlValueMapper')
   valueMapper: IControlValueMapper | undefined;
 
-  readonly control: FormControl;
+  readonly control: T;
   //  = new FormControl<any>({
   //   id: Symbol(`NgFormControlNameDirective-${SwFormControlNameDirective.id++}`),
   // });
@@ -67,7 +69,7 @@ export class SwFormControlNameDirective
   ) {
     super(renderer, el);
 
-    this.control = resolveControlAccessor(accessors).control as FormControl;
+    this.control = resolveControlAccessor(accessors).control as T;
 
     this.containerAccessor = resolveControlContainerAccessor(parentAccessors);
 
@@ -89,10 +91,10 @@ export class SwFormControlNameDirective
     super.ngOnChanges(_);
   }
 
-  protected validateProvidedControl(control: any): control is FormControl {
-    if (!(control instanceof FormControl)) {
+  protected validateProvidedControl(control: any): control is T {
+    if (!AbstractControl.isControl(control)) {
       throw new Error(
-        'NgFormControlNameDirective must link to an instance of FormControl'
+        'NgFormControlNameDirective must link to an AbstractControl'
       );
     }
 

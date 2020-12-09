@@ -1,6 +1,6 @@
 import { OnDestroy, OnChanges, SimpleChange } from '@angular/core';
 import { AbstractControl } from '../models';
-import { IControlValueMapper, IControlAccessorEvent } from './interface';
+import { IControlValueMapper, IControlAccessorControlEvent } from './interface';
 import { map, filter } from 'rxjs/operators';
 import { SwBaseDirective } from './base.directive';
 import { ControlAccessor } from '../accessors/interface';
@@ -29,7 +29,7 @@ export abstract class SwControlDirective<T extends AbstractControl>
     this.onChangesSubscriptions.forEach((sub) => sub.unsubscribe());
     this.onChangesSubscriptions = [];
 
-    this.control.emitEvent<IControlAccessorEvent>({
+    this.control.emitEvent<IControlAccessorControlEvent>({
       type: 'ControlAccessor',
       label: 'PreInit',
     });
@@ -70,7 +70,7 @@ export abstract class SwControlDirective<T extends AbstractControl>
         .subscribe(this.providedControl.source)
     );
 
-    this.control.emitEvent<IControlAccessorEvent>({
+    this.control.emitEvent<IControlAccessorControlEvent>({
       type: 'ControlAccessor',
       label: 'PostInit',
     });
@@ -79,7 +79,7 @@ export abstract class SwControlDirective<T extends AbstractControl>
   ngOnDestroy() {
     super.ngOnDestroy();
 
-    this.control.emitEvent<IControlAccessorEvent>({
+    this.control.emitEvent<IControlAccessorControlEvent>({
       type: 'ControlAccessor',
       label: 'Cleanup',
     });

@@ -332,6 +332,59 @@ export interface AbstractControlContainer<
   patchValue(value: unknown, options?: IControlEventOptions): void;
 
   setControls(controls: Controls, options?: IControlEventOptions): void;
+  // setControl<N extends ControlsKey<Controls>>(
+  //   name: N,
+  //   control: Controls[N] | null,
+  //   options?: IControlEventOptions
+  // ): void;
+  // addControl<N extends ControlsKey<Controls>>(
+  //   name: N,
+  //   control: Controls[N],
+  //   options?: IControlEventOptions
+  // ): void;
+  // removeControl(
+  //   name: ControlsKey<Controls>,
+  //   options?: IControlEventOptions
+  // ): void;
+
+  setControl(
+    name: unknown,
+    control: unknown,
+    options?: IControlEventOptions
+  ): void;
+  addControl(
+    name: unknown,
+    control: unknown,
+    options?: IControlEventOptions
+  ): void;
+  removeControl(name: unknown, options?: IControlEventOptions): void;
+
+  markChildrenDisabled(value: boolean, options?: IControlEventOptions): void;
+  markChildrenTouched(value: boolean, options?: IControlEventOptions): void;
+  markChildrenDirty(value: boolean, options?: IControlEventOptions): void;
+  markChildrenReadonly(value: boolean, options?: IControlEventOptions): void;
+  markChildrenSubmitted(value: boolean, options?: IControlEventOptions): void;
+  markChildrenPending(value: boolean, options?: IControlEventOptions): void;
+
+  clone(): AbstractControlContainer<Controls, Data>;
+}
+
+/**
+ * This exists because of limitations in typescript. It lets the "real"
+ * AbstractControlContainer interface be less type safe while still
+ * retaining the correct type information in FormArray and FormGroup. If
+ * AbstractControlContainer looked like this (and it should), then
+ * FormArray<AbstractControl[]> could not be assigned to AbstractControlContainer<any>
+ * (and it should be able to be assigned to that).
+ *
+ * I think the issue arrises because Typescript doesn't seem to recognize that
+ * Controls[ControlsKey<Controls>] is an AbstractControl.
+ */
+export interface PrivateAbstractControlContainer<
+  Controls extends GenericControlsObject = any,
+  Data = any
+> extends AbstractControlContainer<Controls, Data> {
+  // setControls(controls: Controls, options?: IControlEventOptions): void;
   setControl<N extends ControlsKey<Controls>>(
     name: N,
     control: Controls[N] | null,
@@ -346,13 +399,4 @@ export interface AbstractControlContainer<
     name: ControlsKey<Controls>,
     options?: IControlEventOptions
   ): void;
-
-  markChildrenDisabled(value: boolean, options?: IControlEventOptions): void;
-  markChildrenTouched(value: boolean, options?: IControlEventOptions): void;
-  markChildrenDirty(value: boolean, options?: IControlEventOptions): void;
-  markChildrenReadonly(value: boolean, options?: IControlEventOptions): void;
-  markChildrenSubmitted(value: boolean, options?: IControlEventOptions): void;
-  markChildrenPending(value: boolean, options?: IControlEventOptions): void;
-
-  clone(): AbstractControlContainer<Controls, Data>;
 }

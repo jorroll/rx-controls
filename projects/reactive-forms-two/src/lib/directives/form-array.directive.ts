@@ -11,7 +11,7 @@ import {
   Input,
 } from '@angular/core';
 import { FormArray } from '../models';
-import { SW_CONTROL_DIRECTIVE } from './base.directive';
+import { SW_CONTROL_DIRECTIVE } from './interface';
 import { resolveControlContainerAccessor, syncAccessorToControl } from './util';
 import {
   ControlContainerAccessor,
@@ -24,7 +24,7 @@ import { concat } from 'rxjs';
 
 @Directive({
   selector: '[swFormArray]',
-  exportAs: 'ngForm',
+  exportAs: 'swForm',
   providers: [
     {
       provide: SW_CONTROL_DIRECTIVE,
@@ -47,13 +47,11 @@ export class SwFormArrayDirective
 
   readonly control: FormArray;
 
-  // readonly accessor: ControlContainerAccessor | null;
-
   constructor(
     @Optional()
     @Self()
     @Inject(SW_CONTROL_ACCESSOR)
-    accessors: ControlAccessor[] | null,
+    accessors: Array<ControlAccessor | ControlContainerAccessor> | null,
     renderer: Renderer2,
     el: ElementRef
   ) {
@@ -64,12 +62,9 @@ export class SwFormArrayDirective
     if (accessor) {
       this.control = accessor.control as FormArray;
     } else {
-      this.control = new FormArray<any>(
-        {},
-        {
-          id: Symbol(`SwFormArrayDirective-${SwFormArrayDirective.id++}`),
-        }
-      );
+      this.control = new FormArray<any>([], {
+        id: Symbol(`SwFormArrayDirective-${SwFormArrayDirective.id++}`),
+      });
     }
   }
 

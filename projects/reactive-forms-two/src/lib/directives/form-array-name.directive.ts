@@ -12,7 +12,7 @@ import {
 } from '@angular/core';
 import { FormArray } from '../models';
 import { IControlValueMapper } from './interface';
-import { SW_CONTROL_DIRECTIVE } from './base.directive';
+import { SW_CONTROL_DIRECTIVE } from './interface';
 import {
   ControlAccessor,
   SW_CONTROL_ACCESSOR,
@@ -22,8 +22,8 @@ import { SwControlNameDirective } from './control-name.directive';
 import { resolveControlContainerAccessor } from './util';
 
 @Directive({
-  selector: '[ngFormArrayName]',
-  exportAs: 'ngForm',
+  selector: '[swFormArrayName]',
+  exportAs: 'swForm',
   providers: [
     {
       provide: SW_CONTROL_DIRECTIVE,
@@ -41,8 +41,8 @@ export class SwFormArrayNameDirective
   implements ControlAccessor, OnChanges, OnDestroy {
   static id = 0;
 
-  @Input('ngFormArrayName') controlName!: string;
-  @Input('ngFormArrayValueMapper')
+  @Input('swFormArrayName') controlName!: string;
+  @Input('swFormArrayValueMapper')
   valueMapper: IControlValueMapper | undefined;
 
   readonly control = new FormArray<any>(

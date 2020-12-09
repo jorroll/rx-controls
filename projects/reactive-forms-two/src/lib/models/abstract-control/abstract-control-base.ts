@@ -103,7 +103,7 @@ export abstract class AbstractControlBase<Value = any, Data = any>
   > = this.source.pipe(
     map((event) => {
       if (AbstractControl.debugCallback) {
-        AbstractControl.debugCallback.bind(this)({
+        AbstractControl.debugCallback.call(this, {
           type: 'INPUT',
           event,
         });
@@ -122,7 +122,7 @@ export abstract class AbstractControlBase<Value = any, Data = any>
       const newEvent = this.processEvent(event);
 
       if (AbstractControl.debugCallback) {
-        AbstractControl.debugCallback.bind(this)({
+        AbstractControl.debugCallback.call(this, {
           type: 'OUTPUT',
           event: newEvent,
         });

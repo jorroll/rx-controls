@@ -19,7 +19,6 @@ import {
   mapControlsToId,
 } from './test-util';
 import runSharedTestSuite from './shared-tests';
-import { AbstractControlContainer } from './abstract-control-container/abstract-control-container';
 import { map, tap } from 'rxjs/operators';
 import { isStateChange } from './util';
 
@@ -32,7 +31,7 @@ runAbstractControlContainerBaseTestSuite('FormGroup', (args = {}) => {
     }
   }
 
-  return c as AbstractControlContainer;
+  return c;
 });
 
 runAbstractControlBaseTestSuite(

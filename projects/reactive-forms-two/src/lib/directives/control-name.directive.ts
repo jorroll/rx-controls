@@ -1,6 +1,6 @@
 import { Input, OnDestroy, OnChanges, SimpleChange } from '@angular/core';
 import { AbstractControl } from '../models';
-import { IControlValueMapper, IControlAccessorEvent } from './interface';
+import { IControlValueMapper, IControlAccessorControlEvent } from './interface';
 import { map, filter } from 'rxjs/operators';
 import { SwBaseDirective } from './base.directive';
 import {
@@ -41,7 +41,7 @@ export abstract class SwControlNameDirective<T extends AbstractControl>
 
         this.validateProvidedControl(providedControl);
 
-        this.control.emitEvent<IControlAccessorEvent>({
+        this.control.emitEvent<IControlAccessorControlEvent>({
           type: 'ControlAccessor',
           label: 'PreInit',
         });
@@ -58,7 +58,7 @@ export abstract class SwControlNameDirective<T extends AbstractControl>
             .subscribe(providedControl.source)
         );
 
-        this.control.emitEvent<IControlAccessorEvent>({
+        this.control.emitEvent<IControlAccessorControlEvent>({
           type: 'ControlAccessor',
           label: 'PostInit',
         });
@@ -102,7 +102,7 @@ export abstract class SwControlNameDirective<T extends AbstractControl>
   protected cleanupInnerSubs() {
     this.innerSubscriptions.forEach((sub) => sub.unsubscribe());
 
-    this.control.emitEvent<IControlAccessorEvent>({
+    this.control.emitEvent<IControlAccessorControlEvent>({
       type: 'ControlAccessor',
       label: 'Cleanup',
     });
