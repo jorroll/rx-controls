@@ -70,7 +70,8 @@ export class RadioInputRegistry {
       this.radioAccessorRegistry.set(radioName, accessors);
     }
 
-    const isNewAccessorSelected = accessor.control.value === accessor.value;
+    const isNewAccessorSelected =
+      accessor.control.value === accessor.radioValue;
     // it doesn't matter which we select since all the existing ones have
     // their value synced
     const existingAccessor = accessors[0];
@@ -180,11 +181,10 @@ export class RadioInputAccessor
    * (which, as a reminder, is not necessarily equal to the
    * value of this accessor's "control")
    */
-  @Input() value: unknown;
+  @Input('value') radioValue: unknown;
 
   private name$ = new BehaviorSubject<string | undefined>(undefined);
   private value$ = new BehaviorSubject<SimpleChange>(null!);
-  private subscriptions: Subscription[] = [];
 
   constructor(
     protected renderer: Renderer2,
@@ -217,7 +217,7 @@ export class RadioInputAccessor
         this.renderer.setProperty(
           this.el.nativeElement,
           'checked',
-          value === this.value
+          value === this.radioValue
         );
       },
     });
@@ -244,7 +244,7 @@ export class RadioInputAccessor
 
   select() {
     this.control.markDirty(true);
-    this.control.setValue(this.value);
+    this.control.setValue(this.radioValue);
   }
 
   protected onChange() {

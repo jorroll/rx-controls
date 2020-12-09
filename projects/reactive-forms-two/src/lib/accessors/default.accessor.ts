@@ -49,8 +49,6 @@ export abstract class DefaultAccessor
   implements ControlAccessor<FormControl<string>>, OnInit, OnDestroy {
   readonly control = new FormControl();
 
-  private subscriptions: Subscription[] = [];
-
   constructor(
     protected renderer: Renderer2,
     protected el: ElementRef,

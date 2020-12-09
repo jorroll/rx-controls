@@ -1,11 +1,3 @@
-/**
- * @license
- * Copyright Google LLC All Rights Reserved.
- *
- * Use of this source code is governed by an MIT-style license that can be
- * found in the LICENSE file at https://angular.io/license
- */
-
 import {
   Attribute,
   Directive,
@@ -68,8 +60,6 @@ export class CheckboxInputAccessor
   [CONTROL_ACCESSOR_SPECIFICITY] = '0.2.1';
 
   readonly control = new FormControl<boolean>();
-
-  private subscriptions: Subscription[] = [];
 
   constructor(
     protected renderer: Renderer2,

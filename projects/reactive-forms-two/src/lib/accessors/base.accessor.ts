@@ -1,4 +1,5 @@
 import { Directive, forwardRef, InjectFlags, Injector } from '@angular/core';
+import { Subscription } from 'rxjs';
 import { CONTROL_ACCESSOR_SPECIFICITY, SW_CONTROL_ACCESSOR } from './interface';
 
 @Directive({ selector: 'BaseAccessor' })
@@ -6,6 +7,8 @@ export abstract class BaseAccessor {
   abstract [CONTROL_ACCESSOR_SPECIFICITY]: string;
 
   deactivated!: boolean;
+
+  protected subscriptions: Subscription[] = [];
 
   constructor(protected injector: Injector) {}
 

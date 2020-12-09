@@ -76,8 +76,6 @@ export abstract class SelectAccessor
   protected optionMap = new Map<string, SwSelectOption>();
   protected optionIdCounter = 0;
 
-  private subscriptions: Subscription[] = [];
-
   constructor(
     protected renderer: Renderer2,
     protected el: ElementRef,

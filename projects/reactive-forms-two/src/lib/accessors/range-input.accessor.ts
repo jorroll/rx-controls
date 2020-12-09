@@ -60,8 +60,6 @@ export class RangeInputAccessor
 
   readonly control = new FormControl<number | null>();
 
-  private subscriptions: Subscription[] = [];
-
   constructor(
     protected renderer: Renderer2,
     protected el: ElementRef,
