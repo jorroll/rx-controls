@@ -15,10 +15,21 @@
     "importHelpers": true,
     "target": "es2015",
     "module": "es2020",
-    "lib": ["esnext", "dom"],
-    "types": ["jest"],
+    "lib": [
+      "esnext",
+      "dom"
+    ],
+    "types": [
+      "jest"
+    ],
     "paths": {
-      "reactive-forms-two": ["libs/reactive-forms-two/src/public-api"]
+      "reactive-forms-two": [
+        "libs/reactive-forms-two/src/public-api"
+      ],
+      "reactive-forms-two-compat": [
+        "dist/reactive-forms-two-compat/reactive-forms-two-compat",
+        "dist/reactive-forms-two-compat"
+      ]
     }
   },
   "angularCompilerOptions": {
@@ -26,5 +37,7 @@
     "strictInputAccessModifiers": true,
     "strictTemplates": true
   },
-  "exclude": ["./tmp/**"]
+  "exclude": [
+    "./tmp/**"
+  ]
 }

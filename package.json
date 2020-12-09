@@ -1,6 +1,12 @@
 {
   "name": "reactive-forms-two-repo",
   "version": "0.0.0",
+  "private": true,
+  "workspaces": {
+    "packages": [
+      "projects/*"
+    ]
+  },
   "scripts": {
     "ng": "ng",
     "start": "ng serve",
@@ -8,7 +14,6 @@
     "test": "ng test",
     "lint": "ng lint"
   },
-  "private": true,
   "dependencies": {
     "@angular/animations": "~10.1.6",
     "@angular/common": "~10.1.6",
