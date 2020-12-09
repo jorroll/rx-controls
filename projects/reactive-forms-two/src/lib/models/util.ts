@@ -14,6 +14,24 @@ export type Mutable<T> = {
   -readonly [P in keyof T]: T[P] extends ReadonlyArray<infer U> ? U[] : T[P];
 };
 
+// type PickUndefinedKeys<T> = {
+//   [K in keyof T]: undefined extends T[K] ? K : never;
+// }[keyof T];
+
+// type PickRequiredKeys<T> = {
+//   [K in keyof T]: undefined extends T[K] ? never : K;
+// }[keyof T];
+
+// type SelectOptional<T extends {}> = Pick<
+//   T,
+//   Exclude<PickUndefinedKeys<T>, undefined>
+// >;
+
+// type SelectRequired<T extends {}> = Pick<
+//   T,
+//   Exclude<PickRequiredKeys<T>, undefined>
+// >;
+
 // export function cloneJSON<T>(item: T): T {
 //   return JSON.parse(JSON.stringify(item));
 // }

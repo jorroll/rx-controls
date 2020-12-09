@@ -10,8 +10,16 @@ import {
   IControlStateChange,
   IControlValidationEvent,
   IControlEventArgs,
+  IControlFocusEvent,
 } from './abstract-control';
-import { defer, from, Observable, Subscriber, Subscription } from 'rxjs';
+import {
+  defer,
+  from,
+  Observable,
+  queueScheduler,
+  Subscriber,
+  Subscription,
+} from 'rxjs';
 import {
   pluckOptions,
   isTruthy,
@@ -64,25 +72,23 @@ function composeValidators(
   return validators;
 }
 
-function replacer(key: string, value: unknown) {
-  if (
-    value instanceof Subscriber ||
-    value instanceof Subscription ||
-    value instanceof Observable
-  ) {
-    return value.constructor.name;
-  } else if (key === '_parent' && AbstractControl.isControl(value)) {
-    return value.constructor.name;
-  } else if (typeof value === 'symbol') {
-    return value.toString();
-  } else if (typeof value === 'function') {
-    return value.toString();
-  }
+// function replacer(key: string, value: unknown) {
+//   if (
+//     value instanceof Subscriber ||
+//     value instanceof Subscription ||
+//     value instanceof Observable
+//   ) {
+//     return value.constructor.name;
+//   } else if (key === '_parent' && AbstractControl.isControl(value)) {
+//     return value.constructor.name;
+//   } else if (typeof value === 'symbol') {
+//     return value.toString();
+//   } else if (typeof value === 'function') {
+//     return value.toString();
+//   }
 
-  return value;
-}
-
-let errorEventLog: IControlEvent[] = [];
+//   return value;
+// }
 
 export abstract class AbstractControlBase<Value = any, Data = any>
   implements AbstractControl<Value, Data> {
@@ -90,41 +96,39 @@ export abstract class AbstractControlBase<Value = any, Data = any>
 
   data!: Data;
 
-  source = new ControlSource<
-    IControlEvent | (IControlEvent & { [key: string]: unknown })
-  >();
+  source = new ControlSource();
 
   events: Observable<
     IControlEvent | (IControlEvent & { [key: string]: unknown })
   > = this.source.pipe(
     map((event) => {
+      if (AbstractControl.debugCallback) {
+        AbstractControl.debugCallback.bind(this)({
+          type: 'INPUT',
+          event,
+        });
+      }
+
       // Here we provide the user with an error message in case of an
       // infinite loop
-      if (event.eventId - event.idOfOriginatingEvent > 90) {
-        errorEventLog.push(event);
-
-        if (event.eventId - event.idOfOriginatingEvent > 100) {
-          const message =
-            `AbstractControl "${this.id.toString()}" appears to be caught ` +
-            `in an infinite event loop. Most recent 10 events: ` +
-            JSON.stringify(errorEventLog, replacer, 4);
-
-          errorEventLog = [];
-
-          throw new Error(message);
-        }
+      if (event.eventId - event.idOfOriginatingEvent > 500) {
+        throw new Error(
+          `AbstractControl "${this.id.toString()}" appears to be caught ` +
+            `in an infinite event loop. You can register a debugCallback ` +
+            `with AbstractControl.debugCallback to help diagnose the issue.`
+        );
       }
 
-      if (Number.isInteger(event.delay)) {
-        if (event.delay! > 0) {
-          this.emitEvent({ ...event, delay: event.delay! - 1 });
-          return null;
-        }
+      const newEvent = this.processEvent(event);
 
-        delete event.delay;
+      if (AbstractControl.debugCallback) {
+        AbstractControl.debugCallback.bind(this)({
+          type: 'OUTPUT',
+          event: newEvent,
+        });
       }
 
-      return this.processEvent(event);
+      return newEvent;
     }),
     filter(isTruthy),
     share()
@@ -189,16 +193,10 @@ export abstract class AbstractControlBase<Value = any, Data = any>
     return this._validatorStore;
   }
 
-  protected _registeredValidators: ReadonlySet<ControlId> = new Set<
-    ControlId
-  >();
+  protected _registeredValidators: ReadonlySet<ControlId> = new Set<ControlId>();
   protected _runningValidation: ReadonlySet<ControlId> = new Set<ControlId>();
-  protected _registeredAsyncValidators: ReadonlySet<ControlId> = new Set<
-    ControlId
-  >();
-  protected _runningAsyncValidation: ReadonlySet<ControlId> = new Set<
-    ControlId
-  >();
+  protected _registeredAsyncValidators: ReadonlySet<ControlId> = new Set<ControlId>();
+  protected _runningAsyncValidation: ReadonlySet<ControlId> = new Set<ControlId>();
 
   protected _pending = false;
   get pending() {
@@ -981,6 +979,10 @@ export abstract class AbstractControlBase<Value = any, Data = any>
     return this;
   }
 
+  focus(focus = true, options?: Omit<IControlEventOptions, 'noEmit'>) {
+    this.emitEvent<IControlFocusEvent>({ type: 'Focus', focus }, options);
+  }
+
   replayState(
     options: Omit<IControlEventOptions, 'idOfOriginatingEvent'> = {}
   ): Observable<IControlStateChangeEvent<Value, Data>> {
@@ -1019,7 +1021,7 @@ export abstract class AbstractControlBase<Value = any, Data = any>
         source: this.id,
         meta: {},
         ...pluckOptions(options),
-        eventId: eventId = AbstractControl.eventId(),
+        eventId: (eventId = AbstractControl.eventId()),
         idOfOriginatingEvent: eventId,
         type: 'StateChange',
         change,
@@ -1050,7 +1052,7 @@ export abstract class AbstractControlBase<Value = any, Data = any>
         type: string;
       },
     options?: IControlEventOptions
-  ): void {
+  ): number {
     const normEvent = {
       ...pluckOptions(options),
       ...event,
@@ -1064,6 +1066,8 @@ export abstract class AbstractControlBase<Value = any, Data = any>
     }
 
     this.source.next(normEvent as IControlEvent);
+
+    return normEvent.eventId;
   }
 
   protected runValidation(_options?: IControlEventOptions): string[] {
@@ -1149,7 +1153,8 @@ export abstract class AbstractControlBase<Value = any, Data = any>
       }
       case 'ValidationStart':
       case 'AsyncValidationStart':
-      case 'ValidationComplete': {
+      case 'ValidationComplete':
+      case 'Focus': {
         if (event.source !== this.id) return null;
         return event;
       }
@@ -1230,13 +1235,20 @@ export abstract class AbstractControlBase<Value = any, Data = any>
   }
 
   protected processStateChange_Value(
-    event: IControlStateChangeEvent<Value, Data>
+    event: IControlStateChangeEvent<Value, Data> & {
+      controlContainerValueChangeFn?: () => void;
+    }
   ): IControlStateChangeEvent<Value, Data> | null {
     const change = event.change.value as NonNullable<
       IControlStateChange<Value, Data>['value']
     >;
 
     const newValue = change(this._value);
+
+    if (event.controlContainerValueChangeFn) {
+      queueScheduler.schedule(event.controlContainerValueChangeFn);
+      delete event.controlContainerValueChangeFn;
+    }
 
     if (isEqual(this._value, newValue)) return null;
 

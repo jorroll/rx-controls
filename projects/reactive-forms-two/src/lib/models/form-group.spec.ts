@@ -1,6 +1,8 @@
 import { Subject } from 'rxjs';
 import {
   AbstractControl,
+  IControlEvent,
+  IControlStateChangeEvent,
   ValidationErrors,
 } from './abstract-control/abstract-control';
 import runAbstractControlBaseTestSuite from './abstract-control/abstract-control-base-tests';
@@ -13,9 +15,13 @@ import {
   getControlEventsUntilEnd,
   toControlMatcherEntries,
   testAllAbstractControlDefaultsExcept,
+  subscribeToControlEventsUntilEnd,
+  mapControlsToId,
 } from './test-util';
 import runSharedTestSuite from './shared-tests';
 import { AbstractControlContainer } from './abstract-control-container/abstract-control-container';
+import { map, tap } from 'rxjs/operators';
+import { isStateChange } from './util';
 
 runAbstractControlContainerBaseTestSuite('FormGroup', (args = {}) => {
   const c = new FormGroup<{ [key: string]: AbstractControl }>({}, args.options);
@@ -843,16 +849,22 @@ describe('FormGroup', () => {
       });
     });
 
-    it(`a to b`, () => {
-      expect(a.value).toEqual({ one: 'one', two: 2 });
-      expect(b.value).toEqual({});
-      expect(c.value).toEqual({ three: ['one'], four: { one: 'one', two: 2 } });
+    it('setup', () => {
+      expect(a).toImplementObject({ value: { one: 'one', two: 2 } });
+      expect(b).toImplementObject({ value: {} });
+      expect(c).toImplementObject({
+        value: { three: ['one'], four: { one: 'one', two: 2 } },
+      });
+    });
 
+    it(`a to b`, () => {
       a.replayState().subscribe(b.source);
 
-      expect(b.value).toEqual(a.value);
+      expect(b).toEqualControl(a, {
+        skip: ['parent'],
+      });
 
-      a.events.subscribe(b.source);
+      const [end] = subscribeToControlEventsUntilEnd(a, b);
 
       const newValue = {
         one: 'two',
@@ -860,16 +872,22 @@ describe('FormGroup', () => {
       };
 
       a.setValue(newValue);
-      expect(a.value).toEqual(newValue);
-      expect(b.value).toEqual(newValue);
+
+      expect(b).toEqualControl(a, {
+        skip: ['parent'],
+      });
+
       expect(c.value).toEqual({ three: ['one'], four: newValue });
+
+      end.next();
+      end.complete();
     });
 
     it(`a & b`, async () => {
       a.replayState().subscribe(b.source);
 
-      a.events.subscribe(b.source);
-      b.events.subscribe(a.source);
+      const [end] = subscribeToControlEventsUntilEnd(a, b);
+      subscribeToControlEventsUntilEnd(b, a, end);
 
       const value1 = {
         one: 'two',
@@ -878,8 +896,10 @@ describe('FormGroup', () => {
 
       a.setValue(value1);
 
-      expect(a.value).toEqual(value1);
-      expect(b.value).toEqual(value1);
+      expect(b).toEqualControl(a, {
+        skip: ['parent'],
+      });
+
       expect(c.value).toEqual({ three: ['one'], four: value1 });
 
       const value2 = {
@@ -889,9 +909,259 @@ describe('FormGroup', () => {
 
       b.setValue(value2);
 
-      expect(b.value).toEqual(value2);
-      expect(a.value).toEqual(value2);
+      expect(a).toEqualControl(b, {
+        skip: ['parent'],
+      });
+
       expect(c.value).toEqual({ three: ['one'], four: value2 });
+
+      end.next();
+      end.complete();
+    });
+
+    it('c to b', () => {
+      c.replayState().subscribe(b.source);
+
+      expect(b).toEqualControl(c, {
+        skip: ['parent'],
+      });
+
+      const [end] = subscribeToControlEventsUntilEnd(c, b);
+
+      const newValue = {
+        three: ['two'],
+        four: {
+          one: 'three',
+          two: 4,
+        },
+      };
+
+      c.setValue(newValue);
+
+      expect(b).toEqualControl(c, {
+        skip: ['parent'],
+      });
+
+      expect(a.value).toEqual(newValue.four);
+
+      end.next();
+      end.complete();
+    });
+
+    describe('c & b', () => {
+      it(`setValue on parent`, async () => {
+        c.replayState().subscribe(b.source);
+
+        const [end] = subscribeToControlEventsUntilEnd(c, b);
+        subscribeToControlEventsUntilEnd(b, c, end);
+
+        const value1 = {
+          three: ['two'],
+          four: {
+            one: 'three',
+            two: 4,
+          },
+        };
+
+        c.setValue(value1);
+
+        expect(b).toEqualControl(c, {
+          skip: ['parent'],
+        });
+
+        expect(a.value).toEqual(value1.four);
+
+        const value2 = {
+          three: ['three'],
+          four: {
+            one: 'one',
+            two: 5,
+          },
+        };
+
+        b.setValue(value2);
+
+        expect(c).toEqualControl(b, {
+          skip: ['parent'],
+        });
+
+        expect(a.value).toEqual(value2.four);
+
+        end.next();
+        end.complete();
+      });
+
+      it(`setValue on child`, async () => {
+        c.replayState().subscribe(b.source);
+
+        const [end] = subscribeToControlEventsUntilEnd(c, b);
+        subscribeToControlEventsUntilEnd(b, c, end);
+
+        const child = b.get('four', 'one')!;
+
+        child.setValue('threvinty');
+
+        expect(child.value).toEqual('threvinty');
+        expect(b.value).toEqual({
+          three: ['one'],
+          four: {
+            one: 'threvinty',
+            two: 2,
+          },
+        });
+
+        expect(c).toEqualControl(b, {
+          skip: ['parent'],
+        });
+
+        const child2 = c.get('four', 'two')!;
+
+        child2.setValue(3);
+
+        expect(child2.value).toEqual(3);
+        expect(c.value).toEqual({
+          three: ['one'],
+          four: {
+            one: 'threvinty',
+            two: 3,
+          },
+        });
+
+        expect(b).toEqualControl(c, {
+          skip: ['parent'],
+        });
+
+        end.next();
+        end.complete();
+      });
+
+      it('with value transform', () => {
+        c.replayState().subscribe(b.source);
+
+        c.events
+          .pipe(
+            map((e) => {
+              if (!isStateChange(e)) return e;
+              if (!e.change.value) return e;
+
+              const newValue = {
+                ...c.value,
+                four: {
+                  ...c.value.four,
+                  one: c.value.four.one.toUpperCase(),
+                },
+              };
+
+              return { ...e, change: { value: () => newValue } };
+            })
+          )
+          .subscribe(b.source);
+
+        b.events
+          .pipe(
+            map((e) => {
+              if (!isStateChange(e)) return e;
+              if (!e.change.value) return e;
+
+              const newValue = {
+                ...b.value,
+                four: {
+                  ...b.value.four,
+                  one: b.value.four.one.toLowerCase(),
+                },
+              };
+
+              return { ...e, change: { value: () => newValue } };
+            })
+          )
+          .subscribe(c.source);
+
+        const child = c.get('four', 'one')!;
+        const child2 = b.get('four', 'one')!;
+
+        child.setValue('threVINTY');
+
+        expect(child.value).toEqual('threvinty');
+        expect(child2.value).toEqual('THREVINTY');
+
+        expect(b.value).toEqual({
+          three: ['one'],
+          four: {
+            one: 'THREVINTY',
+            two: 2,
+          },
+        });
+
+        expect(b.enabledValue).toEqual({
+          three: ['one'],
+          four: {
+            one: 'THREVINTY',
+            two: 2,
+          },
+        });
+
+        expect(c.value).toEqual({
+          three: ['one'],
+          four: {
+            one: 'threvinty',
+            two: 2,
+          },
+        });
+
+        expect(c.enabledValue).toEqual({
+          three: ['one'],
+          four: {
+            one: 'threvinty',
+            two: 2,
+          },
+        });
+
+        expect(c).toEqualControl(b, {
+          skip: ['parent', '_value', 'value', '_enabledValue', 'enabledValue'],
+        });
+
+        const child3 = b.get('four', 'two')!;
+
+        child3.setValue(3);
+
+        expect(child3.value).toEqual(3);
+
+        expect(b.value).toEqual({
+          three: ['one'],
+          four: {
+            one: 'THREVINTY',
+            two: 3,
+          },
+        });
+
+        expect(b.enabledValue).toEqual({
+          three: ['one'],
+          four: {
+            one: 'THREVINTY',
+            two: 3,
+          },
+        });
+
+        expect(c.value).toEqual({
+          three: ['one'],
+          four: {
+            one: 'threvinty',
+            two: 3,
+          },
+        });
+
+        expect(c.enabledValue).toEqual({
+          three: ['one'],
+          four: {
+            one: 'threvinty',
+            two: 3,
+          },
+        });
+
+        expect(b).toEqualControl(c, {
+          skip: ['parent', '_value', 'value', '_enabledValue', 'enabledValue'],
+        });
+      });
     });
   });
 });

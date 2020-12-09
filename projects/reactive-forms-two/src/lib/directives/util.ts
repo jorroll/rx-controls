@@ -1,60 +1,26 @@
 import { concat } from 'rxjs';
+import { DefaultAccessor } from '../accessors/default.accessor';
 import {
   ControlAccessor,
-  DefaultValueAccessor,
   ControlContainerAccessor,
-} from '../accessors';
+} from '../accessors/interface';
+import { selectControlAccessor } from '../accessors/util';
 import { AbstractControlContainer, IControlEvent } from '../models';
+import { IChildControlStateChangeEvent } from '../models/abstract-control-container/abstract-control-container';
 import {
   AbstractControl,
   IStateChange,
   IControlStateChangeEvent,
 } from '../models/abstract-control/abstract-control';
 
-const STD_ACCESSORS: ControlAccessor[] = [];
-
 export function resolveControlAccessor(accessors: ControlAccessor[]) {
-  if (accessors.length > 3) {
-    throw new Error(
-      'Too many accessors found. Can only resolve a single custom accessor'
-    );
-  } else if (accessors.length === 3) {
-    const customAccessor = accessors.find(
-      (acc) =>
-        !STD_ACCESSORS.includes(acc) && !(acc instanceof DefaultValueAccessor)
-    );
+  const accessor = selectControlAccessor(accessors);
 
-    if (!customAccessor) {
-      throw new Error(
-        'Error resolving accessor. Expected to find custom accessor'
-      );
-    }
-
-    return customAccessor;
-  } else if (accessors.length === 2) {
-    const customAccessor = accessors.find(
-      (acc) =>
-        !STD_ACCESSORS.includes(acc) && !(acc instanceof DefaultValueAccessor)
-    );
-
-    if (customAccessor) {
-      return customAccessor;
-    }
-
-    const stdAccessor = accessors.find((acc) => STD_ACCESSORS.includes(acc));
-
-    if (!stdAccessor) {
-      throw new Error(
-        'Error resolving accessor. Expected to find std accessor'
-      );
-    }
-
-    return stdAccessor;
-  } else if (accessors.length === 1) {
-    return accessors[0];
-  } else {
+  if (!accessor) {
     throw new Error('Could not find control accessor');
   }
+
+  return accessor;
 }
 
 export function resolveControlContainerAccessor(
@@ -78,9 +44,13 @@ export function resolveControlContainerAccessor(
   }
 }
 
-// export function isStateChange(event: IControlEventArgs): event is StateChange {
-//   return event.type === 'StateChange';
-// }
+export function isStateChangeOrChildStateChange(
+  event: IControlEvent
+): event is
+  | IControlStateChangeEvent<any, any>
+  | IChildControlStateChangeEvent<any, any> {
+  return event.type === 'StateChange' || event.type === 'ChildStateChange';
+}
 
 export function isValueStateChange<T = unknown>(
   event: IControlEvent

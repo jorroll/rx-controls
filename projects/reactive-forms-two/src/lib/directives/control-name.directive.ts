@@ -3,7 +3,10 @@ import { AbstractControl } from '../models';
 import { IControlValueMapper, IControlAccessorEvent } from './interface';
 import { map, filter } from 'rxjs/operators';
 import { SwBaseDirective } from './base.directive';
-import { ControlAccessor, ControlContainerAccessor } from '../accessors';
+import {
+  ControlAccessor,
+  ControlContainerAccessor,
+} from '../accessors/interface';
 import { concat, Subscription } from 'rxjs';
 
 export abstract class SwControlNameDirective<T extends AbstractControl>
@@ -45,13 +48,13 @@ export abstract class SwControlNameDirective<T extends AbstractControl>
 
         this.innerSubscriptions.push(
           concat(providedControl.replayState(), providedControl.events)
-            .pipe(map(this.toAccessorValueMapFn()))
+            .pipe(map(this.toAccessorEventMapFn()))
             .subscribe(this.control.source)
         );
 
         this.innerSubscriptions.push(
           this.control.events
-            .pipe(map(this.fromAccessorValueMapFn()))
+            .pipe(map(this.fromAccessorEventMapFn()))
             .subscribe(providedControl.source)
         );
 

@@ -10,10 +10,10 @@ import {
   forwardRef,
   Input,
 } from '@angular/core';
-import { FormControl } from '../models';
+import { AbstractControl, FormControl } from '../models';
 import { SW_CONTROL_DIRECTIVE } from './base.directive';
 import { resolveControlAccessor, syncAccessorToControl } from './util';
-import { ControlAccessor, SW_CONTROL_ACCESSOR } from '../accessors';
+import { ControlAccessor, SW_CONTROL_ACCESSOR } from '../accessors/interface';
 import { SwControlDirective } from './control.directive';
 import { IControlValueMapper } from './interface';
 import { concat } from 'rxjs';
@@ -29,18 +29,23 @@ import { concat } from 'rxjs';
   ],
 })
 export class SwFormControlDirective
-  extends SwControlDirective<FormControl>
+  extends SwControlDirective<AbstractControl>
   implements ControlAccessor, OnChanges, OnDestroy {
   static id = 0;
-  @Input('swFormControl') providedControl!: FormControl;
+  @Input('swFormControl') providedControl: AbstractControl | undefined;
   @Input('swFormControlValueMapper')
   valueMapper: IControlValueMapper | undefined;
 
-  readonly control = new FormControl<any>(null, {
-    id: Symbol(`SwFormControlDirective-${SwFormControlDirective.id++}`),
-  });
+  readonly control: FormControl;
+  // get control() {
+  //   return this.accessor.control as FormControl;
+  // }
 
-  readonly accessor: ControlAccessor;
+  // readonly control = new FormControl<any>(null, {
+  //   id: Symbol(`SwFormControlDirective-${SwFormControlDirective.id++}`),
+  // });
+
+  // readonly accessor: ControlAccessor;
 
   constructor(
     @Self()
@@ -51,17 +56,28 @@ export class SwFormControlDirective
   ) {
     super(renderer, el);
 
-    this.accessor = resolveControlAccessor(accessors);
+    this.control = resolveControlAccessor(accessors).control as FormControl;
 
-    this.subscriptions.push(syncAccessorToControl(this.accessor, this.control));
+    // this.subscriptions.push(syncAccessorToControl(this.accessor, this.control));
   }
 
   ngOnChanges(_: {
     providedControl?: SimpleChange;
     valueMapper?: SimpleChange;
   }) {
-    if (!this.providedControl) {
-      throw new Error(`SwFormControlDirective must be passed a swFormControl`);
+    // Here, we allow doing <input swFormControl> which simply applies
+    // the appropriate css to the host element and doesn't link a providedControl.
+    // We do *not* allow actively setting <input [swFormControl]="null">
+    // or <input [swFormControl]="undefined">
+    if ((this.providedControl as unknown) === '') {
+      this.providedControl = undefined;
+      return;
+    }
+
+    if (!AbstractControl.isControl(this.providedControl)) {
+      throw new Error(
+        `SwFormControlDirective must be passed an AbstractControl via swFormControl`
+      );
     }
 
     this.assertValidValueMapper(

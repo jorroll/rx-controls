@@ -25,12 +25,16 @@ runAbstractControlContainerBaseTestSuite('FormArray', (args = {}) => {
 
 runAbstractControlBaseTestSuite(
   'FormArray',
-  (args) => new FormArray([], args?.options)
+  (args) => new FormArray<any[]>([], args?.options)
 );
 
-runSharedTestSuite('FormArray', (args) => new FormArray([], args?.options), {
-  controlContainer: true,
-});
+runSharedTestSuite(
+  'FormArray',
+  (args) => new FormArray<any[]>([], args?.options),
+  {
+    controlContainer: true,
+  }
+);
 
 function testAllDefaultsExcept(
   c: FormArray<any>,

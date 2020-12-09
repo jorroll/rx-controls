@@ -5,6 +5,7 @@ import {
 } from './abstract-control-container/abstract-control-container-base';
 import {
   AbstractControlContainer,
+  ContainerControls,
   ControlsEnabledValue,
   ControlsValue,
   IControlContainerStateChange,
@@ -15,7 +16,7 @@ import { Mutable, isEqual } from './util';
 export type IFormGroupArgs<D> = IAbstractControlContainerBaseArgs<D>;
 
 export class FormGroup<
-  Controls extends { [key: string]: AbstractControl } = {
+  Controls extends { [key: string]: AbstractControl | undefined } = {
     [key: string]: AbstractControl;
   },
   Data = any
@@ -68,11 +69,13 @@ export class FormGroup<
     }
 
     // controls that need to be added
-    for (const [key, control] of controlsStore) {
+    for (const [key, _control] of controlsStore) {
+      const control = _control as AbstractControl;
+
       if (this._controlsStore.get(key) === control) continue;
       // This is needed because the call to "registerControl" can clone
       // the provided control (returning a new one);
-      controls[key] = this.registerControl(key, control);
+      controls[key] = this.registerControl(key, _control);
       newValue[key] = control.value;
 
       if (control.enabled) {

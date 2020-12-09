@@ -1,7 +1,7 @@
 import { Component, forwardRef } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { FormControl, FormGroup } from '../models';
-import { ReactiveFormsModule2 } from './form.module';
+import { ReactiveFormsModuleTwo } from './form.module';
 import {
   SW_CONTROL_ACCESSOR,
   // SW_CONTROL_CONTAINER_ACCESSOR,
@@ -11,53 +11,6 @@ import { render, screen, fireEvent } from '@testing-library/angular';
 import userEvent from '@testing-library/user-event';
 import { IControlValueMapper } from './interface';
 import { wait } from '../models/test-util';
-
-@Component({
-  selector: 'my-test-component',
-  template: `
-    <input [swFormControl]="control" [swFormControlValueMapper]="valueMapper" />
-  `,
-})
-export class SimpleValueMapperTestComponent {
-  readonly control = new FormControl<Date | null>(new Date(2020, 0, 1));
-
-  readonly valueMapper: IControlValueMapper<Date | null, string> = {
-    to: (value) => value?.toISOString() ?? '',
-    from: (value) => (value ? new Date(Date.parse(value)) : null),
-  };
-}
-
-describe('SimpleValueMapperTestComponent', () => {
-  let container: HTMLElement;
-  let fixture: ComponentFixture<SimpleValueMapperTestComponent>;
-  let component: SimpleValueMapperTestComponent;
-
-  beforeEach(async () => {
-    ({ container, fixture } = await render(SimpleValueMapperTestComponent, {
-      imports: [ReactiveFormsModule2],
-    }));
-
-    component = fixture.componentInstance;
-  });
-
-  it('initializes', () => {
-    const input = container.querySelector('input')!;
-
-    expect(input.value).toEqual(component.control.value!.toISOString());
-  });
-
-  it('updates', () => {
-    const input = container.querySelector('input')!;
-
-    const newDate = new Date(2021, 1, 1);
-
-    userEvent.clear(input);
-    userEvent.paste(input, newDate.toISOString());
-
-    expect(component.control.value).toEqual(newDate);
-    expect(input.value).toEqual(newDate.toISOString());
-  });
-});
 
 @Component({
   selector: 'my-test-component',
@@ -136,7 +89,7 @@ describe('ComplexValueMapperTestComponent', () => {
 
   beforeEach(async () => {
     ({ container, fixture } = await render(ComplexValueMapperTestComponent, {
-      imports: [ReactiveFormsModule2],
+      imports: [ReactiveFormsModuleTwo],
     }));
 
     component = fixture.componentInstance;

@@ -19,7 +19,7 @@ import {
   ControlAccessor,
   SW_CONTROL_ACCESSOR,
   ControlContainerAccessor,
-} from '../accessors';
+} from '../accessors/interface';
 import {
   resolveControlAccessor,
   resolveControlContainerAccessor,
@@ -46,11 +46,12 @@ export class SwFormControlNameDirective
   @Input('swFormControlValueMapper')
   valueMapper: IControlValueMapper | undefined;
 
-  readonly control = new FormControl<any>({
-    id: Symbol(`NgFormControlNameDirective-${SwFormControlNameDirective.id++}`),
-  });
+  readonly control: FormControl;
+  //  = new FormControl<any>({
+  //   id: Symbol(`NgFormControlNameDirective-${SwFormControlNameDirective.id++}`),
+  // });
 
-  readonly accessor: ControlAccessor;
+  // readonly accessor: ControlAccessor;
 
   protected containerAccessor: ControlContainerAccessor;
 
@@ -66,11 +67,11 @@ export class SwFormControlNameDirective
   ) {
     super(renderer, el);
 
-    this.accessor = resolveControlAccessor(accessors);
+    this.control = resolveControlAccessor(accessors).control as FormControl;
 
     this.containerAccessor = resolveControlContainerAccessor(parentAccessors);
 
-    this.subscriptions.push(syncAccessorToControl(this.accessor, this.control));
+    // this.subscriptions.push(syncAccessorToControl(this.accessor, this.control));
   }
 
   ngOnChanges(_: { controlName?: SimpleChange; valueMapper?: SimpleChange }) {

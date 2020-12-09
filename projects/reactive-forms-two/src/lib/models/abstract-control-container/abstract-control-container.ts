@@ -7,16 +7,73 @@ import {
   IControlStateChange,
   IControlStateChangeEvent,
 } from '../abstract-control/abstract-control';
+import { FormControl } from '../form-control';
 
-export type ContainerControls<C> = C extends AbstractControlContainer<
-  infer Controls
->
-  ? Controls
-  : unknown;
+// UTILITY TYPES
+
+type PickUndefinedKeys<T> = {
+  [K in keyof T]: undefined extends T[K] ? K : never;
+}[keyof T];
+
+type PickRequiredKeys<T> = {
+  [K in keyof T]: undefined extends T[K] ? never : K;
+}[keyof T];
+
+type ObjectControlsOptionalValue<
+  T extends { [key: string]: AbstractControl | undefined }
+> = {
+  [P in Exclude<PickUndefinedKeys<T>, undefined>]?: NonNullable<T[P]>['value'];
+};
+
+type ObjectControlsRequiredValue<
+  T extends { [key: string]: AbstractControl | undefined }
+> = {
+  [P in Exclude<PickRequiredKeys<T>, undefined>]: NonNullable<T[P]>['value'];
+};
+
+type ArrayControlsValue<
+  T extends ReadonlyArray<AbstractControl>
+> = T extends ReadonlyArray<infer C>
+  ? C extends AbstractControl
+    ? C['value']
+    : never
+  : never;
+
+type ObjectControlsOptionalEnabledValue<
+  T extends { [key: string]: AbstractControl | undefined }
+> = {
+  [P in Exclude<PickUndefinedKeys<T>, undefined>]?: NonNullable<
+    T[P]
+  > extends AbstractControlContainer
+    ? NonNullable<T[P]>['enabledValue']
+    : NonNullable<T[P]>['value'];
+};
+
+type ObjectControlsRequiredEnabledValue<
+  T extends { [key: string]: AbstractControl | undefined }
+> = {
+  [P in Exclude<PickRequiredKeys<T>, undefined>]: NonNullable<
+    T[P]
+  > extends AbstractControlContainer
+    ? NonNullable<T[P]>['enabledValue']
+    : NonNullable<T[P]>['value'];
+};
+
+type ArrayControlsEnabledValue<
+  T extends ReadonlyArray<AbstractControl>
+> = T extends ReadonlyArray<infer C>
+  ? C extends AbstractControlContainer
+    ? C['enabledValue']
+    : C extends AbstractControl
+    ? C['value']
+    : never
+  : never;
+
+// END UTILITY TYPES
 
 export type GenericControlsObject =
   | {
-      readonly [key: string]: AbstractControl;
+      readonly [key: string]: AbstractControl | undefined;
     }
   | ReadonlyArray<AbstractControl>;
 
@@ -29,6 +86,32 @@ export type ControlsKey<
     // ControlsKey<{[key: string]: AbstractControl}> is type string | number
     keyof Controls & string
   : any;
+
+export type ControlsValue<
+  Controls extends GenericControlsObject
+> = Controls extends ReadonlyArray<AbstractControl>
+  ? ArrayControlsValue<Controls>
+  : Controls extends { readonly [key: string]: AbstractControl | undefined }
+  ? ObjectControlsRequiredValue<Controls> &
+      ObjectControlsOptionalValue<Controls>
+  : never;
+
+export type ControlsEnabledValue<
+  Controls extends GenericControlsObject
+> = Controls extends ReadonlyArray<AbstractControl>
+  ? ArrayControlsEnabledValue<Controls>
+  : Controls extends { readonly [key: string]: AbstractControl | undefined }
+  ? Partial<
+      ObjectControlsRequiredEnabledValue<Controls> &
+        ObjectControlsOptionalEnabledValue<Controls>
+    >
+  : never;
+
+export type ContainerControls<C> = C extends AbstractControlContainer<
+  infer Controls
+>
+  ? Controls
+  : unknown;
 
 export interface IControlContainerStateChange<
   Controls extends GenericControlsObject,
@@ -66,36 +149,6 @@ export interface IChildControlStateChangeEvent<
   changedProps: string[];
 }
 
-export type ControlsValue<Controls extends GenericControlsObject> = {
-  readonly [Key in ControlsKey<Controls>]: Controls[Key] extends AbstractControl
-    ? Controls[Key]['value']
-    : never;
-};
-
-export type ControlsEnabledValue<
-  Controls extends GenericControlsObject
-> = Controls extends ReadonlyArray<any>
-  ? {
-      readonly [Key in ControlsKey<
-        Controls
-      >]: Controls[Key] extends AbstractControlContainer
-        ? Controls[Key]['enabledValue']
-        : Controls[Key] extends AbstractControl
-        ? Controls[Key]['value']
-        : never;
-    }
-  : Partial<
-      {
-        readonly [Key in ControlsKey<
-          Controls
-        >]: Controls[Key] extends AbstractControlContainer
-          ? Controls[Key]['enabledValue']
-          : Controls[Key] extends AbstractControl
-          ? Controls[Key]['value']
-          : never;
-      }
-    >;
-
 export namespace AbstractControlContainer {
   export const INTERFACE = Symbol('@@AbstractControlContainerInterface');
 
@@ -118,7 +171,7 @@ export interface AbstractControlContainer<
   readonly controls: Controls;
   readonly controlsStore: ReadonlyMap<
     ControlsKey<Controls>,
-    Controls[ControlsKey<Controls>]
+    NonNullable<Controls[ControlsKey<Controls>]>
   >;
   readonly size: number;
 

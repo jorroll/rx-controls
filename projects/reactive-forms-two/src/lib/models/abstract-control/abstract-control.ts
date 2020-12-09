@@ -1,4 +1,15 @@
-import { Observable, Subject, queueScheduler } from 'rxjs';
+import {
+  Observable,
+  Subject,
+  // queueScheduler,
+  SchedulerLike,
+  SchedulerAction,
+  Subscription,
+  queueScheduler,
+} from 'rxjs';
+
+import { AsyncScheduler } from 'rxjs/internal/scheduler/AsyncScheduler';
+import { QueueAction } from 'rxjs/internal/scheduler/QueueAction';
 
 // *****************************
 // Misc Types
@@ -23,11 +34,6 @@ export interface IControlEventArgs {
   type: string;
   meta?: { [key: string]: unknown };
   noEmit?: boolean;
-  /**
-   * Advanced option which can be used to control the timing of
-   * an emitted ControlEvent.
-   */
-  delay?: number;
 }
 
 export interface IControlEvent extends IControlEventArgs {
@@ -39,7 +45,6 @@ export interface IControlEvent extends IControlEventArgs {
 export interface IControlEventOptions {
   noEmit?: boolean;
   meta?: { [key: string]: unknown };
-  // eventId?: number;
   idOfOriginatingEvent?: number;
   source?: ControlId;
 }
@@ -77,22 +82,31 @@ export interface IControlStateChangeEvent<V, D> extends IControlEvent {
   changedProps: string[];
 }
 
+export interface IControlFocusEvent extends IControlEvent {
+  type: 'Focus';
+  focus: boolean;
+}
+
 // *****************************
-// AbstractControl interface
+// ControlSource
 // *****************************
 
 /**
  * ControlSource is a special rxjs Subject which never
  * completes.
  */
-export class ControlSource<T> extends Subject<T> {
+export class ControlSource extends Subject<IControlEvent> {
   /** NOOP: Complete does nothing */
   complete() {}
 
-  next(value?: T) {
+  next(value?: IControlEvent) {
     queueScheduler.schedule((state) => super.next(state), 0, value);
   }
 }
+
+// *****************************
+// AbstractControl interface
+// *****************************
 
 export namespace AbstractControl {
   export const INTERFACE = Symbol('@@AbstractControlInterface');
@@ -115,6 +129,20 @@ export namespace AbstractControl {
       (object as any)[AbstractControl.INTERFACE]() === object
     );
   }
+
+  /**
+   * If not undefined, this callback will be called whenever an AbstractControl
+   * `source` emits. It can be used for printing all control events to
+   * the console.
+   */
+  export let debugCallback:
+    | undefined
+    | ((
+        this: AbstractControl,
+        args:
+          | { type: 'INPUT'; event: IControlEvent }
+          | { type: 'OUTPUT'; event?: IControlEvent | null }
+      ) => void);
 }
 
 export interface AbstractControl<Value = any, Data = any> {
@@ -138,9 +166,7 @@ export interface AbstractControl<Value = any, Data = any> {
    * Never subscribe to the source directly. If you want to receive events for
    * this control, subscribe to the `events` observable.
    */
-  source: ControlSource<
-    IControlEvent | (IControlEvent & { [key: string]: unknown })
-  >;
+  source: ControlSource;
 
   /** An observable of all events for this AbstractControl */
   events: Observable<
@@ -622,6 +648,8 @@ export interface AbstractControl<Value = any, Data = any> {
     options?: IControlEventOptions
   ): void;
 
+  focus(value?: boolean, options?: Omit<IControlEventOptions, 'noEmit'>): void;
+
   /**
    * Returns an observable of this control's state in the form of
    * StateChange objects which can be used to make another control
@@ -630,10 +658,16 @@ export interface AbstractControl<Value = any, Data = any> {
    */
   replayState(options?: IControlEventOptions): Observable<IControlEvent>;
 
+  /**
+   * Returns a new AbstractControl which is identical to this one except
+   * for the `id` and `parent` properties.
+   */
   clone(): AbstractControl<Value, Data>;
 
   /**
    * A convenience method for emitting an arbitrary control event.
+   *
+   * @returns the `eventId` of the emitted event
    */
   emitEvent<
     T extends IControlEventArgs = IControlEventArgs & { [key: string]: any }
@@ -648,5 +682,5 @@ export interface AbstractControl<Value = any, Data = any> {
         type: string;
       },
     options?: IControlEventOptions
-  ): void;
+  ): number;
 }

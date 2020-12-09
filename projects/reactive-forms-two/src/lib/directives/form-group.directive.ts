@@ -17,7 +17,7 @@ import {
   ControlContainerAccessor,
   SW_CONTROL_ACCESSOR,
   ControlAccessor,
-} from '../accessors';
+} from '../accessors/interface';
 import { SwControlDirective } from './control.directive';
 import { IControlValueMapper } from './interface';
 import { concat } from 'rxjs';
@@ -45,14 +45,9 @@ export class SwFormGroupDirective
   @Input('swFormGroupValueMapper')
   valueMapper: IControlValueMapper | undefined;
 
-  readonly control = new FormGroup<any>(
-    {},
-    {
-      id: Symbol(`SwFormGroupDirective-${SwFormGroupDirective.id++}`),
-    }
-  );
+  readonly control: FormGroup;
 
-  readonly accessor: ControlContainerAccessor | null;
+  // readonly accessor: ControlContainerAccessor | null;
 
   constructor(
     @Optional()
@@ -64,11 +59,16 @@ export class SwFormGroupDirective
   ) {
     super(renderer, el);
 
-    this.accessor = accessors && resolveControlContainerAccessor(accessors);
+    const accessor = accessors && resolveControlContainerAccessor(accessors);
 
-    if (this.accessor) {
-      this.subscriptions.push(
-        syncAccessorToControl(this.accessor, this.control)
+    if (accessor) {
+      this.control = accessor.control as FormGroup;
+    } else {
+      this.control = new FormGroup<any>(
+        {},
+        {
+          id: Symbol(`SwFormGroupDirective-${SwFormGroupDirective.id++}`),
+        }
       );
     }
   }

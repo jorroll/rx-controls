@@ -17,7 +17,7 @@ import {
   ControlContainerAccessor,
   SW_CONTROL_ACCESSOR,
   ControlAccessor,
-} from '../accessors';
+} from '../accessors/interface';
 import { SwControlDirective } from './control.directive';
 import { IControlValueMapper } from './interface';
 import { concat } from 'rxjs';
@@ -45,11 +45,9 @@ export class SwFormArrayDirective
   @Input('swFormArrayValueMapper')
   valueMapper: IControlValueMapper | undefined;
 
-  readonly control = new FormArray<any>([], {
-    id: Symbol(`SwFormArrayDirective-${SwFormArrayDirective.id++}`),
-  });
+  readonly control: FormArray;
 
-  readonly accessor: ControlContainerAccessor | null;
+  // readonly accessor: ControlContainerAccessor | null;
 
   constructor(
     @Optional()
@@ -61,11 +59,16 @@ export class SwFormArrayDirective
   ) {
     super(renderer, el);
 
-    this.accessor = accessors && resolveControlContainerAccessor(accessors);
+    const accessor = accessors && resolveControlContainerAccessor(accessors);
 
-    if (this.accessor) {
-      this.subscriptions.push(
-        syncAccessorToControl(this.accessor, this.control)
+    if (accessor) {
+      this.control = accessor.control as FormArray;
+    } else {
+      this.control = new FormArray<any>(
+        {},
+        {
+          id: Symbol(`SwFormArrayDirective-${SwFormArrayDirective.id++}`),
+        }
       );
     }
   }

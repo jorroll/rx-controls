@@ -1,9 +1,12 @@
 import { NgModule } from '@angular/core';
-import { DefaultValueAccessor } from './default_value_accessor';
+import {
+  DefaultAccessorAttribute,
+  DefaultAccessorInputTextarea,
+} from './default.accessor';
 
 @NgModule({
-  declarations: [DefaultValueAccessor],
-  exports: [DefaultValueAccessor],
+  declarations: [DefaultAccessorInputTextarea, DefaultAccessorAttribute],
+  exports: [DefaultAccessorInputTextarea, DefaultAccessorAttribute],
   providers: [],
 })
 export class AccessorsModule {}

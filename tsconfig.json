@@ -17,7 +17,9 @@
     "module": "es2020",
     "lib": ["esnext", "dom"],
     "types": ["jest"],
-    "paths": {}
+    "paths": {
+      "reactive-forms-two": ["libs/reactive-forms-two/src/public-api"]
+    }
   },
   "angularCompilerOptions": {
     "strictInjectionParameters": true,

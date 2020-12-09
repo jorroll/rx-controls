@@ -17,7 +17,7 @@ import {
   ControlAccessor,
   SW_CONTROL_ACCESSOR,
   ControlContainerAccessor,
-} from '../accessors';
+} from '../accessors/interface';
 import { SwControlNameDirective } from './control-name.directive';
 import { resolveControlContainerAccessor } from './util';
 

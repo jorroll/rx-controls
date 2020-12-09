@@ -32,7 +32,6 @@ describe(`pluckOptions`, () => {
         one: 1,
       },
       source: 'one',
-      delay: 1,
       noEmit: true,
     };
 

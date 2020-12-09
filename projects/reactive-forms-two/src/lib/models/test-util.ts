@@ -232,6 +232,20 @@ export function getControlEventsUntilEnd(
   ] as const;
 }
 
+export function subscribeToControlEventsUntilEnd(
+  original: AbstractControl,
+  subscriber: AbstractControl,
+  end?: Subject<any>
+) {
+  if (!end) {
+    end = new Subject();
+  }
+
+  original.events.pipe(takeUntil(end)).subscribe(subscriber.source);
+
+  return [end] as const;
+}
+
 export function toControlMatcherEntries(controls: {
   [key: string]: AbstractControl;
 }) {
@@ -254,4 +268,18 @@ export function setExistingErrors(
   if (AbstractControlContainer.isControlContainer(control)) {
     c._combinedErrors = errors;
   }
+}
+
+export function mapControlsToId(
+  obj: { [key: string]: AbstractControl } | AbstractControl[]
+): any {
+  return Object.fromEntries(
+    Object.entries(obj).map(([k, v]) => {
+      if (AbstractControlContainer.isControlContainer(v)) {
+        return [`${k} "${v.id.toString()}"`, mapControlsToId(v.controls)];
+      }
+
+      return [`${k}`, v.id.toString()];
+    })
+  );
 }

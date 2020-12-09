@@ -3,13 +3,13 @@ import { AbstractControl } from '../models';
 import { IControlValueMapper, IControlAccessorEvent } from './interface';
 import { map, filter } from 'rxjs/operators';
 import { SwBaseDirective } from './base.directive';
-import { ControlAccessor } from '../accessors';
+import { ControlAccessor } from '../accessors/interface';
 import { concat } from 'rxjs';
 
 export abstract class SwControlDirective<T extends AbstractControl>
   extends SwBaseDirective<T>
   implements ControlAccessor, OnChanges, OnDestroy {
-  abstract providedControl: T;
+  abstract providedControl: T | undefined;
 
   valueMapper?: IControlValueMapper;
 
@@ -19,6 +19,13 @@ export abstract class SwControlDirective<T extends AbstractControl>
     providedControl?: SimpleChange;
     valueMapper?: SimpleChange;
   }) {
+    if (!this.providedControl) {
+      throw new Error(
+        `SwControlDirective#ngOnChanges should never be ` +
+          `called with !this.providedControl`
+      );
+    }
+
     this.onChangesSubscriptions.forEach((sub) => sub.unsubscribe());
     this.onChangesSubscriptions = [];
 
@@ -29,7 +36,7 @@ export abstract class SwControlDirective<T extends AbstractControl>
 
     this.onChangesSubscriptions.push(
       concat(this.providedControl.replayState(), this.providedControl.events)
-        .pipe(map(this.toAccessorValueMapFn()))
+        .pipe(map(this.toAccessorEventMapFn()))
         .subscribe(this.control.source)
     );
 
@@ -59,7 +66,7 @@ export abstract class SwControlDirective<T extends AbstractControl>
 
     this.onChangesSubscriptions.push(
       this.control.events
-        .pipe(map(this.fromAccessorValueMapFn()))
+        .pipe(map(this.fromAccessorEventMapFn()))
         .subscribe(this.providedControl.source)
     );
 

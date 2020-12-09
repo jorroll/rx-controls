@@ -134,7 +134,7 @@ export class FormArray<
     this._controls = (controls as unknown) as Controls;
     // This is needed because the call to "registerControl" can clone
     // the provided control (returning a new one);
-    this._controlsStore = controlsStore;
+    this._controlsStore = (controlsStore as unknown) as this['controlsStore'];
     this._value = newValue as this['value'];
     this._enabledValue = (newEnabledValue as unknown) as this['enabledValue'];
 

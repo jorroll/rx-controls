@@ -1,4 +1,11 @@
-import { Subscription, concat, Observable, of, from } from 'rxjs';
+import {
+  Subscription,
+  concat,
+  Observable,
+  of,
+  from,
+  queueScheduler,
+} from 'rxjs';
 import { filter, map } from 'rxjs/operators';
 import {
   AbstractControl,
@@ -54,8 +61,11 @@ export abstract class AbstractControlContainerBase<
 
   protected _controlsStore: ReadonlyMap<
     ControlsKey<Controls>,
-    Controls[ControlsKey<Controls>]
-  > = new Map();
+    NonNullable<Controls[ControlsKey<Controls>]>
+  > = new Map<
+    ControlsKey<Controls>,
+    NonNullable<Controls[ControlsKey<Controls>]>
+  >();
   get controlsStore() {
     return this._controlsStore;
   }
@@ -522,7 +532,7 @@ export abstract class AbstractControlContainerBase<
             meta: {},
             ...pluckOptions(options),
             type: 'StateChange',
-            eventId: eventId = AbstractControl.eventId(),
+            eventId: (eventId = AbstractControl.eventId()),
             idOfOriginatingEvent: eventId,
             change,
             changedProps: [],
@@ -538,13 +548,28 @@ export abstract class AbstractControlContainerBase<
     control: Controls[ControlsKey<Controls>],
     options?: IControlEventOptions
   ) {
-    // This clone might problems when unregistering controls...
+    let focusSub: Subscription | undefined;
 
     if (((control as unknown) as AbstractControl).parent) {
-      control = (((control as unknown) as AbstractControl).clone() as unknown) as Controls[ControlsKey<
-        Controls
-      >];
-      // throw new Error('AbstractControl can only have one parent');
+      const _control = ((control as unknown) as AbstractControl).clone();
+
+      // Focus events are ordinarily ignored by linked controls. This would mean
+      // that this clone control would not trigger a focus event when the original
+      // triggers a focus event. To solve this, we subscribe the clone to the
+      // original's focus events and we cause the clone to trigger it's own
+      // focus event
+      focusSub = ((control as unknown) as AbstractControl).events
+        .pipe(
+          filter((e) => e.type === 'Focus'),
+          map((event) => ({
+            ...event,
+            eventId: AbstractControl.eventId(),
+            source: _control.id,
+          }))
+        )
+        .subscribe(_control.source);
+
+      control = (_control as unknown) as Controls[ControlsKey<Controls>];
     }
 
     ((control as unknown) as AbstractControl).setParent(this, options);
@@ -562,7 +587,7 @@ export abstract class AbstractControlContainerBase<
             source: this.id,
             key,
             childEvent: event as IControlStateChangeEvent<
-              this['value'][ControlsKey<Controls>],
+              ControlsValue<Controls>[ControlsKey<Controls>],
               Data
             >,
             changedProps: [],
@@ -574,6 +599,8 @@ export abstract class AbstractControlContainerBase<
         filter(isTruthy)
       )
       .subscribe(this.source);
+
+    if (focusSub) sub.add(focusSub);
 
     this._controlsSubscriptions.set(control, sub);
 
@@ -632,30 +659,28 @@ export abstract class AbstractControlContainerBase<
 
   protected processStateChange_Value(
     event: IControlContainerStateChangeEvent<Controls, Data> & {
-      controlContainerValueChange?: {
-        id: ControlId;
-        originalEnabledValue: ControlsEnabledValue<Controls>;
-      };
+      originalEnabledValue?: ControlsEnabledValue<Controls>;
+      controlContainerValueChangeFn?: () => void;
     }
   ): IControlContainerStateChangeEvent<Controls, Data> | null {
-    if (event.controlContainerValueChange?.id === this.id) {
+    if (event.originalEnabledValue) {
       const changedProps = [
         'value',
         ...this.runValidation(pluckOptions(event)),
       ];
 
-      if (
-        !isEqual(
-          this.enabledValue,
-          event.controlContainerValueChange.originalEnabledValue
-        )
-      ) {
+      if (!isEqual(this.enabledValue, event.originalEnabledValue)) {
         changedProps.push('enabledValue');
       }
 
       const newEvent = { ...event, changedProps };
 
-      delete newEvent.controlContainerValueChange;
+      if (newEvent.controlContainerValueChangeFn) {
+        queueScheduler.schedule(newEvent.controlContainerValueChangeFn);
+        delete newEvent.controlContainerValueChangeFn;
+      }
+
+      delete newEvent.originalEnabledValue;
 
       return newEvent;
     }
@@ -666,11 +691,20 @@ export abstract class AbstractControlContainerBase<
 
     const newValue = change(this._value);
 
-    if (isEqual(this._value, newValue)) return null;
+    if (isEqual(this._value, newValue)) {
+      if (event.controlContainerValueChangeFn) {
+        queueScheduler.schedule(event.controlContainerValueChangeFn);
+      }
 
-    for (const [key, value] of Object.entries<
-      this['value'][ControlsKey<Controls>]
-    >(newValue)) {
+      return null;
+    }
+
+    const dependencies: number[] = [];
+    const originalEnabledValue = this.enabledValue;
+
+    for (const [key, _value] of Object.entries(newValue)) {
+      const value = _value as this['value'][ControlsKey<Controls>];
+
       const control = (this._controls[
         key as ControlsKey<Controls>
       ] as unknown) as AbstractControl;
@@ -703,9 +737,10 @@ export abstract class AbstractControlContainerBase<
        *    FormGroup.
        */
 
-      control.emitEvent<
+      const eventId = control.emitEvent<
         IControlStateChangeEvent<this['value'][ControlsKey<Controls>], Data> & {
           controlContainerValueChangeId: ControlId;
+          controlContainerValueChangeFn: () => void;
         }
       >(
         {
@@ -715,19 +750,19 @@ export abstract class AbstractControlContainerBase<
           },
           changedProps: [],
           controlContainerValueChangeId: this.id,
+          controlContainerValueChangeFn: () => {
+            dependencies.splice(dependencies.indexOf(eventId), 1);
+
+            if (dependencies.length > 0) return;
+
+            this.emitEvent({ ...event, originalEnabledValue });
+          },
         },
         event
       );
-    }
 
-    this.emitEvent({
-      ...event,
-      delay: 1,
-      controlContainerValueChange: {
-        id: this.id,
-        originalEnabledValue: this.enabledValue,
-      },
-    });
+      dependencies.push(eventId);
+    }
 
     return null;
   }
@@ -948,7 +983,7 @@ export abstract class AbstractControlContainerBase<
     const control = (_control as unknown) as AbstractControl;
 
     const change = event.childEvent.change.value as NonNullable<
-      IControlStateChange<this['value'][typeof key], unknown>['value']
+      IControlStateChange<ControlsValue<Controls>[typeof key], unknown>['value']
     >;
 
     const newChange: IStateChange<this['value']> = (old) => {
