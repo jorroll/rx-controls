@@ -24,7 +24,7 @@
   "forwardPorts": [4200],
 
   // Use 'postCreateCommand' to run commands after the container is created.
-  "postCreateCommand": "yes | npm install @angular/cli -g"
+  "postCreateCommand": "yes | npm install @briebug/jest-schematic @angular/cli -g"
 
   // Uncomment to connect as a non-root user. See https://aka.ms/vscode-remote/containers/non-root.
   // "remoteUser": "node"

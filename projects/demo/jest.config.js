@@ -4,7 +4,7 @@ module.exports = {
   ...baseConfig,
   globals: {
     'ts-jest': {
-      tsConfig: '<rootDir>/projects/reactive-forms-two-compat/tsconfig.spec.json',
+      tsConfig: '<rootDir>/projects/demo/tsconfig.spec.json',
     },
   },
 };
