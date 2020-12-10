@@ -3,7 +3,7 @@
     "projects/reactive-forms-two",
     "projects/reactive-forms-two-compat"
   ],
-  "version": "0.1.0-next.0",
+  "version": "0.1.0",
   "npmClient": "yarn",
   "useWorkspaces": true
 }
