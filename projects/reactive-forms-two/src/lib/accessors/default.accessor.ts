@@ -43,7 +43,7 @@ import { BaseAccessor } from './base.accessor';
  * @ngModule FormsModule
  * @publicApi
  */
-@Directive({ selector: 'DefaultAccessor' })
+@Directive()
 export abstract class DefaultAccessor
   extends BaseAccessor
   implements ControlAccessor<FormControl<string>>, OnInit, OnDestroy {

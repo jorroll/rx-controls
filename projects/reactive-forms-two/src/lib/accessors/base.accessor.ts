@@ -2,7 +2,7 @@ import { Directive, forwardRef, InjectFlags, Injector } from '@angular/core';
 import { Subscription } from 'rxjs';
 import { CONTROL_ACCESSOR_SPECIFICITY, SW_CONTROL_ACCESSOR } from './interface';
 
-@Directive({ selector: 'BaseAccessor' })
+@Directive()
 export abstract class BaseAccessor {
   abstract [CONTROL_ACCESSOR_SPECIFICITY]: string;
 
