@@ -4,7 +4,8 @@
   "private": true,
   "workspaces": {
     "packages": [
-      "projects/*"
+      "projects/reactive-forms-two",
+      "projects/reactive-forms-two-compat"
     ]
   },
   "scripts": {
@@ -12,6 +13,7 @@
     "start": "ng serve",
     "build": "ng build --prod --project reactive-forms-two && ng build --prod --project reactive-forms-two-compat",
     "pubcanary": "yarn test && yarn lerna version --preid next && yarn build && yarn lerna publish from-git --yes --dist-tag next --contents build",
+    "pub": "yarn test && yarn lerna version && yarn build && yarn lerna publish from-git --yes --contents build",
     "test": "ng test",
     "lint": "ng lint",
     "e2e": "ng e2e"
