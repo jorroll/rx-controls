@@ -20,8 +20,8 @@
   ],
 
   // Use 'forwardPorts' to make a list of ports inside the container available locally.
-  // - 4200 needed for serving the angular app
-  "forwardPorts": [4200],
+  // - 4201 needed for serving the angular app
+  "forwardPorts": [4201],
 
   // Use 'postCreateCommand' to run commands after the container is created.
   "postCreateCommand": "yes | npm install @briebug/jest-schematic @angular/cli -g"

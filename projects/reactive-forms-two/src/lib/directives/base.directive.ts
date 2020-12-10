@@ -4,6 +4,7 @@ import {
   Renderer2,
   ElementRef,
   InjectionToken,
+  Directive,
 } from '@angular/core';
 import { Subscription } from 'rxjs';
 import { AbstractControl, IControlEvent } from '../models';
@@ -14,6 +15,7 @@ import { IControlStateChangeEvent } from '../models/abstract-control/abstract-co
 import { filter } from 'rxjs/operators';
 import { IChildControlStateChangeEvent } from '../models/abstract-control-container/abstract-control-container';
 
+@Directive()
 export abstract class BaseDirective<T extends AbstractControl>
   implements ControlAccessor<T>, OnChanges, OnDestroy {
   static id = 0;

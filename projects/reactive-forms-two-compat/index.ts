@@ -1,2 +1,2 @@
-// this exists for development only
+// only exists for development
 export * from './src/public-api';

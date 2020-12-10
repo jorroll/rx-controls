@@ -2,18 +2,11 @@
   "extends": "../../tsconfig.json",
   "compilerOptions": {
     "outDir": "../../out-tsc/spec",
-    "types": [
-      "jest",
-      "jest"
-    ],
+    "types": ["jest"],
     "module": "commonjs",
     "emitDecoratorMetadata": true,
     "allowJs": true
   },
   "files": [],
-  "include": [
-    "./src/**/*.spec.ts",
-    "./src/**/*.d.ts",
-    "../../setup-jest.ts"
-  ]
+  "include": ["./src/**/*.spec.ts", "./src/**/*.d.ts", "../../setup-jest.ts"]
 }

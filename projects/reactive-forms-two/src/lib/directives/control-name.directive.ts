@@ -1,4 +1,4 @@
-import { Input, OnDestroy, OnChanges, SimpleChange } from '@angular/core';
+import { Input, OnDestroy, OnChanges, SimpleChange, Directive } from '@angular/core';
 import { AbstractControl } from '../models';
 import { IControlValueMapper, IControlAccessorControlEvent } from './interface';
 import { map, filter } from 'rxjs/operators';
@@ -9,6 +9,7 @@ import {
 } from '../accessors/interface';
 import { concat, Subscription } from 'rxjs';
 
+@Directive()
 export abstract class ControlNameDirective<T extends AbstractControl>
   extends BaseDirective<T>
   implements ControlAccessor, OnChanges, OnDestroy {

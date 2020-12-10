@@ -95,35 +95,40 @@ export abstract class DefaultAccessor
   }
 }
 
-export function a(s: string, d: any) {
-  return {
-    selector: s,
-    providers: [
-      {
-        provide: SW_CONTROL_ACCESSOR,
-        useExisting: d,
-        multi: true,
-      },
-      {
-        provide: DefaultAccessor,
-        useExisting: d,
-      },
-    ],
-  };
-}
-
-@Directive(
-  a(
+@Directive({
+  selector:
     'input[swFormControl],input[swFormControlName],' +
-      'textarea[swFormControl],textarea[swFormControlName],',
-    DefaultAccessorInputTextarea
-  )
-)
+    'textarea[swFormControl],textarea[swFormControlName]',
+  providers: [
+    {
+      provide: SW_CONTROL_ACCESSOR,
+      useExisting: DefaultAccessorInputTextarea,
+      multi: true,
+    },
+    {
+      provide: DefaultAccessor,
+      useExisting: DefaultAccessorInputTextarea,
+    },
+  ],
+})
 export class DefaultAccessorInputTextarea extends DefaultAccessor {
   [CONTROL_ACCESSOR_SPECIFICITY] = '0.1.1';
 }
 
-@Directive(a('[swInputAccessor]', DefaultAccessorAttribute))
+@Directive({
+  selector: '[swInputAccessor]',
+  providers: [
+    {
+      provide: SW_CONTROL_ACCESSOR,
+      useExisting: DefaultAccessorAttribute,
+      multi: true,
+    },
+    {
+      provide: DefaultAccessor,
+      useExisting: DefaultAccessorAttribute,
+    },
+  ],
+})
 export class DefaultAccessorAttribute extends DefaultAccessor {
   [CONTROL_ACCESSOR_SPECIFICITY] = '0.1.0';
 }
