@@ -3,14 +3,19 @@ import { skip, take, takeUntil, toArray } from 'rxjs/operators';
 import {
   AbstractControl,
   ControlId,
-  ValidationErrors,
+  IControlStateChangeEvent,
+  IControlValidationEvent,
   ValidatorFn,
 } from './abstract-control/abstract-control';
 import runAbstractControlBaseTestSuite from './abstract-control/abstract-control-base-tests';
 import { FormControl } from './form-control';
 import { FormGroup } from './form-group';
 import runSharedTestSuite from './shared-tests';
-import { testAllAbstractControlDefaultsExcept, wait } from './test-util';
+import {
+  getControlEventsUntilEnd,
+  testAllAbstractControlDefaultsExcept,
+  wait,
+} from './test-util';
 
 runAbstractControlBaseTestSuite(
   'FormControl',
@@ -424,6 +429,87 @@ describe('FormControl', () => {
       expect(c.value).toEqual('newValue');
 
       return Promise.all([promise1, promise2, promise3]);
+    });
+
+    it('with validator', async () => {
+      c.setValidators((c) =>
+        c.value !== 'oldValue' ? null : { required: true }
+      );
+
+      expect(c.value).toEqual('oldValue');
+      expect(c.valid).toEqual(false);
+      expect(c.invalid).toEqual(true);
+      expect(c.status).toEqual('INVALID');
+      expect(c.errors).toEqual({ required: true });
+      expect(c.errorsStore).toEqual(new Map([[c.id, { required: true }]]));
+      expect(c.validator).toEqual(expect.any(Function));
+      expect(c.validatorStore).toEqual(new Map([[c.id, expect.any(Function)]]));
+
+      testAllDefaultsExcept(
+        c,
+        'value',
+        'status',
+        'valid',
+        'invalid',
+        'errors',
+        'errorsStore',
+        'validator',
+        'validatorStore'
+      );
+
+      const [promise1, end] = getControlEventsUntilEnd(c);
+
+      c.setValue('hi');
+
+      end.next();
+      end.complete();
+
+      expect(c.value).toEqual('hi');
+      expect(c.validator).toEqual(expect.any(Function));
+      expect(c.validatorStore).toEqual(new Map([[c.id, expect.any(Function)]]));
+
+      testAllDefaultsExcept(c, 'value', 'validator', 'validatorStore');
+
+      const [event1, event2, event3, event4] = await promise1;
+
+      expect(event1).toEqual<IControlStateChangeEvent<unknown, unknown>>({
+        type: 'StateChange',
+        source: c.id,
+        change: {
+          value: expect.any(Function),
+        },
+        changedProps: expect.arrayContaining([
+          'value',
+          'valid',
+          'invalid',
+          'status',
+          'errors',
+          'errorsStore',
+        ]),
+        eventId: expect.any(Number),
+        idOfOriginatingEvent: expect.any(Number),
+        meta: {},
+      });
+
+      expect(event2).toEqual<IControlValidationEvent<unknown>>({
+        type: 'AsyncValidationStart',
+        source: c.id,
+        eventId: expect.any(Number),
+        idOfOriginatingEvent: expect.any(Number),
+        meta: {},
+        value: 'hi',
+      });
+
+      expect(event3).toEqual<IControlValidationEvent<unknown>>({
+        type: 'ValidationComplete',
+        source: c.id,
+        eventId: expect.any(Number),
+        idOfOriginatingEvent: expect.any(Number),
+        meta: {},
+        value: 'hi',
+      });
+
+      expect(event4).toBe(undefined);
     });
   });
 
