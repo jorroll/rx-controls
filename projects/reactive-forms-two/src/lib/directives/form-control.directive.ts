@@ -30,22 +30,12 @@ import { concat } from 'rxjs';
 })
 export class FormControlDirective<T extends AbstractControl = AbstractControl>
   extends ControlDirective<T>
-  implements ControlAccessor, OnChanges, OnDestroy {
-  static id = 0;
+  implements ControlAccessor<T>, OnChanges, OnDestroy {
   @Input('swFormControl') providedControl: T | undefined;
   @Input('swFormControlValueMapper')
   valueMapper: IControlValueMapper | undefined;
 
   readonly control: T;
-  // get control() {
-  //   return this.accessor.control as FormControl;
-  // }
-
-  // readonly control = new FormControl<any>(null, {
-  //   id: Symbol(`SwFormControlDirective-${SwFormControlDirective.id++}`),
-  // });
-
-  // readonly accessor: ControlAccessor;
 
   constructor(
     @Self()
@@ -57,8 +47,6 @@ export class FormControlDirective<T extends AbstractControl = AbstractControl>
     super(renderer, el);
 
     this.control = resolveControlAccessor(accessors).control as T;
-
-    // this.subscriptions.push(syncAccessorToControl(this.accessor, this.control));
   }
 
   ngOnChanges(_: {

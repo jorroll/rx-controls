@@ -9,8 +9,9 @@ import {
   Renderer2,
   ElementRef,
   forwardRef,
+  Self,
 } from '@angular/core';
-import { FormArray } from '../models';
+import { AbstractControlContainer, FormArray } from '../models';
 import { IControlValueMapper } from './interface';
 import { SW_CONTROL_DIRECTIVE } from './interface';
 import {
@@ -29,39 +30,32 @@ import { resolveControlContainerAccessor } from './util';
       provide: SW_CONTROL_DIRECTIVE,
       useExisting: forwardRef(() => FormArrayNameDirective),
     },
-    {
-      provide: SW_CONTROL_ACCESSOR,
-      useExisting: forwardRef(() => FormArrayNameDirective),
-      multi: true,
-    },
   ],
 })
-export class FormArrayNameDirective
-  extends ControlNameDirective<FormArray>
-  implements ControlAccessor, OnChanges, OnDestroy {
-  static id = 0;
-
+export class FormArrayNameDirective<T extends FormArray = FormArray>
+  extends ControlNameDirective<T>
+  implements ControlContainerAccessor<T>, OnChanges, OnDestroy {
   @Input('swFormArrayName') controlName!: string;
   @Input('swFormArrayValueMapper')
   valueMapper: IControlValueMapper | undefined;
 
-  readonly control = new FormArray<any>(
-    {},
-    {
-      id: Symbol(`SwFormArrayNameDirective-${FormArrayNameDirective.id++}`),
-    }
-  );
+  readonly control: T;
 
   protected containerAccessor: ControlContainerAccessor;
 
   constructor(
+    @Self()
+    @Inject(SW_CONTROL_ACCESSOR)
+    accessors: Array<ControlAccessor | ControlContainerAccessor>,
     @SkipSelf()
     @Inject(SW_CONTROL_ACCESSOR)
-    parentAccessors: ControlAccessor[],
+    parentAccessors: Array<ControlAccessor | ControlContainerAccessor>,
     renderer: Renderer2,
     el: ElementRef
   ) {
     super(renderer, el);
+
+    this.control = resolveControlContainerAccessor(accessors).control as T;
 
     this.containerAccessor = resolveControlContainerAccessor(parentAccessors);
   }
@@ -81,7 +75,7 @@ export class FormArrayNameDirective
     super.ngOnChanges(_);
   }
 
-  protected validateProvidedControl(control: any): control is FormArray {
+  protected validateProvidedControl(control: any): control is T {
     if (!(control instanceof FormArray)) {
       throw new Error(
         'SwFormArrayNameDirective must link to an instance of FormArray'

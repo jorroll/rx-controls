@@ -9,8 +9,9 @@ import {
   Renderer2,
   ElementRef,
   forwardRef,
+  Self,
 } from '@angular/core';
-import { FormGroup } from '../models';
+import { AbstractControlContainer, FormGroup } from '../models';
 import { IControlValueMapper } from './interface';
 import { SW_CONTROL_DIRECTIVE } from './interface';
 import {
@@ -29,39 +30,32 @@ import { resolveControlContainerAccessor } from './util';
       provide: SW_CONTROL_DIRECTIVE,
       useExisting: forwardRef(() => FormGroupNameDirective),
     },
-    {
-      provide: SW_CONTROL_ACCESSOR,
-      useExisting: forwardRef(() => FormGroupNameDirective),
-      multi: true,
-    },
   ],
 })
-export class FormGroupNameDirective
-  extends ControlNameDirective<FormGroup>
-  implements ControlAccessor, OnChanges, OnDestroy {
-  static id = 0;
-
+export class FormGroupNameDirective<T extends FormGroup = FormGroup>
+  extends ControlNameDirective<T>
+  implements ControlContainerAccessor<T>, OnChanges, OnDestroy {
   @Input('swFormGroupName') controlName!: string;
   @Input('swFormGroupValueMapper')
   valueMapper: IControlValueMapper | undefined;
 
-  readonly control = new FormGroup<any>(
-    {},
-    {
-      id: Symbol(`SwFormGroupNameDirective-${FormGroupNameDirective.id++}`),
-    }
-  );
+  readonly control: T;
 
   protected containerAccessor: ControlContainerAccessor;
 
   constructor(
+    @Self()
+    @Inject(SW_CONTROL_ACCESSOR)
+    accessors: Array<ControlAccessor | ControlContainerAccessor>,
     @SkipSelf()
     @Inject(SW_CONTROL_ACCESSOR)
-    parentAccessors: ControlAccessor[],
+    parentAccessors: Array<ControlAccessor | ControlContainerAccessor>,
     renderer: Renderer2,
     el: ElementRef
   ) {
     super(renderer, el);
+
+    this.control = resolveControlContainerAccessor(accessors).control as T;
 
     this.containerAccessor = resolveControlContainerAccessor(parentAccessors);
   }
@@ -81,7 +75,7 @@ export class FormGroupNameDirective
     super.ngOnChanges(_);
   }
 
-  protected validateProvidedControl(control: any): control is FormGroup {
+  protected validateProvidedControl(control: any): control is T {
     if (!(control instanceof FormGroup)) {
       throw new Error(
         'SwFormGroupNameDirective must link to an instance of FormGroup'

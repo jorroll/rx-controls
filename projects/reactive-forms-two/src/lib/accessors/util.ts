@@ -26,24 +26,6 @@ export function setupListeners(
   return dir.renderer.listen(dir.el.nativeElement, event, dir[fn].bind(dir));
 }
 
-// export function setupValueStateChangeHandler<T extends ControlAccessor>(
-//   dir: T,
-//   fn: (value: T['control']['value']) => void
-// ) {
-//   return dir.control.events
-//     .pipe(
-//       filter(
-//         (event) => isStateChange(event) && event.changedProps.includes('value')
-//       ),
-//       map(() => dir.control.value),
-//       distinctUntilChanged()
-//     )
-//     .subscribe((value) => {
-//       (dir as any)._valueHasBeenSet = true;
-//       fn(value);
-//     });
-// }
-
 export function setupStdControlEventHandlers<T extends ControlAccessor>(
   _dir: T,
   options: {
@@ -93,54 +75,6 @@ export function setupStdControlEventHandlers<T extends ControlAccessor>(
     }
   });
 }
-
-// export function setupDisabledStateChangeHandler<T extends ControlAccessor>(
-//   dir: T
-// ) {
-//   return dir.control.events
-//     .pipe(
-//       filter(
-//         (event) =>
-//           isStateChange(event) &&
-//           event.changedProps.includes('disabled') &&
-//           event.source !== dir.control.id
-//       ),
-//       map(() => dir.control.disabled),
-//       distinctUntilChanged()
-//     )
-//     .subscribe((isDisabled) => {
-//       ((dir as unknown) as { renderer: Renderer2 }).renderer.setProperty(
-//         (dir as any).el.nativeElement,
-//         'disabled',
-//         isDisabled
-//       );
-//     });
-// }
-
-// export function setupControlFocusHandler<T extends ControlAccessor>(dir: T) {
-//   const el = (dir as any).el as ElementRef<object> | null;
-
-//   if (
-//     !(
-//       el &&
-//       el.nativeElement &&
-//       'focus' in el.nativeElement &&
-//       typeof (el.nativeElement as any).focus === 'function'
-//     )
-//   ) {
-//     return NEVER.subscribe();
-//   }
-
-//   return dir.control.events
-//     .pipe(filter((event) => event.type === 'Focus'))
-//     .subscribe((e) => {
-//       if ((e as IControlFocusEvent).focus) {
-//         (el.nativeElement as any).focus();
-//       } else {
-//         (el.nativeElement as any).blur();
-//       }
-//     });
-// }
 
 export function selectControlAccessor<T extends ControlAccessor>(
   accessors: readonly [T, ...T[]]

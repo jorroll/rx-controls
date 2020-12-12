@@ -16,258 +16,79 @@ import { FormGroupDirective } from './form-group.directive';
 import { FormControlDirective } from './form-control.directive';
 import { FormControlNameDirective } from './form-control-name.directive';
 import { FormGroupNameDirective } from './form-group-name.directive';
-
-const beforeEachFn = TestMultiChild.buildBeforeEachFn({
-  declarations: [
-    // FormGroupDirective,
-    FormGroupNameDirective,
-    FormControlDirective,
-    FormControlNameDirective,
-  ],
-});
+import { DefaultFormGroupDirectiveAccessor } from './default-form-group.directive.accessor';
 
 @Component({
-  selector: 'my-test-component',
+  selector: 'my-accessor',
   template: `
-    <div swFormGroupName="name">
-      <input swFormControlName="firstName" />
-      <input swFormControlName="lastName" />
-    </div>
-
-    <input
-      swFormControlName="birthdate"
-      [swFormControlValueMapper]="valueMapper"
-    />
-
-    <div swFormGroupName="relative">
-      <div swFormGroupName="name">
-        <input [swFormControl]="alternateRelativeFirstNameControl" />
-        <input swFormControlName="lastName" />
-      </div>
-    </div>
+    <input swFormControlName="firstName" />
+    <input swFormControlName="lastName" />
   `,
   providers: [
     {
       provide: SW_CONTROL_ACCESSOR,
-      useExisting: forwardRef(() => ComplexValueMapperTestComponent),
+      useExisting: forwardRef(() => SimpleGroupAccessorComponent),
       multi: true,
     },
   ],
 })
-export class ComplexValueMapperTestComponent {
+export class SimpleGroupAccessorComponent {
   readonly control = new FormGroup({
-    name: new FormGroup({
-      firstName: new FormControl('John'),
-      lastName: new FormControl('Carroll'),
-    }),
-    birthdate: new FormControl<Date | null>(new Date(2020, 0, 1)),
-    relative: new FormGroup({
-      name: new FormGroup({
-        firstName: new FormControl('Alison'),
-        lastName: new FormControl('Paul'),
-      }),
-    }),
+    firstName: new FormControl(''),
+    lastName: new FormControl(''),
   });
-
-  readonly valueMapper: IControlValueMapper<Date | null, string> = {
-    to: (value) => value?.toISOString() ?? '',
-    from: (value) => (value ? new Date(Date.parse(value)) : null),
-  };
-
-  alternateRelativeFirstNameControl = new FormControl('Bobby');
-
-  updateBirthdate(date: Date | null) {
-    this.control.patchValue({
-      birthdate: date,
-    });
-  }
-
-  updateFirstName(text: string) {
-    this.control.get('name').get('firstName').setValue(text);
-  }
-
-  updateRelativeFirstName(text: string) {
-    this.alternateRelativeFirstNameControl.setValue(text);
-  }
 }
 
-describe('ComplexValueMapperTestComponent', () => {
-  const o: TestMultiChild.TestArgs<ComplexValueMapperTestComponent> = {} as any;
+@Component({
+  selector: 'my-test-component',
+  template: ` <my-accessor [swFormGroup]="control"></my-accessor> `,
+  providers: [
+    {
+      provide: SW_CONTROL_ACCESSOR,
+      useExisting: forwardRef(() => SimpleGroupComponent),
+      multi: true,
+    },
+  ],
+})
+export class SimpleGroupComponent {
+  readonly control = new FormGroup({
+    firstName: new FormControl('John'),
+    lastName: new FormControl('Carroll'),
+  });
+}
 
-  beforeEach(beforeEachFn(ComplexValueMapperTestComponent, o));
+const beforeEachFn = TestMultiChild.buildBeforeEachFn({
+  declarations: [
+    FormGroupDirective,
+    // FormGroupNameDirective,
+    FormControlDirective,
+    FormControlNameDirective,
+    SimpleGroupAccessorComponent,
+    DefaultFormGroupDirectiveAccessor,
+  ],
+});
+
+describe('SimpleGroupComponent', () => {
+  const o: TestMultiChild.TestArgs<SimpleGroupComponent> = {} as any;
+
+  beforeEach(beforeEachFn(SimpleGroupComponent, o));
 
   it('initializes', () => {
     expect(o.component.control.value).toEqual({
-      name: {
-        firstName: 'John',
-        lastName: 'Carroll',
-      },
-      birthdate: new Date(2020, 0, 1),
-      relative: {
-        name: {
-          firstName: 'Alison',
-          lastName: 'Paul',
-        },
-      },
+      firstName: 'John',
+      lastName: 'Carroll',
     });
 
-    expect(o.component.alternateRelativeFirstNameControl.value).toEqual(
-      'Bobby'
-    );
-
-    const name = o.container.querySelector(
-      '[swFormGroupName="name"]'
-    ) as HTMLDivElement;
-
-    const name_firstName = name.querySelector(
+    const firstName = o.container.querySelector(
       '[swFormControlName="firstName"]'
     ) as HTMLInputElement;
 
-    expect(name_firstName).toHaveProperty('value', 'John');
+    expect(firstName).toHaveProperty('value', 'John');
 
-    const name_lastName = name.querySelector(
+    const lastName = o.container.querySelector(
       '[swFormControlName="lastName"]'
     ) as HTMLInputElement;
 
-    expect(name_lastName).toHaveProperty('value', 'Carroll');
-
-    const birthdate = o.container.querySelector(
-      '[swFormControlName="birthdate"]'
-    ) as HTMLInputElement;
-
-    expect(birthdate.value).toEqual(new Date(2020, 0, 1).toISOString());
-
-    const relative = o.container.querySelector(
-      '[swFormGroupName="relative"]'
-    ) as HTMLDivElement;
-
-    const relative_firstName = relative.querySelector('input');
-
-    expect(relative_firstName).toHaveProperty('value', 'Bobby');
-
-    const relative_lastName = relative.querySelector(
-      '[swFormControlName="lastName"]'
-    ) as HTMLInputElement;
-
-    expect(relative_lastName).toHaveProperty('value', 'Paul');
-  });
-
-  it('updateBirthdate', () => {
-    const newDate = new Date(1919, 0, 1);
-
-    o.component.updateBirthdate(newDate);
-
-    expect(o.component.control.value).toEqual({
-      name: {
-        firstName: 'John',
-        lastName: 'Carroll',
-      },
-      birthdate: newDate,
-      relative: {
-        name: {
-          firstName: 'Alison',
-          lastName: 'Paul',
-        },
-      },
-    });
-
-    const birthdate = o.container.querySelector(
-      '[swFormControlName="birthdate"]'
-    ) as HTMLInputElement;
-
-    expect(birthdate.value).toEqual(newDate.toISOString());
-  });
-
-  it('updateFirstName', async () => {
-    o.component.updateFirstName('Cassidy');
-
-    expect(o.component.control.get('name').get('firstName').value).toEqual(
-      'Cassidy'
-    );
-
-    expect(o.component.control.value).toEqual({
-      name: {
-        firstName: 'Cassidy',
-        lastName: 'Carroll',
-      },
-      birthdate: new Date(2020, 0, 1),
-      relative: {
-        name: {
-          firstName: 'Alison',
-          lastName: 'Paul',
-        },
-      },
-    });
-
-    const name = o.container.querySelector(
-      '[swFormGroupName="name"]'
-    ) as HTMLDivElement;
-
-    const name_firstName = name.querySelector('input');
-
-    expect(name_firstName).toHaveProperty('value', 'Cassidy');
-
-    o.component.control.patchValue({
-      name: {
-        firstName: 'Bill',
-      },
-    });
-
-    await wait(0); // without this, errors inside the event loop are silently suppressed
-
-    expect(o.component.control.get('name').get('firstName').value).toEqual(
-      'Bill'
-    );
-
-    expect(name_firstName).toHaveProperty('value', 'Bill');
-  });
-
-  it('updateRelativeFirstName', async () => {
-    o.component.updateRelativeFirstName('Jack');
-
-    expect(o.component.alternateRelativeFirstNameControl.value).toEqual('Jack');
-
-    expect(o.component.control.value).toEqual({
-      name: {
-        firstName: 'John',
-        lastName: 'Carroll',
-      },
-      birthdate: new Date(2020, 0, 1),
-      relative: {
-        name: {
-          firstName: 'Alison',
-          lastName: 'Paul',
-        },
-      },
-    });
-
-    const relative = o.container.querySelector(
-      '[swFormGroupName="relative"]'
-    ) as HTMLDivElement;
-
-    const relative_firstName = relative.querySelector('input');
-
-    expect(relative_firstName).toHaveProperty('value', 'Jack');
-
-    o.component.control.patchValue({
-      relative: {
-        name: {
-          firstName: 'Bill',
-        },
-      },
-    });
-
-    await wait(0); // without this, errors inside the event loop are silently suppressed
-
-    expect(o.component.alternateRelativeFirstNameControl.value).toEqual('Jack');
-    expect(relative_firstName).toHaveProperty('value', 'Jack');
-  });
-
-  it('error if trying to add child control to a new FormGroup', () => {
-    const firstName = o.component.control.get('name').get('firstName');
-
-    const form = new FormGroup();
-
-    expect(() => form.addControl('test', firstName)).toThrowError();
+    expect(lastName).toHaveProperty('value', 'Carroll');
   });
 });

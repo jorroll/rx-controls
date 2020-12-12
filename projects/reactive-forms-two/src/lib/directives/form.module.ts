@@ -6,6 +6,8 @@ import { FormGroupNameDirective } from './form-group-name.directive';
 import { AccessorsModule } from '../accessors/accessors.module';
 import { FormArrayDirective } from './form-array.directive';
 import { FormArrayNameDirective } from './form-array-name.directive';
+import { DefaultFormArrayDirectiveAccessor } from './default-form-array.directive.accessor';
+import { DefaultFormGroupDirectiveAccessor } from './default-form-group.directive.accessor';
 
 @NgModule({
   imports: [AccessorsModule],
@@ -15,8 +17,10 @@ import { FormArrayNameDirective } from './form-array-name.directive';
     FormControlNameDirective,
     FormGroupDirective,
     FormGroupNameDirective,
+    DefaultFormGroupDirectiveAccessor,
     FormArrayDirective,
     FormArrayNameDirective,
+    DefaultFormArrayDirectiveAccessor,
   ],
   exports: [
     AccessorsModule,
@@ -24,8 +28,10 @@ import { FormArrayNameDirective } from './form-array-name.directive';
     FormControlNameDirective,
     FormGroupDirective,
     FormGroupNameDirective,
+    DefaultFormGroupDirectiveAccessor,
     FormArrayDirective,
     FormArrayNameDirective,
+    DefaultFormArrayDirectiveAccessor,
   ],
 })
 export class ReactiveFormsModuleTwo {}

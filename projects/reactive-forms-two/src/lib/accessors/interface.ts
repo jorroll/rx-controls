@@ -7,7 +7,7 @@ export const CONTROL_ACCESSOR_SPECIFICITY = Symbol(
 
 export interface ControlAccessor<T extends AbstractControl = AbstractControl> {
   readonly control: T;
-  [CONTROL_ACCESSOR_SPECIFICITY]?: string;
+  readonly [CONTROL_ACCESSOR_SPECIFICITY]?: string;
 }
 
 export const SW_CONTROL_ACCESSOR = new InjectionToken<
@@ -18,6 +18,6 @@ export interface ControlContainerAccessor<
   T extends AbstractControlContainer = AbstractControlContainer
 > extends ControlAccessor<T> {}
 
-// export const SW_CONTROL_CONTAINER_ACCESSOR = new InjectionToken<
-//   ControlContainerAccessor
-// >('SW_CONTROL_CONTAINER_ACCESSOR');
+export const SW_CONTROL_CONTAINER_ACCESSOR = new InjectionToken<ControlContainerAccessor>(
+  'SW_CONTROL_CONTAINER_ACCESSOR'
+);

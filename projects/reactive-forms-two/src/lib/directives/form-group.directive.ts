@@ -9,8 +9,9 @@ import {
   ElementRef,
   Optional,
   Input,
+  SkipSelf,
 } from '@angular/core';
-import { FormGroup } from '../models';
+import { AbstractControlContainer, FormGroup } from '../models';
 import { SW_CONTROL_DIRECTIVE } from './interface';
 import { resolveControlContainerAccessor, syncAccessorToControl } from './util';
 import {
@@ -30,45 +31,27 @@ import { concat } from 'rxjs';
       provide: SW_CONTROL_DIRECTIVE,
       useExisting: forwardRef(() => FormGroupDirective),
     },
-    {
-      provide: SW_CONTROL_ACCESSOR,
-      useExisting: forwardRef(() => FormGroupDirective),
-      multi: true,
-    },
   ],
 })
-export class FormGroupDirective
-  extends ControlDirective<FormGroup>
-  implements OnChanges {
-  static id = 0;
-  @Input('swFormGroup') providedControl!: FormGroup;
+export class FormGroupDirective<T extends AbstractControlContainer = FormGroup>
+  extends ControlDirective<T>
+  implements ControlContainerAccessor<T>, OnChanges {
+  @Input('swFormGroup') providedControl!: T;
   @Input('swFormGroupValueMapper')
   valueMapper: IControlValueMapper | undefined;
 
-  readonly control: FormGroup;
+  readonly control: T;
 
   constructor(
-    @Optional()
     @Self()
     @Inject(SW_CONTROL_ACCESSOR)
-    accessors: Array<ControlAccessor | ControlContainerAccessor> | null,
+    accessors: Array<ControlAccessor | ControlContainerAccessor>,
     renderer: Renderer2,
     el: ElementRef
   ) {
     super(renderer, el);
 
-    const accessor = accessors && resolveControlContainerAccessor(accessors);
-
-    if (accessor) {
-      this.control = accessor.control as FormGroup;
-    } else {
-      this.control = new FormGroup<any>(
-        {},
-        {
-          id: Symbol(`SwFormGroupDirective-${FormGroupDirective.id++}`),
-        }
-      );
-    }
+    this.control = resolveControlContainerAccessor(accessors).control as T;
   }
 
   ngOnChanges(_: {

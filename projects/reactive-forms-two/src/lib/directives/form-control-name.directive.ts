@@ -42,18 +42,11 @@ export class FormControlNameDirective<
   >
   extends ControlNameDirective<T>
   implements ControlAccessor<T>, OnChanges, OnDestroy {
-  static id = 0;
-
   @Input('swFormControlName') controlName!: string;
   @Input('swFormControlValueMapper')
   valueMapper: IControlValueMapper | undefined;
 
   readonly control: T;
-  //  = new FormControl<any>({
-  //   id: Symbol(`NgFormControlNameDirective-${SwFormControlNameDirective.id++}`),
-  // });
-
-  // readonly accessor: ControlAccessor;
 
   protected containerAccessor: ControlContainerAccessor;
 
@@ -72,8 +65,6 @@ export class FormControlNameDirective<
     this.control = resolveControlAccessor(accessors).control as T;
 
     this.containerAccessor = resolveControlContainerAccessor(parentAccessors);
-
-    // this.subscriptions.push(syncAccessorToControl(this.accessor, this.control));
   }
 
   ngOnChanges(_: { controlName?: SimpleChange; valueMapper?: SimpleChange }) {

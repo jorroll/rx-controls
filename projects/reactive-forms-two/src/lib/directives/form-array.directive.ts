@@ -7,12 +7,11 @@ import {
   Inject,
   Renderer2,
   ElementRef,
-  Optional,
   Input,
 } from '@angular/core';
-import { FormArray } from '../models';
+import { AbstractControlContainer, FormArray } from '../models';
 import { SW_CONTROL_DIRECTIVE } from './interface';
-import { resolveControlContainerAccessor, syncAccessorToControl } from './util';
+import { resolveControlContainerAccessor } from './util';
 import {
   ControlContainerAccessor,
   SW_CONTROL_ACCESSOR,
@@ -20,7 +19,6 @@ import {
 } from '../accessors/interface';
 import { ControlDirective } from './control.directive';
 import { IControlValueMapper } from './interface';
-import { concat } from 'rxjs';
 
 @Directive({
   selector: '[swFormArray]',
@@ -30,42 +28,27 @@ import { concat } from 'rxjs';
       provide: SW_CONTROL_DIRECTIVE,
       useExisting: forwardRef(() => FormArrayDirective),
     },
-    {
-      provide: SW_CONTROL_ACCESSOR,
-      useExisting: forwardRef(() => FormArrayDirective),
-      multi: true,
-    },
   ],
 })
-export class FormArrayDirective
-  extends ControlDirective<FormArray>
-  implements OnChanges {
-  static id = 0;
-  @Input('swFormArray') providedControl!: FormArray;
+export class FormArrayDirective<T extends AbstractControlContainer = FormArray>
+  extends ControlDirective<T>
+  implements ControlContainerAccessor<T>, OnChanges {
+  @Input('swFormArray') providedControl!: T;
   @Input('swFormArrayValueMapper')
   valueMapper: IControlValueMapper | undefined;
 
-  readonly control: FormArray;
+  readonly control: T;
 
   constructor(
-    @Optional()
     @Self()
     @Inject(SW_CONTROL_ACCESSOR)
-    accessors: Array<ControlAccessor | ControlContainerAccessor> | null,
+    accessors: Array<ControlAccessor | ControlContainerAccessor>,
     renderer: Renderer2,
     el: ElementRef
   ) {
     super(renderer, el);
 
-    const accessor = accessors && resolveControlContainerAccessor(accessors);
-
-    if (accessor) {
-      this.control = accessor.control as FormArray;
-    } else {
-      this.control = new FormArray<any>([], {
-        id: Symbol(`SwFormArrayDirective-${FormArrayDirective.id++}`),
-      });
-    }
+    this.control = resolveControlContainerAccessor(accessors).control as T;
   }
 
   ngOnChanges(_: {
