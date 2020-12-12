@@ -1,27 +1,5 @@
 # ReactiveFormsTwo
 
-This project was generated with [Angular CLI](https://github.com/angular/angular-cli) version 10.1.7.
+## Potential "Gotchas" for people familiar with the `@angular/forms` `ReactiveFormsModule`
 
-## Development server
-
-Run `ng serve` for a dev server. Navigate to `http://localhost:4200/`. The app will automatically reload if you change any of the source files.
-
-## Code scaffolding
-
-Run `ng generate component component-name` to generate a new component. You can also use `ng generate directive|pipe|service|class|guard|interface|enum|module`.
-
-## Build
-
-Run `ng build` to build the project. The build artifacts will be stored in the `dist/` directory. Use the `--prod` flag for a production build.
-
-## Running unit tests
-
-Run `ng test` to execute the unit tests via [Karma](https://karma-runner.github.io).
-
-## Running end-to-end tests
-
-Run `ng e2e` to execute the end-to-end tests via [Protractor](http://www.protractortest.org/).
-
-## Further help
-
-To get more help on the Angular CLI use `ng help` or go check out the [Angular CLI README](https://github.com/angular/angular-cli/blob/master/README.md).
+- The new `AbstractControl#valid = (AbstractControl#errors === null)` and `AbstractControl#invalid = (AbstractControl#errors !== null)`. The original abstract control is valid when its `status` is `"VALID"` and invalid when its status is `"INVALID"`. This means that, for the original control, both `valid` and `invalid` would be `false` if the control was pending or disabled. I found this behavior to be unintuitive, which is why it has been changed (note: I don't think there was anything conceptually wrong with the original behavior, but unexpected behavior of any kind should be avoided). Obviously, this change has the downside that people _familiar_ with the original behavior might find the new behavior to be unintuitive. In general though, I think "invalid" being the opposite of "valid" is expected behavior.

@@ -129,6 +129,51 @@ describe('FormGroup', () => {
           'size'
         );
       });
+
+      it('invalid child', async () => {
+        const aControls = {
+          one: new FormControl('', {
+            validators: (c) => (c.value.length > 0 ? null : { required: true }),
+          }),
+        };
+        const a = new FormGroup(aControls);
+
+        await wait(0);
+
+        expect(a.value).toEqual({ one: '' });
+        expect(a.valid).toEqual(false);
+        expect(a.childValid).toEqual(false);
+        expect(a.childrenValid).toEqual(false);
+        expect(a.containerValid).toEqual(true);
+        expect(a.invalid).toEqual(true);
+        expect(a.childInvalid).toEqual(true);
+        expect(a.childrenInvalid).toEqual(true);
+        expect(a.containerInvalid).toEqual(false);
+        expect(a.status).toEqual('INVALID');
+
+        expect(a.controls).toEqual(aControls);
+        expect(a.controlsStore).toEqual(new Map(Object.entries(aControls)));
+        expect(a.size).toEqual(1);
+
+        testAllDefaultsExcept(
+          a,
+          'value',
+          'enabledValue',
+          'controls',
+          'controlsStore',
+          'size',
+          'parent',
+          'status',
+          'valid',
+          'childValid',
+          'childrenValid',
+          'containerValid',
+          'invalid',
+          'childInvalid',
+          'childrenInvalid',
+          'containerInvalid'
+        );
+      });
     });
   });
 });

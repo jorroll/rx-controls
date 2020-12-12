@@ -296,6 +296,14 @@ export abstract class AbstractControlContainerBase<
     if (options.errors) this.setErrors(options.errors);
     if (options.validators) this.setValidators(options.validators);
     if (options.pending) this.markPending(options.pending);
+
+    updateDisabledProp(this);
+    updateChildrenProps(this, 'Readonly');
+    updateChildrenProps(this, 'Pending');
+    updateChildrenProps(this, 'Touched');
+    updateChildrenProps(this, 'Dirty');
+    updateChildrenProps(this, 'Submitted');
+    updateInvalidProp(this);
   }
 
   [AbstractControlContainer.INTERFACE]() {
