@@ -49,4 +49,15 @@ describe('SimpleValueMapperComponent', () => {
     expect(o.component.control.value).toEqual(newDate);
     expect(o.input.value).toEqual(newDate.toISOString());
   });
+
+  it('disables', () => {
+    o.component.control.markDisabled(true);
+    expect(o.input.disabled).toEqual(true);
+  });
+
+  it('enables', () => {
+    o.component.control.markDisabled(true);
+    o.component.control.markDisabled(false);
+    expect(o.input.disabled).toEqual(false);
+  });
 });
