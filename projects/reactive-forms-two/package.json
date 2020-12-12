@@ -1,6 +1,6 @@
 {
   "name": "@service-work/reactive-forms",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "peerDependencies": {
     "@angular/core": "10 || 11"
   },
