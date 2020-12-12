@@ -5,4 +5,3 @@
 export * from './lib/models/public_api';
 export * from './lib/accessors/public_api';
 export * from './lib/directives/public_api';
-export { isEqual as ɵisEqual } from './lib/util';
