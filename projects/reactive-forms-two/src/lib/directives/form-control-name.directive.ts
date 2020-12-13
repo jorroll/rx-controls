@@ -10,10 +10,15 @@ import {
   Renderer2,
   ElementRef,
   forwardRef,
+  Optional,
 } from '@angular/core';
 import { concat } from 'rxjs';
 import { AbstractControl, FormControl } from '../models';
-import { IControlValueMapper } from './interface';
+import {
+  IControlDirectiveCallback,
+  IControlValueMapper,
+  SW_CONTROL_DIRECTIVE_CALLBACK,
+} from './interface';
 import { SW_CONTROL_DIRECTIVE } from './interface';
 import {
   ControlAccessor,
@@ -57,6 +62,9 @@ export class FormControlNameDirective<
     @SkipSelf()
     @Inject(SW_CONTROL_ACCESSOR)
     parentAccessors: ControlAccessor[],
+    @Optional()
+    @Inject(SW_CONTROL_DIRECTIVE_CALLBACK)
+    protected controlDirectiveCallbacks: IControlDirectiveCallback<T>[] | null,
     renderer: Renderer2,
     el: ElementRef
   ) {

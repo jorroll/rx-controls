@@ -5,10 +5,11 @@ import {
   ElementRef,
   InjectionToken,
   Directive,
+  Input,
 } from '@angular/core';
 import { Subscription } from 'rxjs';
 import { AbstractControl, IControlEvent } from '../models';
-import { IControlValueMapper } from './interface';
+import { IControlDirectiveCallback, IControlValueMapper } from './interface';
 import { ControlAccessor } from '../accessors/interface';
 import { isStateChangeOrChildStateChange, isValueStateChange } from './util';
 import { IControlStateChangeEvent } from '../models/abstract-control/abstract-control';
@@ -16,16 +17,22 @@ import { filter } from 'rxjs/operators';
 import { IChildControlStateChangeEvent } from '../models/abstract-control-container/abstract-control-container';
 
 @Directive()
-export abstract class BaseDirective<T extends AbstractControl>
+export abstract class BaseDirective<T extends AbstractControl, D = any>
   implements ControlAccessor<T>, OnChanges, OnDestroy {
   static id = 0;
   abstract readonly control: T;
+
+  @Input('swFormDirectiveData') data: D | null = null;
 
   valueMapper?: IControlValueMapper;
 
   protected accessorValidatorId = Symbol(
     `SwDirectiveAccessorValidator-${BaseDirective.id++}`
   );
+
+  protected abstract controlDirectiveCallbacks:
+    | IControlDirectiveCallback<T>[]
+    | null;
 
   protected onChangesSubscriptions: Subscription[] = [];
   protected subscriptions: Subscription[] = [];
@@ -35,6 +42,12 @@ export abstract class BaseDirective<T extends AbstractControl>
   abstract ngOnChanges(...args: any[]): void;
 
   ngOnInit() {
+    this.controlDirectiveCallbacks?.forEach((c) => {
+      const sub = c.controlDirectiveCallback(this.control, this.data);
+      if (!sub) return;
+      this.subscriptions.push(sub);
+    });
+
     // The nativeElement will be a comment if a directive is placed on
     // an `<ng-container>` element.
     if (!(this.el.nativeElement instanceof HTMLElement)) return;

@@ -9,9 +9,14 @@ import {
   ElementRef,
   forwardRef,
   Input,
+  Optional,
 } from '@angular/core';
 import { AbstractControl, FormControl } from '../models';
-import { SW_CONTROL_DIRECTIVE } from './interface';
+import {
+  IControlDirectiveCallback,
+  SW_CONTROL_DIRECTIVE,
+  SW_CONTROL_DIRECTIVE_CALLBACK,
+} from './interface';
 import { resolveControlAccessor, syncAccessorToControl } from './util';
 import { ControlAccessor, SW_CONTROL_ACCESSOR } from '../accessors/interface';
 import { ControlDirective } from './control.directive';
@@ -41,6 +46,9 @@ export class FormControlDirective<T extends AbstractControl = AbstractControl>
     @Self()
     @Inject(SW_CONTROL_ACCESSOR)
     accessors: ControlAccessor[],
+    @Optional()
+    @Inject(SW_CONTROL_DIRECTIVE_CALLBACK)
+    protected controlDirectiveCallbacks: IControlDirectiveCallback<T>[] | null,
     renderer: Renderer2,
     el: ElementRef
   ) {

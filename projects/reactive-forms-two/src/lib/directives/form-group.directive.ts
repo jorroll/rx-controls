@@ -9,11 +9,14 @@ import {
   ElementRef,
   Optional,
   Input,
-  SkipSelf,
 } from '@angular/core';
 import { AbstractControlContainer, FormGroup } from '../models';
-import { SW_CONTROL_DIRECTIVE } from './interface';
-import { resolveControlContainerAccessor, syncAccessorToControl } from './util';
+import {
+  IControlDirectiveCallback,
+  SW_CONTROL_DIRECTIVE,
+  SW_CONTROL_DIRECTIVE_CALLBACK,
+} from './interface';
+import { resolveControlContainerAccessor } from './util';
 import {
   ControlContainerAccessor,
   SW_CONTROL_ACCESSOR,
@@ -46,6 +49,9 @@ export class FormGroupDirective<T extends AbstractControlContainer = FormGroup>
     @Self()
     @Inject(SW_CONTROL_ACCESSOR)
     accessors: Array<ControlAccessor | ControlContainerAccessor>,
+    @Optional()
+    @Inject(SW_CONTROL_DIRECTIVE_CALLBACK)
+    protected controlDirectiveCallbacks: IControlDirectiveCallback<T>[] | null,
     renderer: Renderer2,
     el: ElementRef
   ) {

@@ -10,9 +10,14 @@ import {
   ElementRef,
   forwardRef,
   Self,
+  Optional,
 } from '@angular/core';
 import { AbstractControlContainer, FormArray } from '../models';
-import { IControlValueMapper } from './interface';
+import {
+  IControlDirectiveCallback,
+  IControlValueMapper,
+  SW_CONTROL_DIRECTIVE_CALLBACK,
+} from './interface';
 import { SW_CONTROL_DIRECTIVE } from './interface';
 import {
   ControlAccessor,
@@ -50,6 +55,9 @@ export class FormArrayNameDirective<T extends FormArray = FormArray>
     @SkipSelf()
     @Inject(SW_CONTROL_ACCESSOR)
     parentAccessors: Array<ControlAccessor | ControlContainerAccessor>,
+    @Optional()
+    @Inject(SW_CONTROL_DIRECTIVE_CALLBACK)
+    protected controlDirectiveCallbacks: IControlDirectiveCallback<T>[] | null,
     renderer: Renderer2,
     el: ElementRef
   ) {
