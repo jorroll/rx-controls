@@ -1064,6 +1064,7 @@ export abstract class AbstractControlBase<RawValue, Data, Value>
       { change: { dirty: () => _dirty }, changedProps: ['dirty'] },
       { change: { readonly: () => _readonly }, changedProps: ['readonly'] },
       { change: { submitted: () => _submitted }, changedProps: ['submitted'] },
+      { change: { data: () => data }, changedProps: ['data'] },
       {
         change: { validatorStore: () => _validatorStore },
         changedProps: ['validatorStore'],
@@ -1078,7 +1079,6 @@ export abstract class AbstractControlBase<RawValue, Data, Value>
         change: { errorsStore: () => _errorsStore },
         changedProps: ['errorsStore'],
       },
-      { change: { data: () => data }, changedProps: ['data'] },
     ];
 
     let eventId: number;

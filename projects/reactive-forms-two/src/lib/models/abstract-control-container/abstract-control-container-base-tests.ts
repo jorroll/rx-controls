@@ -401,10 +401,10 @@ export default function runAbstractControlContainerBaseTestSuite<
           dirtyEvent,
           readonlyEvent,
           submittedEvent,
+          dataEvent,
           validatorStoreEvent,
           pendingStoreEvent,
           errorsStoreEvent,
-          dataEvent,
         ] = await state.pipe(toArray()).toPromise();
 
         [
@@ -458,6 +458,10 @@ export default function runAbstractControlContainerBaseTestSuite<
             },
           ] as const,
           [
+            dataEvent,
+            { change: { data: expect.any(Function) }, changedProps: ['data'] },
+          ] as const,
+          [
             validatorStoreEvent,
             {
               change: { validatorStore: expect.any(Function) },
@@ -477,10 +481,6 @@ export default function runAbstractControlContainerBaseTestSuite<
               change: { errorsStore: expect.any(Function) },
               changedProps: ['errorsStore'],
             },
-          ] as const,
-          [
-            dataEvent,
-            { change: { data: expect.any(Function) }, changedProps: ['data'] },
           ] as const,
         ].forEach(([event, change]) => {
           expect(event).toEqual(buildStateChangeBase(change));

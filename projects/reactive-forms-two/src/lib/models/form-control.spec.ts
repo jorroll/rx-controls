@@ -689,6 +689,7 @@ describe('FormControl', () => {
           change: { submitted: expect.any(Function) },
           changedProps: ['submitted'],
         },
+        { change: { data: expect.any(Function) }, changedProps: ['data'] },
         {
           change: { validatorStore: expect.any(Function) },
           changedProps: ['validatorStore'],
@@ -701,7 +702,6 @@ describe('FormControl', () => {
           change: { errorsStore: expect.any(Function) },
           changedProps: ['errorsStore'],
         },
-        { change: { data: expect.any(Function) }, changedProps: ['data'] },
       ];
 
       const events = await state
