@@ -46,12 +46,12 @@ function testAllDefaultsExcept(
   testAllAbstractControlDefaultsExcept(c, ...skipTests);
   testAllAbstractControlContainerDefaultsExcept(c, ...skipTests);
 
-  if (!skipTests.includes('value')) {
-    expect(c.value).toEqual([]);
+  if (!skipTests.includes('rawValue')) {
+    expect(c.rawValue).toEqual([]);
   }
 
-  if (!skipTests.includes('enabledValue')) {
-    expect(c.enabledValue).toEqual([]);
+  if (!skipTests.includes('value')) {
+    expect(c.value).toEqual([]);
   }
 
   if (!skipTests.includes('controls')) {
@@ -78,8 +78,8 @@ describe('FormArray', () => {
         // only exists because, without it, jest sometimes suppresses error messages
         await wait(0);
 
+        expect(c.rawValue).toEqual(['one', 2]);
         expect(c.value).toEqual(['one', 2]);
-        expect(c.enabledValue).toEqual(['one', 2]);
         expect(c.controls).toEqual(controls);
         expect(c.controlsStore).toEqual(
           new Map(Object.entries(controls).map(([k, c]) => [parseInt(k), c]))
@@ -88,8 +88,8 @@ describe('FormArray', () => {
 
         testAllDefaultsExcept(
           c,
+          'rawValue',
           'value',
-          'enabledValue',
           'controls',
           'controlsStore',
           'size'

@@ -16,6 +16,27 @@ import {
 } from '../models/abstract-control/abstract-control';
 import { filter } from 'rxjs/operators';
 
+function assertEventShape(
+  event: IControlStateChangeEvent
+): asserts event is IControlSelfStateChangeEvent<any, any> {
+  if (
+    event.subtype !== 'Self' ||
+    !(event as IControlSelfStateChangeEvent<any, any>).change.rawValue
+  ) {
+    // because the swFormControlValueMapper returns a `IControlSelfStateChangeEvent`
+    // state change, we want to ensure that this doesn't accidently destroy a custom
+    // event returned by a user. The standard FormControl only changes the rawValue
+    // via a IControlSelfStateChangeEvent "rawValue" event.
+    throw new Error(
+      `swFormControlValueMapper expects all changes to a control's ` +
+        `rawValue to come from IControlSelfStateChangeEvent "rawValue" ` +
+        `changes but it received a StateChange that didn't conform to this. ` +
+        `Are you using a custom accessor that doesn't implement ` +
+        `ControlAccessor<FormControl>?`
+    );
+  }
+}
+
 @Directive()
 export abstract class BaseDirective<T extends AbstractControl, D = any>
   implements ControlAccessor<T>, OnChanges, OnDestroy {
@@ -103,9 +124,10 @@ export abstract class BaseDirective<T extends AbstractControl, D = any>
     return (event: IControlEvent) => {
       if (
         isStateChange(event) &&
-        event.changedProps.includes('value') &&
-        valueMapperToFn
+        valueMapperToFn &&
+        event.changedProps.includes('rawValue')
       ) {
+        assertEventShape(event);
         return this.mapValueEvent(control, event, valueMapperToFn);
       }
 
@@ -127,9 +149,10 @@ export abstract class BaseDirective<T extends AbstractControl, D = any>
     return (event: IControlEvent) => {
       if (
         isStateChange(event) &&
-        event.changedProps.includes('value') &&
-        valueMapperFromFn
+        valueMapperFromFn &&
+        event.changedProps.includes('rawValue')
       ) {
+        assertEventShape(event);
         return this.mapValueEvent(this.control, event, valueMapperFromFn);
       }
 
@@ -140,9 +163,9 @@ export abstract class BaseDirective<T extends AbstractControl, D = any>
   private mapValueEvent(
     control: AbstractControl,
     event: IControlStateChangeEvent,
-    mapperFn: (value: unknown) => unknown
+    mapperFn: (rawValue: unknown) => unknown
   ) {
-    const value = mapperFn(control.value);
+    const rawValue = mapperFn(control.rawValue);
 
     // TODO:
     // If a Assessor implements ControlContainerAccessor and a user
@@ -152,13 +175,13 @@ export abstract class BaseDirective<T extends AbstractControl, D = any>
     // `value` state change handler is currently setup to catch all of these
     // other state changes. AbstractControl might need to be updated to
     // support handling multiple disperate changes
-    const newEvent: IControlSelfStateChangeEvent<T['value'], T['data']> = {
+    const newEvent: IControlSelfStateChangeEvent<T['rawValue'], T['data']> = {
       type: 'StateChange',
       subtype: 'Self',
       source: event.source,
       eventId: event.eventId,
       idOfOriginatingEvent: event.idOfOriginatingEvent,
-      change: { value: () => value },
+      change: { rawValue: () => rawValue },
       changedProps: event.changedProps,
       meta: event.meta,
     };

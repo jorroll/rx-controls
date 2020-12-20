@@ -32,7 +32,7 @@ export function setupListeners(
 export function setupStdControlEventHandlers<T extends ControlAccessor>(
   _dir: T,
   options: {
-    onValueChangeFn: (value: T['control']['value']) => void;
+    onValueChangeFn: (value: T['control']['rawValue']) => void;
   }
 ) {
   const dir = (_dir as unknown) as ControlAccessor & {
@@ -59,7 +59,7 @@ export function setupStdControlEventHandlers<T extends ControlAccessor>(
     if (isStateChange(e)) {
       if (e.changedProps.includes('value')) {
         dir._valueHasBeenSet = true;
-        options.onValueChangeFn(dir.control.value);
+        options.onValueChangeFn(dir.control.rawValue);
       }
     } else if (
       e.type === 'Focus' &&

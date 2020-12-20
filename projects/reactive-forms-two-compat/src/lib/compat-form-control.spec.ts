@@ -287,7 +287,7 @@ describe('CompatFormControl', () => {
     const value = 'okey';
 
     function theTest() {
-      expect(control.value).toEqual(value);
+      expect(control.rawValue).toEqual(value);
       expect(compat.value).toEqual(value);
       testAllAbstractControlDefaultsExcept(control, 'value');
       testAllCompatControlDefaultsExcept(compat, 'value');
@@ -369,7 +369,7 @@ describe('CompatFormControl', () => {
 
     describe('invalid value initially', () => {
       function theTest() {
-        expect(control.value).toEqual('hi');
+        expect(control.rawValue).toEqual('hi');
         expect(control.valid).toEqual(false);
         expect(control.invalid).toEqual(true);
         expect(control.status).toEqual('INVALID');
@@ -464,7 +464,7 @@ describe('CompatFormControl', () => {
 
     describe('valid to invalid', () => {
       function theTest() {
-        expect(control.value).toEqual('hi');
+        expect(control.rawValue).toEqual('hi');
         expect(control.valid).toEqual(false);
         expect(control.invalid).toEqual(true);
         expect(control.status).toEqual('INVALID');

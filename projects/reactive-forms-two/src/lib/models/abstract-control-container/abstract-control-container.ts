@@ -24,20 +24,22 @@ type PickRequiredKeys<T> = {
 type ObjectControlsOptionalValue<
   T extends { [key: string]: AbstractControl | undefined }
 > = {
-  [P in Exclude<PickUndefinedKeys<T>, undefined>]?: NonNullable<T[P]>['value'];
+  [P in Exclude<PickUndefinedKeys<T>, undefined>]?: NonNullable<
+    T[P]
+  >['rawValue'];
 };
 
 type ObjectControlsRequiredValue<
   T extends { [key: string]: AbstractControl | undefined }
 > = {
-  [P in Exclude<PickRequiredKeys<T>, undefined>]: NonNullable<T[P]>['value'];
+  [P in Exclude<PickRequiredKeys<T>, undefined>]: NonNullable<T[P]>['rawValue'];
 };
 
 type ArrayControlsValue<
   T extends ReadonlyArray<AbstractControl>
 > = T extends ReadonlyArray<infer C>
   ? C extends AbstractControl
-    ? C['value']
+    ? C['rawValue']
     : never
   : never;
 
@@ -47,8 +49,8 @@ type ObjectControlsOptionalEnabledValue<
   [P in Exclude<PickUndefinedKeys<T>, undefined>]?: NonNullable<
     T[P]
   > extends AbstractControlContainer
-    ? NonNullable<T[P]>['enabledValue']
-    : NonNullable<T[P]>['value'];
+    ? NonNullable<T[P]>['value']
+    : NonNullable<T[P]>['rawValue'];
 };
 
 type ObjectControlsRequiredEnabledValue<
@@ -57,17 +59,17 @@ type ObjectControlsRequiredEnabledValue<
   [P in Exclude<PickRequiredKeys<T>, undefined>]: NonNullable<
     T[P]
   > extends AbstractControlContainer
-    ? NonNullable<T[P]>['enabledValue']
-    : NonNullable<T[P]>['value'];
+    ? NonNullable<T[P]>['value']
+    : NonNullable<T[P]>['rawValue'];
 };
 
 type ArrayControlsEnabledValue<
   T extends ReadonlyArray<AbstractControl>
 > = T extends ReadonlyArray<infer C>
   ? C extends AbstractControlContainer
-    ? C['enabledValue']
-    : C extends AbstractControl
     ? C['value']
+    : C extends AbstractControl
+    ? C['rawValue']
     : never
   : never;
 
@@ -89,7 +91,7 @@ export type ControlsKey<
     keyof Controls & string
   : any;
 
-export type ControlsValue<
+export type ControlsRawValue<
   Controls extends GenericControlsObject
 > = Controls extends ReadonlyArray<AbstractControl>
   ? ArrayControlsValue<Controls>
@@ -98,7 +100,7 @@ export type ControlsValue<
       ObjectControlsOptionalValue<Controls>
   : never;
 
-export type ControlsEnabledValue<
+export type ControlsValue<
   Controls extends GenericControlsObject
 > = Controls extends ReadonlyArray<AbstractControl>
   ? ArrayControlsEnabledValue<Controls>
@@ -118,7 +120,7 @@ export type ContainerControls<C> = C extends AbstractControlContainer<
 export interface IControlContainerStateChange<
   Controls extends GenericControlsObject,
   D
-> extends IControlStateChange<ControlsValue<Controls>, D> {
+> extends IControlStateChange<ControlsRawValue<Controls>, D> {
   controlsStore?: IStateChange<
     ReadonlyMap<ControlsKey<Controls>, Controls[ControlsKey<Controls>]>
   >;
@@ -127,7 +129,7 @@ export interface IControlContainerStateChange<
 export interface IControlContainerSelfStateChangeEvent<
   Controls extends GenericControlsObject,
   D
-> extends IControlSelfStateChangeEvent<ControlsValue<Controls>, D> {
+> extends IControlSelfStateChangeEvent<ControlsRawValue<Controls>, D> {
   change: IControlContainerStateChange<Controls, D>;
 }
 
@@ -163,7 +165,11 @@ export namespace AbstractControlContainer {
 export interface AbstractControlContainer<
   Controls extends GenericControlsObject = any,
   Data = any
-> extends AbstractControl<ControlsValue<Controls>, Data> {
+> extends AbstractControl<
+    ControlsRawValue<Controls>,
+    Data,
+    ControlsValue<Controls>
+  > {
   readonly controls: Controls;
   readonly controlsStore: ReadonlyMap<
     ControlsKey<Controls>,
@@ -171,12 +177,8 @@ export interface AbstractControlContainer<
   >;
   readonly size: number;
 
-  /**
-   * Only returns values for `enabled` child controls. If a
-   * child control is itself a `ControlContainer`, it will return
-   * the `enabledValue` for that child.
-   */
-  readonly enabledValue: ControlsEnabledValue<Controls>;
+  /** Only returns values for `enabled` child controls. */
+  readonly value: ControlsValue<Controls>;
 
   /** Will return true if `containerValid` and `childrenValid` */
   readonly valid: boolean;

@@ -7,8 +7,8 @@ import {
   IAbstractControlContainerBaseArgs,
 } from './abstract-control-container/abstract-control-container-base';
 import {
-  ControlsEnabledValue,
   ControlsValue,
+  ControlsRawValue,
   IControlContainerStateChange,
   ControlsKey,
   AbstractControlContainer,
@@ -39,9 +39,11 @@ export class FormArray<
     // if a non-default value is provided. In the case of a default value,
     // the following properties need be manually set.
     if (!this._controls) this._controls = ([] as unknown) as Controls;
-    if (!this._value) this._value = ([] as unknown) as ControlsValue<Controls>;
-    if (!this._enabledValue) {
-      this._enabledValue = ([] as unknown) as ControlsEnabledValue<Controls>;
+    if (!this._rawValue) {
+      this._rawValue = ([] as unknown) as ControlsRawValue<Controls>;
+    }
+    if (!this._value) {
+      this._value = ([] as unknown) as ControlsValue<Controls>;
     }
   }
 
@@ -103,24 +105,16 @@ export class FormArray<
     }
 
     const controls: Array<Controls[ControlsKey<Controls>]> = [];
+    const newRawValue: Array<this['rawValue'][ControlsKey<Controls>]> = [];
     const newValue: Array<this['value'][ControlsKey<Controls>]> = [];
-    const newEnabledValue: Array<
-      this['enabledValue'][ControlsKey<Controls>]
-    > = [];
 
     // controls that need to be added
     for (const [key, control] of controlsStore) {
       controls.push(control);
-      newValue.push(control.value);
+      newRawValue.push(control.rawValue);
 
       if (control.enabled) {
-        const controlEnabledValue = AbstractControlContainer.isControlContainer(
-          control
-        )
-          ? control.enabledValue
-          : control.value;
-
-        newEnabledValue.push(controlEnabledValue);
+        newValue.push(control.value);
       }
 
       if (this._controlsStore.get(key) === control) continue;
@@ -133,8 +127,8 @@ export class FormArray<
     // This is needed because the call to "registerControl" can clone
     // the provided control (returning a new one);
     this._controlsStore = (controlsStore as unknown) as this['controlsStore'];
-    this._value = newValue as this['value'];
-    this._enabledValue = (newEnabledValue as unknown) as this['enabledValue'];
+    this._rawValue = newRawValue as this['rawValue'];
+    this._value = (newValue as unknown) as this['value'];
 
     return {
       ...event,
@@ -142,13 +136,13 @@ export class FormArray<
       changedProps: [
         'controlsStore',
         'value',
-        'enabledValue',
+        'rawValue',
         ...this.runValidation(event),
       ],
     };
   }
 
-  protected shallowCloneValue<T extends this['value'] | this['enabledValue']>(
+  protected shallowCloneValue<T extends this['rawValue'] | this['value']>(
     value: T
   ) {
     return (value as any).slice() as T;

@@ -15,6 +15,7 @@ import {
   AbstractControl,
   IStateChange,
   IControlStateChangeEvent,
+  IControlSelfStateChangeEvent,
 } from '../models/abstract-control/abstract-control';
 import { SW_CONTROL_DIRECTIVE } from './interface';
 
@@ -74,3 +75,12 @@ export function resolveControlContainerAccessor<T extends ControlAccessor>(
 
 //   return sub;
 // }
+
+export function isSelfStateChange(
+  e: IControlEvent
+): e is IControlSelfStateChangeEvent<any, any> {
+  return (
+    e.type === 'StateChange' &&
+    (e as IControlStateChangeEvent).subtype === 'Self'
+  );
+}

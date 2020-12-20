@@ -37,7 +37,7 @@ describe('SimpleValueMapperComponent', () => {
   beforeEach(beforeEachFn(SimpleValueMapperComponent, 'input', o));
 
   it('initializes', () => {
-    expect(o.input.value).toEqual(o.component.control.value!.toISOString());
+    expect(o.input.value).toEqual(o.component.control.rawValue!.toISOString());
   });
 
   it('updates', () => {
@@ -46,7 +46,7 @@ describe('SimpleValueMapperComponent', () => {
     userEvent.clear(o.input);
     userEvent.paste(o.input, newDate.toISOString());
 
-    expect(o.component.control.value).toEqual(newDate);
+    expect(o.component.control.rawValue).toEqual(newDate);
     expect(o.input.value).toEqual(newDate.toISOString());
   });
 

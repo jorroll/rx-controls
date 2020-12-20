@@ -71,7 +71,7 @@ export class RadioInputRegistry {
     }
 
     const isNewAccessorSelected =
-      accessor.control.value === accessor.radioValue;
+      accessor.control.rawValue === accessor.radioValue;
     // it doesn't matter which we select since all the existing ones have
     // their value synced
     const existingAccessor = accessors[0];
@@ -80,9 +80,9 @@ export class RadioInputRegistry {
     // selected to a radio group, then it becomes the "selected" control in the
     // new group
     if (!isNewAccessorSelected && existingAccessor) {
-      accessor.control.setValue(existingAccessor.control.value);
+      accessor.control.setValue(existingAccessor.control.rawValue);
     } else if (isNewAccessorSelected && existingAccessor) {
-      existingAccessor.control.setValue(accessor.control.value);
+      existingAccessor.control.setValue(accessor.control.rawValue);
     }
 
     if (existingAccessor) {
@@ -229,7 +229,7 @@ export class RadioInputAccessor
     );
 
     const sub3 = this.value$.subscribe((change) => {
-      if (change.previousValue !== this.control.value) return;
+      if (change.previousValue !== this.control.rawValue) return;
       this.control.setValue(change.currentValue);
     });
 

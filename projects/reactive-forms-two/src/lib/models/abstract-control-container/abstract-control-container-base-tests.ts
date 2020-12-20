@@ -20,7 +20,7 @@ import {
 function testAllDefaultsExcept(
   c: AbstractControlContainer,
   ...skipTests: Array<
-    Omit<keyof AbstractControlContainer, 'value' | 'enabledValue' | 'controls'>
+    Omit<keyof AbstractControlContainer, 'value' | 'rawValue' | 'controls'>
   >
 ) {
   testAllAbstractControlDefaultsExcept(c, ...skipTests);
@@ -412,14 +412,14 @@ export default function runAbstractControlContainerBaseTestSuite<
             controlsStoreEvent,
             {
               change: { controlsStore: expect.any(Function) },
-              changedProps: ['controlsStore', 'value'],
+              changedProps: ['controlsStore', 'rawValue', 'value'],
             },
           ] as const,
           [
             valueEvent,
             {
-              change: { value: expect.any(Function) },
-              changedProps: ['value'],
+              change: { rawValue: expect.any(Function) },
+              changedProps: ['value', 'rawValue'],
             },
           ] as const,
           [

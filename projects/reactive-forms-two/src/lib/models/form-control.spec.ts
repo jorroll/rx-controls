@@ -37,8 +37,9 @@ function testAllDefaultsExcept(
 ) {
   testAllAbstractControlDefaultsExcept(c, ...skipTests);
 
-  if (!skipTests.includes('value')) {
+  if (!(skipTests.includes('value') || skipTests.includes('rawValue'))) {
     expect(c.value).toEqual(null);
+    expect(c.rawValue).toEqual(null);
   }
 }
 
@@ -55,12 +56,13 @@ describe('FormControl', () => {
     describe('options', () => {
       let c: FormControl;
 
-      it('value', () => {
+      it('value/rawValue', () => {
         c = new FormControl('one');
 
         expect(c.value).toEqual('one');
+        expect(c.rawValue).toEqual('one');
 
-        testAllDefaultsExcept(c, 'value');
+        testAllDefaultsExcept(c, 'value', 'rawValue');
       });
 
       it('id', () => {
@@ -377,13 +379,13 @@ describe('FormControl', () => {
     });
 
     it('should have starting value', () => {
-      expect(c.value).toEqual('oldValue');
+      expect(c.rawValue).toEqual('oldValue');
       // expect(o.value).toEqual('otherValue');
     });
 
     it('should set the value of the control', () => {
       c.setValue('newValue');
-      expect(c.value).toEqual('newValue');
+      expect(c.rawValue).toEqual('newValue');
     });
 
     it('should fire a StateChange event', () => {
@@ -398,9 +400,9 @@ describe('FormControl', () => {
           source: c.id,
           meta: {},
           change: {
-            value: expect.any(Function),
+            rawValue: expect.any(Function),
           },
-          changedProps: ['value'],
+          changedProps: ['value', 'rawValue'],
         });
       });
 
@@ -410,7 +412,7 @@ describe('FormControl', () => {
           eventId: expect.any(Number),
           idOfOriginatingEvent: expect.any(Number),
           source: c.id,
-          value: 'newValue',
+          rawValue: 'newValue',
           meta: {},
         });
       });
@@ -421,24 +423,25 @@ describe('FormControl', () => {
           eventId: expect.any(Number),
           idOfOriginatingEvent: expect.any(Number),
           source: c.id,
-          value: 'newValue',
+          rawValue: 'newValue',
           meta: {},
         });
       });
 
       c.setValue('newValue');
 
-      expect(c.value).toEqual('newValue');
+      expect(c.rawValue).toEqual('newValue');
 
       return Promise.all([promise1, promise2, promise3]);
     });
 
     it('with validator', async () => {
       c.setValidators((c) =>
-        c.value !== 'oldValue' ? null : { required: true }
+        c.rawValue !== 'oldValue' ? null : { required: true }
       );
 
       expect(c.value).toEqual('oldValue');
+      expect(c.rawValue).toEqual('oldValue');
       expect(c.valid).toEqual(false);
       expect(c.invalid).toEqual(true);
       expect(c.status).toEqual('INVALID');
@@ -450,6 +453,7 @@ describe('FormControl', () => {
       testAllDefaultsExcept(
         c,
         'value',
+        'rawValue',
         'status',
         'valid',
         'invalid',
@@ -466,11 +470,17 @@ describe('FormControl', () => {
       end.next();
       end.complete();
 
-      expect(c.value).toEqual('hi');
+      expect(c.rawValue).toEqual('hi');
       expect(c.validator).toEqual(expect.any(Function));
       expect(c.validatorStore).toEqual(new Map([[c.id, expect.any(Function)]]));
 
-      testAllDefaultsExcept(c, 'value', 'validator', 'validatorStore');
+      testAllDefaultsExcept(
+        c,
+        'value',
+        'rawValue',
+        'validator',
+        'validatorStore'
+      );
 
       const [event1, event2, event3, event4] = await promise1;
 
@@ -479,10 +489,11 @@ describe('FormControl', () => {
         subtype: 'Self',
         source: c.id,
         change: {
-          value: expect.any(Function),
+          rawValue: expect.any(Function),
         },
         changedProps: expect.arrayContaining([
           'value',
+          'rawValue',
           'valid',
           'invalid',
           'status',
@@ -500,7 +511,7 @@ describe('FormControl', () => {
         eventId: expect.any(Number),
         idOfOriginatingEvent: expect.any(Number),
         meta: {},
-        value: 'hi',
+        rawValue: 'hi',
       });
 
       expect(event3).toEqual<IControlValidationEvent<unknown>>({
@@ -509,7 +520,7 @@ describe('FormControl', () => {
         eventId: expect.any(Number),
         idOfOriginatingEvent: expect.any(Number),
         meta: {},
-        value: 'hi',
+        rawValue: 'hi',
       });
 
       expect(event4).toBe(undefined);
@@ -531,7 +542,7 @@ describe('FormControl', () => {
         .validationService('myValidationService')
         .pipe(take(1))
         .forEach((e) => {
-          if (e.value === 'validValue') {
+          if (e.rawValue === 'validValue') {
             c.setErrors(null, { source: 'myValidationService' });
             c.markValidationComplete('myValidationService');
             return;
@@ -548,7 +559,7 @@ describe('FormControl', () => {
 
       const [one, two, three, four, five] = await promise;
 
-      expect(c.value).toEqual('invalidValue');
+      expect(c.rawValue).toEqual('invalidValue');
 
       // expect(one).toEqual({
       //   type: 'StateChange',
@@ -569,9 +580,9 @@ describe('FormControl', () => {
         source: c.id,
         meta: {},
         change: {
-          value: expect.any(Function),
+          rawValue: expect.any(Function),
         },
-        changedProps: ['value'],
+        changedProps: ['value', 'rawValue'],
       });
 
       expect(two).toEqual({
@@ -579,7 +590,7 @@ describe('FormControl', () => {
         eventId: expect.any(Number),
         idOfOriginatingEvent: expect.any(Number),
         source: c.id,
-        value: 'invalidValue',
+        rawValue: 'invalidValue',
         meta: {},
       });
 
@@ -655,8 +666,8 @@ describe('FormControl', () => {
 
       const changes = [
         {
-          change: { value: expect.any(Function) },
-          changedProps: ['value'],
+          change: { rawValue: expect.any(Function) },
+          changedProps: ['value', 'rawValue'],
         },
         {
           change: { disabled: expect.any(Function) },
@@ -715,20 +726,20 @@ describe('FormControl', () => {
 
       const state = a.replayState();
 
-      expect(b.value).toEqual(2);
+      expect(b.rawValue).toEqual(2);
 
       state.subscribe(b.source);
 
-      expect(b.value).toEqual(a.value);
+      expect(b.rawValue).toEqual(a.rawValue);
 
       b.setValue(3);
 
-      expect(b.value).not.toEqual(a.value);
-      expect(b.value).toEqual(3);
+      expect(b.rawValue).not.toEqual(a.rawValue);
+      expect(b.rawValue).toEqual(3);
 
       state.subscribe(b.source);
 
-      expect(b.value).toEqual(a.value);
+      expect(b.rawValue).toEqual(a.rawValue);
     });
   });
 
@@ -738,17 +749,17 @@ describe('FormControl', () => {
       a = new FormControl();
     });
 
-    describe('value', () => {
+    function theTests(valueProp: 'value' | 'rawValue') {
       it('', () => {
         const promise1 = a
-          .observe('value')
+          .observe(valueProp)
           .pipe(take(1))
           .forEach((value) => {
             expect(value).toEqual(null);
           });
 
         const promise2 = a
-          .observe('value')
+          .observe(valueProp)
           .pipe(skip(1), take(1))
           .forEach((value) => {
             expect(value).toEqual('one');
@@ -766,7 +777,7 @@ describe('FormControl', () => {
           .validationService('myValidationService')
           .pipe(takeUntil(testCompleteSignal))
           .forEach((e) => {
-            if (e.value === 'validValue') {
+            if (e.rawValue === 'validValue') {
               a.setErrors(null, { source: 'myValidationService' });
               a.markValidationComplete('myValidationService');
               return;
@@ -781,7 +792,7 @@ describe('FormControl', () => {
           });
 
         const promise1 = a
-          .observe('value')
+          .observe(valueProp)
           .pipe(take(1))
           .forEach((value) => {
             expect(a.errors).toEqual(null);
@@ -789,7 +800,7 @@ describe('FormControl', () => {
           });
 
         const promise2 = a
-          .observe('value')
+          .observe(valueProp)
           .pipe(skip(1), take(1))
           .forEach((value) => {
             expect(a.errors).toEqual({ invalidValue: true });
@@ -797,7 +808,7 @@ describe('FormControl', () => {
           });
 
         const promise3 = a
-          .observe('value')
+          .observe(valueProp)
           .pipe(skip(2), take(1))
           .forEach((value) => {
             expect(a.errors).toEqual(null);
@@ -807,11 +818,13 @@ describe('FormControl', () => {
         a.setValue('invalidValue');
 
         expect(a.errors).toEqual({ invalidValue: true });
+        expect(a.rawValue).toEqual('invalidValue');
         expect(a.value).toEqual('invalidValue');
 
         a.setValue('validValue');
 
         expect(a.errors).toEqual(null);
+        expect(a.rawValue).toEqual('validValue');
         expect(a.value).toEqual('validValue');
 
         testCompleteSignal.next();
@@ -819,78 +832,81 @@ describe('FormControl', () => {
 
         return Promise.all([promise1, promise2, promise3, validatorPromise]);
       });
-    });
 
-    it('parent', () => {
-      const promise1 = a
-        .observe('parent')
-        .pipe(take(1))
-        .forEach((p) => {
-          expect(p).toEqual(null);
-        });
-
-      const parent = new FormControl();
-
-      const promise2 = a
-        .observe('parent')
-        .pipe(skip(1), take(1))
-        .forEach((p) => {
-          expect(p).toEqual(parent);
-        });
-
-      a.setParent(parent);
-
-      return Promise.all([promise1, promise2]);
-    });
-
-    describe('options', () => {
-      it('noEmit', async () => {
+      it('parent', () => {
         const promise1 = a
-          .observe('value')
+          .observe('parent')
           .pipe(take(1))
-          .forEach((value) => {
-            expect(value).toEqual(null);
+          .forEach((p) => {
+            expect(p).toEqual(null);
           });
 
-        const completeSignal = new Subject();
+        const parent = new FormControl();
 
         const promise2 = a
-          .observe('value')
-          .pipe(takeUntil(completeSignal), skip(1))
-          .forEach(() => {
-            throw new Error('This should never be called');
-          });
-
-        a.setValue('one', { noEmit: true });
-
-        await wait(0);
-
-        completeSignal.next();
-        completeSignal.complete();
-
-        return Promise.all([promise1, promise2]);
-      });
-
-      it('ignoreNoEmit', async () => {
-        const promise1 = a
-          .observe('value', { ignoreNoEmit: true })
-          .pipe(take(1))
-          .forEach((value) => {
-            expect(value).toEqual(null);
-          });
-
-        const promise2 = a
-          .observe('value', { ignoreNoEmit: true })
+          .observe('parent')
           .pipe(skip(1), take(1))
-          .forEach((value) => {
-            expect(value).toEqual('one');
+          .forEach((p) => {
+            expect(p).toEqual(parent);
           });
 
-        a.setValue('one', { noEmit: true });
+        a.setParent(parent);
 
         return Promise.all([promise1, promise2]);
       });
-    });
+
+      describe('options', () => {
+        it('noEmit', async () => {
+          const promise1 = a
+            .observe(valueProp)
+            .pipe(take(1))
+            .forEach((value) => {
+              expect(value).toEqual(null);
+            });
+
+          const completeSignal = new Subject();
+
+          const promise2 = a
+            .observe(valueProp)
+            .pipe(takeUntil(completeSignal), skip(1))
+            .forEach(() => {
+              throw new Error('This should never be called');
+            });
+
+          a.setValue('one', { noEmit: true });
+
+          await wait(0);
+
+          completeSignal.next();
+          completeSignal.complete();
+
+          return Promise.all([promise1, promise2]);
+        });
+
+        it('ignoreNoEmit', async () => {
+          const promise1 = a
+            .observe(valueProp, { ignoreNoEmit: true })
+            .pipe(take(1))
+            .forEach((value) => {
+              expect(value).toEqual(null);
+            });
+
+          const promise2 = a
+            .observe(valueProp, { ignoreNoEmit: true })
+            .pipe(skip(1), take(1))
+            .forEach((value) => {
+              expect(value).toEqual('one');
+            });
+
+          a.setValue('one', { noEmit: true });
+
+          return Promise.all([promise1, promise2]);
+        });
+      });
+    }
+
+    describe('value', () => theTests('value'));
+    describe('rawValue', () => theTests('rawValue'));
   });
 
   describe(`observeChanges`, () => {
@@ -899,10 +915,10 @@ describe('FormControl', () => {
       a = new FormControl();
     });
 
-    describe('value', () => {
+    function theTests(valueProp: 'value' | 'rawValue') {
       it('', () => {
         const promise1 = a
-          .observeChanges('value')
+          .observeChanges(valueProp)
           .pipe(take(1))
           .forEach((value) => {
             expect(value).toEqual('one');
@@ -920,7 +936,7 @@ describe('FormControl', () => {
           .validationService('myValidationService')
           .pipe(takeUntil(testCompleteSignal))
           .forEach((e) => {
-            if (e.value === 'validValue') {
+            if (e.rawValue === 'validValue') {
               a.setErrors(null, { source: 'myValidationService' });
               a.markValidationComplete('myValidationService');
               return;
@@ -935,7 +951,7 @@ describe('FormControl', () => {
           });
 
         const promise1 = a
-          .observeChanges('value')
+          .observeChanges(valueProp)
           .pipe(take(1))
           .forEach((value) => {
             expect(a.errors).toEqual({ invalidValue: true });
@@ -943,7 +959,7 @@ describe('FormControl', () => {
           });
 
         const promise2 = a
-          .observeChanges('value')
+          .observeChanges(valueProp)
           .pipe(skip(1), take(1))
           .forEach((value) => {
             expect(a.errors).toEqual(null);
@@ -953,11 +969,13 @@ describe('FormControl', () => {
         a.setValue('invalidValue');
 
         expect(a.errors).toEqual({ invalidValue: true });
+        expect(a.rawValue).toEqual('invalidValue');
         expect(a.value).toEqual('invalidValue');
 
         a.setValue('validValue');
 
         expect(a.errors).toEqual(null);
+        expect(a.rawValue).toEqual('validValue');
         expect(a.value).toEqual('validValue');
 
         testCompleteSignal.next();
@@ -965,7 +983,10 @@ describe('FormControl', () => {
 
         return Promise.all([promise1, promise2, validatorPromise]);
       });
-    });
+    }
+
+    describe('value', () => theTests('value'));
+    describe('rawValue', () => theTests('rawValue'));
   });
 
   describe(`link`, () => {
@@ -981,13 +1002,13 @@ describe('FormControl', () => {
 
       a.setValue('two');
 
-      expect(a.value).toEqual('two');
-      expect(b.value).toEqual('two');
+      expect(a.rawValue).toEqual('two');
+      expect(b.rawValue).toEqual('two');
 
       b.setValue(3);
 
-      expect(b.value).toEqual(3);
-      expect(a.value).toEqual('two');
+      expect(b.rawValue).toEqual(3);
+      expect(a.rawValue).toEqual('two');
     });
 
     it(`a & b`, () => {
@@ -996,13 +1017,13 @@ describe('FormControl', () => {
 
       a.setValue('two');
 
-      expect(a.value).toEqual('two');
-      expect(b.value).toEqual('two');
+      expect(a.rawValue).toEqual('two');
+      expect(b.rawValue).toEqual('two');
 
       b.setValue(3);
 
-      expect(b.value).toEqual(3);
-      expect(a.value).toEqual(3);
+      expect(b.rawValue).toEqual(3);
+      expect(a.rawValue).toEqual(3);
     });
   });
 });
