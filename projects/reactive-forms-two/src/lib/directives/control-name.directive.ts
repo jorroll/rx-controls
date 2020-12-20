@@ -49,7 +49,7 @@ export abstract class ControlNameDirective<T extends AbstractControl>
 
         this.innerSubscriptions.push(
           concat(providedControl.replayState(), providedControl.events)
-            .pipe(map(this.toAccessorEventMapFn()))
+            .pipe(map(this.toAccessorEventMapFn(providedControl)))
             .subscribe(this.control.source)
         );
 

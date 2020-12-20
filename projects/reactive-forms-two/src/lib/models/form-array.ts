@@ -9,10 +9,10 @@ import {
 import {
   ControlsEnabledValue,
   ControlsValue,
-  IControlContainerStateChangeEvent,
   IControlContainerStateChange,
   ControlsKey,
   AbstractControlContainer,
+  IControlContainerSelfStateChangeEvent,
 } from './abstract-control-container/abstract-control-container';
 import { getSimpleContainerStateChangeEventArgs } from './util';
 import { isEqual } from '../util';
@@ -50,7 +50,7 @@ export class FormArray<
       throw new Error('AbstractControl can only have one parent');
     }
 
-    this.emitEvent<IControlContainerStateChangeEvent<Controls, Data>>(
+    this.emitEvent<IControlContainerSelfStateChangeEvent<Controls, Data>>(
       getSimpleContainerStateChangeEventArgs({
         controlsStore: (old) =>
           new Map(old).set(old.size as ControlsKey<Controls>, control),
@@ -64,7 +64,7 @@ export class FormArray<
       throw new Error('AbstractControl can only have one parent');
     }
 
-    this.emitEvent<IControlContainerStateChangeEvent<Controls, Data>>(
+    this.emitEvent<IControlContainerSelfStateChangeEvent<Controls, Data>>(
       getSimpleContainerStateChangeEventArgs({
         controlsStore: (old) => {
           const controlsStore = new Map([
@@ -83,8 +83,8 @@ export class FormArray<
   }
 
   protected processStateChange_ControlsStore(
-    event: IControlContainerStateChangeEvent<Controls, Data>
-  ): IControlContainerStateChangeEvent<Controls, Data> | null {
+    event: IControlContainerSelfStateChangeEvent<Controls, Data>
+  ): IControlContainerSelfStateChangeEvent<Controls, Data> | null {
     const change = event.change.controlsStore as NonNullable<
       IControlContainerStateChange<Controls, Data>['controlsStore']
     >;
@@ -152,5 +152,9 @@ export class FormArray<
     value: T
   ) {
     return (value as any).slice() as T;
+  }
+
+  protected coerceControlStringKey(key: string) {
+    return parseInt(key, 10) as ControlsKey<Controls>;
   }
 }

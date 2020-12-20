@@ -81,7 +81,9 @@ describe('FormArray', () => {
         expect(c.value).toEqual(['one', 2]);
         expect(c.enabledValue).toEqual(['one', 2]);
         expect(c.controls).toEqual(controls);
-        expect(c.controlsStore).toEqual(new Map(Object.entries(controls)));
+        expect(c.controlsStore).toEqual(
+          new Map(Object.entries(controls).map(([k, c]) => [parseInt(k), c]))
+        );
         expect(c.size).toEqual(2);
 
         testAllDefaultsExcept(

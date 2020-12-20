@@ -9,7 +9,8 @@ import {
   ControlsEnabledValue,
   ControlsValue,
   IControlContainerStateChange,
-  IControlContainerStateChangeEvent,
+  IControlContainerSelfStateChangeEvent,
+  ControlsKey,
 } from './abstract-control-container/abstract-control-container';
 import { Mutable } from './util';
 import { isEqual } from '../util';
@@ -45,8 +46,8 @@ export class FormGroup<
   }
 
   protected processStateChange_ControlsStore(
-    event: IControlContainerStateChangeEvent<Controls, Data>
-  ): IControlContainerStateChangeEvent<Controls, Data> | null {
+    event: IControlContainerSelfStateChangeEvent<Controls, Data>
+  ): IControlContainerSelfStateChangeEvent<Controls, Data> | null {
     const change = event.change.controlsStore as NonNullable<
       IControlContainerStateChange<Controls, Data>['controlsStore']
     >;
@@ -111,5 +112,9 @@ export class FormGroup<
     value: T
   ) {
     return { ...value };
+  }
+
+  protected coerceControlStringKey(key: string) {
+    return key as ControlsKey<Controls>;
   }
 }

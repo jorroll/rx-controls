@@ -6,11 +6,12 @@ import {
   ControlId,
   IControlEvent,
   IControlEventOptions,
-  IControlStateChangeEvent,
   IControlStateChange,
   IControlValidationEvent,
   IControlEventArgs,
   IControlFocusEvent,
+  IControlSelfStateChangeEvent,
+  IControlStateChangeEvent,
 } from './abstract-control';
 import {
   defer,
@@ -50,7 +51,7 @@ export interface IAbstractControlBaseArgs<Data = any> {
   pending?: boolean | ReadonlySet<ControlId>;
 }
 
-function composeValidators(
+export function composeValidators(
   validators: undefined | null | ValidatorFn | ValidatorFn[]
 ): null | ValidatorFn {
   if (!validators || (Array.isArray(validators) && validators.length === 0)) {
@@ -116,6 +117,11 @@ export abstract class AbstractControlBase<Value = any, Data = any>
       }
 
       const newEvent = this.processEvent(event);
+
+      if (typeof (event as any)?.onEventProcessedFn === 'function') {
+        queueScheduler.schedule((event as any).onEventProcessedFn, 0, newEvent);
+        delete (newEvent as any)?.onEventProcessedFn;
+      }
 
       if (AbstractControl.debugCallback) {
         AbstractControl.debugCallback.call(this, {
@@ -220,6 +226,50 @@ export abstract class AbstractControlBase<Value = any, Data = any>
   get parent() {
     return this._parent;
   }
+
+  // get parentContainerDisabled() {
+  //   if (!this.parent) return false;
+
+  //   return (
+  //     (this.parent as any).containerDisabled ||
+  //     this.parent.parentContainerDisabled
+  //   );
+  // }
+
+  // get parentContainerTouched() {
+  //   if (!this.parent) return false;
+
+  //   return (
+  //     (this.parent as any).containerTouched ||
+  //     this.parent.parentContainerTouched
+  //   );
+  // }
+
+  // get parentContainerDirty() {
+  //   if (!this.parent) return false;
+
+  //   return (
+  //     (this.parent as any).containerDirty || this.parent.parentContainerDirty
+  //   );
+  // }
+
+  // get parentContainerReadonly() {
+  //   if (!this.parent) return false;
+
+  //   return (
+  //     (this.parent as any).containerReadonly ||
+  //     this.parent.parentContainerReadonly
+  //   );
+  // }
+
+  // get parentContainerSubmitted() {
+  //   if (!this.parent) return false;
+
+  //   return (
+  //     (this.parent as any).containerSubmitted ||
+  //     this.parent.parentContainerSubmitted
+  //   );
+  // }
 
   constructor(controlId: ControlId) {
     // need to maintain one subscription for the events to process
@@ -644,14 +694,14 @@ export abstract class AbstractControlBase<Value = any, Data = any>
   }
 
   setParent(value: AbstractControl | null, options?: IControlEventOptions) {
-    this.emitEvent<IControlStateChangeEvent<Value, Data>>(
+    this.emitEvent<IControlSelfStateChangeEvent<Value, Data>>(
       getSimpleStateChangeEventArgs({ parent: () => value }),
       options
     );
   }
 
   setValue(value: Value, options?: IControlEventOptions) {
-    this.emitEvent<IControlStateChangeEvent<Value, Data>>(
+    this.emitEvent<IControlSelfStateChangeEvent<Value, Data>>(
       getSimpleStateChangeEventArgs({ value: () => value }),
       options
     );
@@ -677,7 +727,7 @@ export abstract class AbstractControlBase<Value = any, Data = any>
       changeFn = (old) => new Map(old).set(source, value);
     }
 
-    this.emitEvent<IControlStateChangeEvent<Value, Data>>(
+    this.emitEvent<IControlSelfStateChangeEvent<Value, Data>>(
       getSimpleStateChangeEventArgs({ errorsStore: changeFn }),
       options
     );
@@ -738,42 +788,42 @@ export abstract class AbstractControlBase<Value = any, Data = any>
       };
     }
 
-    this.emitEvent<IControlStateChangeEvent<Value, Data>>(
+    this.emitEvent<IControlSelfStateChangeEvent<Value, Data>>(
       getSimpleStateChangeEventArgs({ errorsStore: changeFn }),
       options
     );
   }
 
   markTouched(value: boolean, options?: IControlEventOptions) {
-    this.emitEvent<IControlStateChangeEvent<Value, Data>>(
+    this.emitEvent<IControlSelfStateChangeEvent<Value, Data>>(
       getSimpleStateChangeEventArgs({ touched: () => value }),
       options
     );
   }
 
   markDirty(value: boolean, options?: IControlEventOptions) {
-    this.emitEvent<IControlStateChangeEvent<Value, Data>>(
+    this.emitEvent<IControlSelfStateChangeEvent<Value, Data>>(
       getSimpleStateChangeEventArgs({ dirty: () => value }),
       options
     );
   }
 
   markReadonly(value: boolean, options?: IControlEventOptions) {
-    this.emitEvent<IControlStateChangeEvent<Value, Data>>(
+    this.emitEvent<IControlSelfStateChangeEvent<Value, Data>>(
       getSimpleStateChangeEventArgs({ readonly: () => value }),
       options
     );
   }
 
   markDisabled(value: boolean, options?: IControlEventOptions) {
-    this.emitEvent<IControlStateChangeEvent<Value, Data>>(
+    this.emitEvent<IControlSelfStateChangeEvent<Value, Data>>(
       getSimpleStateChangeEventArgs({ disabled: () => value }),
       options
     );
   }
 
   markSubmitted(value: boolean, options?: IControlEventOptions) {
-    this.emitEvent<IControlStateChangeEvent<Value, Data>>(
+    this.emitEvent<IControlSelfStateChangeEvent<Value, Data>>(
       getSimpleStateChangeEventArgs({ submitted: () => value }),
       options
     );
@@ -799,7 +849,7 @@ export abstract class AbstractControlBase<Value = any, Data = any>
       };
     }
 
-    this.emitEvent<IControlStateChangeEvent<Value, Data>>(
+    this.emitEvent<IControlSelfStateChangeEvent<Value, Data>>(
       getSimpleStateChangeEventArgs({ pendingStore: changeFn }),
       options
     );
@@ -835,7 +885,7 @@ export abstract class AbstractControlBase<Value = any, Data = any>
       }
     }
 
-    this.emitEvent<IControlStateChangeEvent<Value, Data>>(
+    this.emitEvent<IControlSelfStateChangeEvent<Value, Data>>(
       getSimpleStateChangeEventArgs({ validatorStore: changeFn }),
       options
     );
@@ -850,7 +900,7 @@ export abstract class AbstractControlBase<Value = any, Data = any>
     }
   > {
     return defer(() => {
-      this.emitEvent<IControlStateChangeEvent<Value, Data>>(
+      this.emitEvent<IControlSelfStateChangeEvent<Value, Data>>(
         getSimpleStateChangeEventArgs({
           registeredValidators: (old) => {
             return new Set(old).add(source);
@@ -869,7 +919,7 @@ export abstract class AbstractControlBase<Value = any, Data = any>
         }
       ),
       finalize(() => {
-        this.emitEvent<IControlStateChangeEvent<Value, Data>>(
+        this.emitEvent<IControlSelfStateChangeEvent<Value, Data>>(
           getSimpleStateChangeEventArgs({
             registeredValidators: (old) => {
               const newValue = new Set(old);
@@ -888,7 +938,7 @@ export abstract class AbstractControlBase<Value = any, Data = any>
     source: ControlId,
     options?: IControlEventOptions
   ): void {
-    this.emitEvent<IControlStateChangeEvent<Value, Data>>(
+    this.emitEvent<IControlSelfStateChangeEvent<Value, Data>>(
       getSimpleStateChangeEventArgs({
         runningValidation: (old) => {
           const newValue = new Set(old);
@@ -909,7 +959,7 @@ export abstract class AbstractControlBase<Value = any, Data = any>
     }
   > {
     return defer(() => {
-      this.emitEvent<IControlStateChangeEvent<Value, Data>>(
+      this.emitEvent<IControlSelfStateChangeEvent<Value, Data>>(
         getSimpleStateChangeEventArgs({
           registeredAsyncValidators: (old) => {
             return new Set(old).add(source);
@@ -928,7 +978,7 @@ export abstract class AbstractControlBase<Value = any, Data = any>
         }
       ),
       finalize(() => {
-        this.emitEvent<IControlStateChangeEvent<Value, Data>>(
+        this.emitEvent<IControlSelfStateChangeEvent<Value, Data>>(
           getSimpleStateChangeEventArgs({
             registeredAsyncValidators: (old: ReadonlySet<ControlId>) => {
               const newValue = new Set(old);
@@ -947,7 +997,7 @@ export abstract class AbstractControlBase<Value = any, Data = any>
     source: ControlId,
     options?: IControlEventOptions
   ): void {
-    this.emitEvent<IControlStateChangeEvent<Value, Data>>(
+    this.emitEvent<IControlSelfStateChangeEvent<Value, Data>>(
       getSimpleStateChangeEventArgs({
         runningAsyncValidation: (old: ReadonlySet<ControlId>) => {
           const newValue = new Set(old);
@@ -960,7 +1010,7 @@ export abstract class AbstractControlBase<Value = any, Data = any>
   }
 
   setData(data: Data | ((data: Data) => Data), options?: IControlEventOptions) {
-    this.emitEvent<IControlStateChangeEvent<Value, Data>>(
+    this.emitEvent<IControlSelfStateChangeEvent<Value, Data>>(
       getSimpleStateChangeEventArgs({
         data:
           typeof data === 'function'
@@ -981,7 +1031,7 @@ export abstract class AbstractControlBase<Value = any, Data = any>
 
   replayState(
     options: Omit<IControlEventOptions, 'idOfOriginatingEvent'> = {}
-  ): Observable<IControlStateChangeEvent<Value, Data>> {
+  ): Observable<IControlSelfStateChangeEvent<Value, Data>> {
     const {
       _value,
       _disabled,
@@ -995,33 +1045,48 @@ export abstract class AbstractControlBase<Value = any, Data = any>
       data,
     } = this;
 
-    const changes: Array<IControlStateChange<Value, Data>> = [
-      { value: () => _value },
-      { disabled: () => _disabled },
-      { touched: () => _touched },
-      { dirty: () => _dirty },
-      { readonly: () => _readonly },
-      { submitted: () => _submitted },
-      { validatorStore: () => _validatorStore },
-      { pendingStore: () => _pendingStore },
+    const changes: Array<{
+      change: IControlStateChange<Value, Data>;
+      changedProps: string[];
+    }> = [
+      { change: { value: () => _value }, changedProps: ['value'] },
+      {
+        change: { disabled: () => _disabled },
+        changedProps: ['disabled', 'enabled'],
+      },
+      { change: { touched: () => _touched }, changedProps: ['touched'] },
+      { change: { dirty: () => _dirty }, changedProps: ['dirty'] },
+      { change: { readonly: () => _readonly }, changedProps: ['readonly'] },
+      { change: { submitted: () => _submitted }, changedProps: ['submitted'] },
+      {
+        change: { validatorStore: () => _validatorStore },
+        changedProps: ['validatorStore'],
+      },
+      {
+        change: { pendingStore: () => _pendingStore },
+        changedProps: ['pendingStore'],
+      },
       // important for errorsStore to come at the end because otherwise
       // the value/validatorStore state change would overwrite the errors
-      { errorsStore: () => _errorsStore },
-      { data: () => data },
+      {
+        change: { errorsStore: () => _errorsStore },
+        changedProps: ['errorsStore'],
+      },
+      { change: { data: () => data }, changedProps: ['data'] },
     ];
 
     let eventId: number;
 
     return from(
-      changes.map<IControlStateChangeEvent<Value, Data>>((change) => ({
+      changes.map<IControlSelfStateChangeEvent<Value, Data>>((change) => ({
         source: this.id,
         meta: {},
         ...pluckOptions(options),
         eventId: (eventId = AbstractControl.eventId()),
         idOfOriginatingEvent: eventId,
         type: 'StateChange',
-        change,
-        changedProps: [],
+        subtype: 'Self',
+        ...change,
       }))
     );
   }
@@ -1144,7 +1209,7 @@ export abstract class AbstractControlBase<Value = any, Data = any>
     switch (event.type) {
       case 'StateChange': {
         return this.processEvent_StateChange(
-          event as IControlStateChangeEvent<Value, Data>
+          event as IControlSelfStateChangeEvent<Value, Data>
         );
       }
       case 'ValidationStart':
@@ -1161,7 +1226,7 @@ export abstract class AbstractControlBase<Value = any, Data = any>
   }
 
   protected processEvent_StateChange(
-    event: IControlStateChangeEvent<Value, Data>
+    event: IControlSelfStateChangeEvent<Value, Data>
   ): IControlEvent | null {
     const keys = Object.keys(event.change);
 
@@ -1176,7 +1241,7 @@ export abstract class AbstractControlBase<Value = any, Data = any>
 
   protected processStateChange(
     changeType: string,
-    event: IControlStateChangeEvent<Value, Data>
+    event: IControlSelfStateChangeEvent<Value, Data>
   ): IControlEvent | null {
     switch (changeType) {
       case 'value': {
@@ -1231,35 +1296,30 @@ export abstract class AbstractControlBase<Value = any, Data = any>
   }
 
   protected processStateChange_Value(
-    event: IControlStateChangeEvent<Value, Data> & {
-      controlContainerValueChangeFn?: () => void;
-    }
-  ): IControlStateChangeEvent<Value, Data> | null {
+    event: IControlSelfStateChangeEvent<Value, Data>
+  ): IControlStateChangeEvent | null {
     const change = event.change.value as NonNullable<
       IControlStateChange<Value, Data>['value']
     >;
 
     const newValue = change(this._value);
 
-    if (event.controlContainerValueChangeFn) {
-      queueScheduler.schedule(event.controlContainerValueChangeFn);
-      delete event.controlContainerValueChangeFn;
-    }
-
     if (isEqual(this._value, newValue)) return null;
 
     this._value = newValue;
 
-    return {
+    const newEvent: IControlSelfStateChangeEvent<Value, Data> = {
       ...event,
       change: { value: change },
       changedProps: ['value', ...this.runValidation(event)],
     };
+
+    return newEvent;
   }
 
   protected processStateChange_Disabled(
-    event: IControlStateChangeEvent<Value, Data>
-  ): IControlStateChangeEvent<Value, Data> | null {
+    event: IControlSelfStateChangeEvent<Value, Data>
+  ): IControlStateChangeEvent | null {
     const change = event.change.disabled as NonNullable<
       IControlStateChange<Value, Data>['disabled']
     >;
@@ -1271,16 +1331,18 @@ export abstract class AbstractControlBase<Value = any, Data = any>
     this._disabled = newDisabled;
     this._status = this.getControlStatus();
 
-    return {
+    const newEvent: IControlSelfStateChangeEvent<Value, Data> = {
       ...event,
       change: { disabled: change },
       changedProps: ['disabled', 'enabled', 'status'],
     };
+
+    return newEvent;
   }
 
   protected processStateChange_Touched(
-    event: IControlStateChangeEvent<Value, Data>
-  ): IControlStateChangeEvent<Value, Data> | null {
+    event: IControlSelfStateChangeEvent<Value, Data>
+  ): IControlStateChangeEvent | null {
     const change = event.change.touched as NonNullable<
       IControlStateChange<Value, Data>['touched']
     >;
@@ -1291,16 +1353,18 @@ export abstract class AbstractControlBase<Value = any, Data = any>
 
     this._touched = newTouched;
 
-    return {
+    const newEvent: IControlSelfStateChangeEvent<Value, Data> = {
       ...event,
       change: { touched: change },
       changedProps: ['touched'],
     };
+
+    return newEvent;
   }
 
   protected processStateChange_Dirty(
-    event: IControlStateChangeEvent<Value, Data>
-  ): IControlStateChangeEvent<Value, Data> | null {
+    event: IControlSelfStateChangeEvent<Value, Data>
+  ): IControlStateChangeEvent | null {
     const change = event.change.dirty as NonNullable<
       IControlStateChange<Value, Data>['dirty']
     >;
@@ -1311,16 +1375,18 @@ export abstract class AbstractControlBase<Value = any, Data = any>
 
     this._dirty = newDirty;
 
-    return {
+    const newEvent: IControlSelfStateChangeEvent<Value, Data> = {
       ...event,
       change: { dirty: change },
       changedProps: ['dirty'],
     };
+
+    return newEvent;
   }
 
   protected processStateChange_Readonly(
-    event: IControlStateChangeEvent<Value, Data>
-  ): IControlStateChangeEvent<Value, Data> | null {
+    event: IControlSelfStateChangeEvent<Value, Data>
+  ): IControlStateChangeEvent | null {
     const change = event.change.readonly as NonNullable<
       IControlStateChange<Value, Data>['readonly']
     >;
@@ -1331,16 +1397,18 @@ export abstract class AbstractControlBase<Value = any, Data = any>
 
     this._readonly = newReadonly;
 
-    return {
+    const newEvent: IControlSelfStateChangeEvent<Value, Data> = {
       ...event,
       change: { readonly: change },
       changedProps: ['readonly'],
     };
+
+    return newEvent;
   }
 
   protected processStateChange_Submitted(
-    event: IControlStateChangeEvent<Value, Data>
-  ): IControlStateChangeEvent<Value, Data> | null {
+    event: IControlSelfStateChangeEvent<Value, Data>
+  ): IControlStateChangeEvent | null {
     const change = event.change.submitted as NonNullable<
       IControlStateChange<Value, Data>['submitted']
     >;
@@ -1351,16 +1419,18 @@ export abstract class AbstractControlBase<Value = any, Data = any>
 
     this._submitted = newSubmitted;
 
-    return {
+    const newEvent: IControlSelfStateChangeEvent<Value, Data> = {
       ...event,
       change: { submitted: change },
       changedProps: ['submitted'],
     };
+
+    return newEvent;
   }
 
   protected processStateChange_ErrorsStore(
-    event: IControlStateChangeEvent<Value, Data>
-  ): IControlStateChangeEvent<Value, Data> | null {
+    event: IControlSelfStateChangeEvent<Value, Data>
+  ): IControlStateChangeEvent | null {
     const change = event.change.errorsStore as NonNullable<
       IControlStateChange<Value, Data>['errorsStore']
     >;
@@ -1375,16 +1445,18 @@ export abstract class AbstractControlBase<Value = any, Data = any>
 
     this.updateErrorsProp(changedProps);
 
-    return {
+    const newEvent: IControlSelfStateChangeEvent<Value, Data> = {
       ...event,
       change: { errorsStore: change },
       changedProps,
     };
+
+    return newEvent;
   }
 
   protected processStateChange_ValidatorStore(
-    event: IControlStateChangeEvent<Value, Data>
-  ): IControlStateChangeEvent<Value, Data> | null {
+    event: IControlSelfStateChangeEvent<Value, Data>
+  ): IControlStateChangeEvent | null {
     const change = event.change.validatorStore as NonNullable<
       IControlStateChange<Value, Data>['validatorStore']
     >;
@@ -1433,16 +1505,18 @@ export abstract class AbstractControlBase<Value = any, Data = any>
       this.updateErrorsProp(changedProps);
     }
 
-    return {
+    const newEvent: IControlSelfStateChangeEvent<Value, Data> = {
       ...event,
       change: { validatorStore: change },
       changedProps,
     };
+
+    return newEvent;
   }
 
   protected processStateChange_RegisteredValidators(
-    event: IControlStateChangeEvent<Value, Data>
-  ): IControlStateChangeEvent<Value, Data> | null {
+    event: IControlSelfStateChangeEvent<Value, Data>
+  ): IControlStateChangeEvent | null {
     const change = event.change.registeredValidators as NonNullable<
       IControlStateChange<Value, Data>['registeredValidators']
     >;
@@ -1458,8 +1532,8 @@ export abstract class AbstractControlBase<Value = any, Data = any>
   }
 
   protected processStateChange_RegisteredAsyncValidators(
-    event: IControlStateChangeEvent<Value, Data>
-  ): IControlStateChangeEvent<Value, Data> | null {
+    event: IControlSelfStateChangeEvent<Value, Data>
+  ): IControlStateChangeEvent | null {
     const change = event.change.registeredAsyncValidators as NonNullable<
       IControlStateChange<Value, Data>['registeredAsyncValidators']
     >;
@@ -1479,8 +1553,8 @@ export abstract class AbstractControlBase<Value = any, Data = any>
   }
 
   protected processStateChange_RunningValidation(
-    event: IControlStateChangeEvent<Value, Data>
-  ): IControlStateChangeEvent<Value, Data> | null {
+    event: IControlSelfStateChangeEvent<Value, Data>
+  ): IControlStateChangeEvent | null {
     const change = event.change.runningValidation as NonNullable<
       IControlStateChange<Value, Data>['runningValidation']
     >;
@@ -1525,8 +1599,8 @@ export abstract class AbstractControlBase<Value = any, Data = any>
   }
 
   protected processStateChange_RunningAsyncValidation(
-    event: IControlStateChangeEvent<Value, Data>
-  ): IControlStateChangeEvent<Value, Data> | null {
+    event: IControlSelfStateChangeEvent<Value, Data>
+  ): IControlStateChangeEvent | null {
     const change = event.change.runningAsyncValidation as NonNullable<
       IControlStateChange<Value, Data>['runningAsyncValidation']
     >;
@@ -1556,8 +1630,8 @@ export abstract class AbstractControlBase<Value = any, Data = any>
   }
 
   protected processStateChange_PendingStore(
-    event: IControlStateChangeEvent<Value, Data>
-  ): IControlStateChangeEvent<Value, Data> | null {
+    event: IControlSelfStateChangeEvent<Value, Data>
+  ): IControlStateChangeEvent | null {
     const change = event.change.pendingStore as NonNullable<
       IControlStateChange<Value, Data>['pendingStore']
     >;
@@ -1584,16 +1658,18 @@ export abstract class AbstractControlBase<Value = any, Data = any>
       this._status = newStatus;
     }
 
-    return {
+    const newEvent: IControlSelfStateChangeEvent<Value, Data> = {
       ...event,
       change: { pendingStore: change },
       changedProps,
     };
+
+    return newEvent;
   }
 
   protected processStateChange_Parent(
-    event: IControlStateChangeEvent<Value, Data>
-  ): IControlStateChangeEvent<Value, Data> | null {
+    event: IControlSelfStateChangeEvent<Value, Data>
+  ): IControlStateChangeEvent | null {
     // ignore the parent state changes of linked controls
     if (event.source !== this.id) return null;
 
@@ -1607,16 +1683,18 @@ export abstract class AbstractControlBase<Value = any, Data = any>
 
     this._parent = newParent;
 
-    return {
+    const newEvent: IControlSelfStateChangeEvent<Value, Data> = {
       ...event,
       change: { parent: change },
       changedProps: ['parent'],
     };
+
+    return newEvent;
   }
 
   protected processStateChange_Data(
-    event: IControlStateChangeEvent<Value, Data>
-  ): IControlStateChangeEvent<Value, Data> | null {
+    event: IControlSelfStateChangeEvent<Value, Data>
+  ): IControlStateChangeEvent | null {
     const change = event.change.data as NonNullable<
       IControlStateChange<Value, Data>['data']
     >;
@@ -1631,11 +1709,13 @@ export abstract class AbstractControlBase<Value = any, Data = any>
 
     this.data = newData;
 
-    return {
+    const newEvent: IControlSelfStateChangeEvent<Value, Data> = {
       ...event,
       change: { data: change },
       changedProps: ['data'],
     };
+
+    return newEvent;
   }
 
   protected updateErrorsProp(changedProps: string[]) {

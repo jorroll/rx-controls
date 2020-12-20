@@ -57,10 +57,7 @@ export function isTruthy<T>(value: T): value is NonNullable<T> {
 }
 
 export function isStateChange<
-  T extends IControlStateChangeEvent<any, any> = IControlStateChangeEvent<
-    any,
-    any
-  >
+  T extends IControlStateChangeEvent = IControlStateChangeEvent
 >(event: IControlEventArgs): event is T {
   return event.type === 'StateChange';
 }
@@ -99,6 +96,7 @@ export function getSimpleStateChangeEventArgs<V, D>(
 ) {
   return {
     type: 'StateChange' as const,
+    subtype: 'Self' as const,
     change,
     changedProps: [],
   };
@@ -111,6 +109,7 @@ export const getSimpleContainerStateChangeEventArgs: <
   change: IControlContainerStateChange<Controls, D>
 ) => {
   type: 'StateChange';
+  subtype: 'Self';
   change: IControlContainerStateChange<Controls, D>;
   changedProps: never[];
 } = getSimpleStateChangeEventArgs;

@@ -1,15 +1,4 @@
-import {
-  Observable,
-  Subject,
-  // queueScheduler,
-  SchedulerLike,
-  SchedulerAction,
-  Subscription,
-  queueScheduler,
-} from 'rxjs';
-
-import { AsyncScheduler } from 'rxjs/internal/scheduler/AsyncScheduler';
-import { QueueAction } from 'rxjs/internal/scheduler/QueueAction';
+import { Observable, Subject, queueScheduler } from 'rxjs';
 
 // *****************************
 // Misc Types
@@ -75,11 +64,17 @@ export interface IControlStateChange<V, D> {
   [key: string]: unknown;
 }
 
-export interface IControlStateChangeEvent<V, D> extends IControlEvent {
+export interface IControlStateChangeEvent extends IControlEvent {
   type: 'StateChange';
-  change: IControlStateChange<V, D>;
+  subtype: string;
   /** Array of props that have changed */
   changedProps: string[];
+}
+
+export interface IControlSelfStateChangeEvent<V, D>
+  extends IControlStateChangeEvent {
+  subtype: 'Self';
+  change: IControlStateChange<V, D>;
 }
 
 export interface IControlFocusEvent extends IControlEvent {
@@ -195,6 +190,16 @@ export interface AbstractControl<Value = any, Data = any> {
   readonly status: 'DISABLED' | 'PENDING' | 'VALID' | 'INVALID';
 
   readonly parent: AbstractControl | null;
+  // /** `true` if either `parent#containerDisabled` or `parent#parentContainerDisabled` */
+  // readonly parentContainerDisabled: boolean;
+  // /** `true` if either `parent#containerTouched` or `parent#parentContainerTouched` */
+  // readonly parentContainerTouched: boolean;
+  // /** `true` if either `parent#containerDirty` or `parent#parentContainerDirty` */
+  // readonly parentContainerDirty: boolean;
+  // /** `true` if either `parent#containerReadonly` or `parent#parentContainerReadonly` */
+  // readonly parentContainerReadonly: boolean;
+  // /** `true` if either `parent#containerSubmitted` or `parent#parentContainerSubmitted` */
+  // readonly parentContainerSubmitted: boolean;
 
   [AbstractControl.INTERFACE](): this;
 

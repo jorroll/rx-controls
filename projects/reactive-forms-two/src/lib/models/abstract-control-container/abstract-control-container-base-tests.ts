@@ -2,9 +2,13 @@ import { toArray } from 'rxjs/operators';
 import {
   AbstractControl,
   ControlId,
+  IControlSelfStateChangeEvent,
   ValidatorFn,
 } from '../abstract-control/abstract-control';
-import { AbstractControlContainer } from './abstract-control-container';
+import {
+  AbstractControlContainer,
+  IChildControlStateChangeEvent,
+} from './abstract-control-container';
 import { IAbstractControlContainerBaseArgs } from './abstract-control-container-base';
 import {
   getControlEventsUntilEnd,
@@ -374,14 +378,17 @@ export default function runAbstractControlContainerBaseTestSuite<
       it('', async () => {
         const state = a.replayState();
 
-        function buildStateChangeBase(change: any) {
+        function buildStateChangeBase(change: {
+          change: any;
+          changedProps: readonly string[];
+        }) {
           return {
             type: 'StateChange',
+            subtype: 'Self',
             eventId: expect.any(Number),
             idOfOriginatingEvent: expect.any(Number),
             source: a.id,
-            change,
-            changedProps: [],
+            ...change,
             meta: {},
           };
         }
@@ -403,21 +410,78 @@ export default function runAbstractControlContainerBaseTestSuite<
         [
           [
             controlsStoreEvent,
-            { controlsStore: expect.any(Function) },
+            {
+              change: { controlsStore: expect.any(Function) },
+              changedProps: ['controlsStore', 'value'],
+            },
           ] as const,
-          [valueEvent, { value: expect.any(Function) }] as const,
-          [disabledEvent, { disabled: expect.any(Function) }] as const,
-          [touchedEvent, { touched: expect.any(Function) }] as const,
-          [dirtyEvent, { dirty: expect.any(Function) }] as const,
-          [readonlyEvent, { readonly: expect.any(Function) }] as const,
-          [submittedEvent, { submitted: expect.any(Function) }] as const,
+          [
+            valueEvent,
+            {
+              change: { value: expect.any(Function) },
+              changedProps: ['value'],
+            },
+          ] as const,
+          [
+            disabledEvent,
+            {
+              change: { disabled: expect.any(Function) },
+              changedProps: ['disabled', 'enabled'],
+            },
+          ] as const,
+          [
+            touchedEvent,
+            {
+              change: { touched: expect.any(Function) },
+              changedProps: ['touched'],
+            },
+          ] as const,
+          [
+            dirtyEvent,
+            {
+              change: { dirty: expect.any(Function) },
+              changedProps: ['dirty'],
+            },
+          ] as const,
+          [
+            readonlyEvent,
+            {
+              change: { readonly: expect.any(Function) },
+              changedProps: ['readonly'],
+            },
+          ] as const,
+          [
+            submittedEvent,
+            {
+              change: { submitted: expect.any(Function) },
+              changedProps: ['submitted'],
+            },
+          ] as const,
           [
             validatorStoreEvent,
-            { validatorStore: expect.any(Function) },
+            {
+              change: { validatorStore: expect.any(Function) },
+              changedProps: ['validatorStore'],
+            },
           ] as const,
-          [pendingStoreEvent, { pendingStore: expect.any(Function) }] as const,
-          [errorsStoreEvent, { errorsStore: expect.any(Function) }] as const,
-          [dataEvent, { data: expect.any(Function) }] as const,
+          [
+            pendingStoreEvent,
+            {
+              change: { pendingStore: expect.any(Function) },
+              changedProps: ['pendingStore'],
+            },
+          ] as const,
+          [
+            errorsStoreEvent,
+            {
+              change: { errorsStore: expect.any(Function) },
+              changedProps: ['errorsStore'],
+            },
+          ] as const,
+          [
+            dataEvent,
+            { change: { data: expect.any(Function) }, changedProps: ['data'] },
+          ] as const,
         ].forEach(([event, change]) => {
           expect(event).toEqual(buildStateChangeBase(change));
         });
@@ -488,23 +552,26 @@ export default function runAbstractControlContainerBaseTestSuite<
 
             const [event1, event2] = await promise1;
 
-            expect(event1).toEqual({
-              type: 'ChildStateChange',
+            expect(event1).toEqual<IChildControlStateChangeEvent>({
+              type: 'StateChange',
+              subtype: 'Child',
               eventId: expect.any(Number),
               idOfOriginatingEvent: expect.any(Number),
               source: b.id,
               meta: {},
-              key: expect.anything(),
-              childEvent: {
-                type: 'StateChange',
-                eventId: expect.any(Number),
-                idOfOriginatingEvent: expect.any(Number),
-                source: child1.id,
-                meta: {},
-                change: {
-                  [PROP_NAME]: expect.any(Function),
-                },
-                changedProps: [PROP_NAME],
+              childEvents: {
+                0: {
+                  type: 'StateChange',
+                  subtype: 'Self',
+                  eventId: expect.any(Number),
+                  idOfOriginatingEvent: expect.any(Number),
+                  source: child1.id,
+                  meta: {},
+                  change: {
+                    [PROP_NAME]: expect.any(Function),
+                  },
+                  changedProps: [PROP_NAME],
+                } as IControlSelfStateChangeEvent<unknown, unknown>,
               },
               changedProps: expect.arrayContaining([
                 PROP_NAME,
@@ -550,23 +617,26 @@ export default function runAbstractControlContainerBaseTestSuite<
 
             const [event1, event2] = await promise1;
 
-            expect(event1).toEqual({
-              type: 'ChildStateChange',
+            expect(event1).toEqual<IChildControlStateChangeEvent>({
+              type: 'StateChange',
+              subtype: 'Child',
               eventId: expect.any(Number),
               idOfOriginatingEvent: expect.any(Number),
               source: b.id,
               meta: {},
-              key: expect.anything(),
-              childEvent: {
-                type: 'StateChange',
-                eventId: expect.any(Number),
-                idOfOriginatingEvent: expect.any(Number),
-                source: child1.id,
-                meta: {},
-                change: {
-                  [PROP_NAME]: expect.any(Function),
-                },
-                changedProps: [PROP_NAME],
+              childEvents: {
+                0: {
+                  type: 'StateChange',
+                  subtype: 'Self',
+                  eventId: expect.any(Number),
+                  idOfOriginatingEvent: expect.any(Number),
+                  source: child1.id,
+                  meta: {},
+                  change: {
+                    [PROP_NAME]: expect.any(Function),
+                  },
+                  changedProps: [PROP_NAME],
+                } as IControlSelfStateChangeEvent<unknown, unknown>,
               },
               changedProps: [],
             });
@@ -607,23 +677,26 @@ export default function runAbstractControlContainerBaseTestSuite<
 
             const [event1, event2, event3] = await promise1;
 
-            expect(event1).toEqual({
-              type: 'ChildStateChange',
+            expect(event1).toEqual<IChildControlStateChangeEvent>({
+              type: 'StateChange',
+              subtype: 'Child',
               eventId: expect.any(Number),
               idOfOriginatingEvent: expect.any(Number),
               source: b.id,
               meta: {},
-              key: expect.anything(),
-              childEvent: {
-                type: 'StateChange',
-                eventId: expect.any(Number),
-                idOfOriginatingEvent: expect.any(Number),
-                source: child1.id,
-                meta: {},
-                change: {
-                  [PROP_NAME]: expect.any(Function),
-                },
-                changedProps: [PROP_NAME],
+              childEvents: {
+                0: {
+                  type: 'StateChange',
+                  subtype: 'Self',
+                  eventId: expect.any(Number),
+                  idOfOriginatingEvent: expect.any(Number),
+                  source: child1.id,
+                  meta: {},
+                  change: {
+                    [PROP_NAME]: expect.any(Function),
+                  },
+                  changedProps: [PROP_NAME],
+                } as IControlSelfStateChangeEvent<unknown, unknown>,
               },
               changedProps: expect.arrayContaining([
                 PROP_NAME,
@@ -632,27 +705,30 @@ export default function runAbstractControlContainerBaseTestSuite<
               ]),
             });
 
-            expect(event2).toEqual({
-              type: 'ChildStateChange',
+            expect(event2).toEqual<IChildControlStateChangeEvent>({
+              type: 'StateChange',
+              subtype: 'Child',
               eventId: expect.any(Number),
               idOfOriginatingEvent: expect.any(Number),
               source: b.id,
               meta: {},
-              key: expect.anything(),
-              childEvent: {
-                type: 'StateChange',
-                eventId: expect.any(Number),
-                idOfOriginatingEvent: expect.any(Number),
-                source: child1.id,
-                meta: {},
-                change: {
-                  disabled: expect.any(Function),
-                },
-                changedProps: expect.arrayContaining([
-                  'disabled',
-                  'enabled',
-                  'status',
-                ]),
+              childEvents: {
+                0: {
+                  type: 'StateChange',
+                  subtype: 'Self',
+                  eventId: expect.any(Number),
+                  idOfOriginatingEvent: expect.any(Number),
+                  source: child1.id,
+                  meta: {},
+                  change: {
+                    disabled: expect.any(Function),
+                  },
+                  changedProps: expect.arrayContaining([
+                    'disabled',
+                    'enabled',
+                    'status',
+                  ]),
+                } as IControlSelfStateChangeEvent<unknown, unknown>,
               },
               changedProps: expect.arrayContaining([
                 'disabled',
@@ -700,27 +776,30 @@ export default function runAbstractControlContainerBaseTestSuite<
 
           const [event1, event2] = await promise1;
 
-          expect(event1).toEqual({
-            type: 'ChildStateChange',
+          expect(event1).toEqual<IChildControlStateChangeEvent>({
+            type: 'StateChange',
+            subtype: 'Child',
             eventId: expect.any(Number),
             idOfOriginatingEvent: expect.any(Number),
             source: b.id,
             meta: {},
-            key: expect.anything(),
-            childEvent: {
-              type: 'StateChange',
-              eventId: expect.any(Number),
-              idOfOriginatingEvent: expect.any(Number),
-              source: child1.id,
-              meta: {},
-              change: {
-                pendingStore: expect.any(Function),
-              },
-              changedProps: expect.arrayContaining([
-                'pending',
-                'pendingStore',
-                'status',
-              ]),
+            childEvents: {
+              0: {
+                type: 'StateChange',
+                subtype: 'Self',
+                eventId: expect.any(Number),
+                idOfOriginatingEvent: expect.any(Number),
+                source: child1.id,
+                meta: {},
+                change: {
+                  pendingStore: expect.any(Function),
+                },
+                changedProps: expect.arrayContaining([
+                  'pending',
+                  'pendingStore',
+                  'status',
+                ]),
+              } as IControlSelfStateChangeEvent<unknown, unknown>,
             },
             changedProps: expect.arrayContaining([
               'pending',
@@ -767,23 +846,29 @@ export default function runAbstractControlContainerBaseTestSuite<
 
           const [event1, event2] = await promise1;
 
-          expect(event1).toEqual({
-            type: 'ChildStateChange',
+          expect(event1).toEqual<IChildControlStateChangeEvent>({
+            type: 'StateChange',
+            subtype: 'Child',
             eventId: expect.any(Number),
             idOfOriginatingEvent: expect.any(Number),
             source: b.id,
             meta: {},
-            key: expect.anything(),
-            childEvent: {
-              type: 'StateChange',
-              eventId: expect.any(Number),
-              idOfOriginatingEvent: expect.any(Number),
-              source: child1.id,
-              meta: {},
-              change: {
-                pendingStore: expect.any(Function),
-              },
-              changedProps: expect.arrayContaining(['pending', 'pendingStore']),
+            childEvents: {
+              0: {
+                type: 'StateChange',
+                subtype: 'Self',
+                eventId: expect.any(Number),
+                idOfOriginatingEvent: expect.any(Number),
+                source: child1.id,
+                meta: {},
+                change: {
+                  pendingStore: expect.any(Function),
+                },
+                changedProps: expect.arrayContaining([
+                  'pending',
+                  'pendingStore',
+                ]),
+              } as IControlSelfStateChangeEvent<unknown, unknown>,
             },
             changedProps: [],
           });
@@ -824,27 +909,30 @@ export default function runAbstractControlContainerBaseTestSuite<
 
           const [event1, event2, event3] = await promise1;
 
-          expect(event1).toEqual({
-            type: 'ChildStateChange',
+          expect(event1).toEqual<IChildControlStateChangeEvent>({
+            type: 'StateChange',
+            subtype: 'Child',
             eventId: expect.any(Number),
             idOfOriginatingEvent: expect.any(Number),
             source: b.id,
             meta: {},
-            key: expect.anything(),
-            childEvent: {
-              type: 'StateChange',
-              eventId: expect.any(Number),
-              idOfOriginatingEvent: expect.any(Number),
-              source: child1.id,
-              meta: {},
-              change: {
-                pendingStore: expect.any(Function),
-              },
-              changedProps: expect.arrayContaining([
-                'pending',
-                'pendingStore',
-                'status',
-              ]),
+            childEvents: {
+              0: {
+                type: 'StateChange',
+                subtype: 'Self',
+                eventId: expect.any(Number),
+                idOfOriginatingEvent: expect.any(Number),
+                source: child1.id,
+                meta: {},
+                change: {
+                  pendingStore: expect.any(Function),
+                },
+                changedProps: expect.arrayContaining([
+                  'pending',
+                  'pendingStore',
+                  'status',
+                ]),
+              } as IControlSelfStateChangeEvent<unknown, unknown>,
             },
             changedProps: expect.arrayContaining([
               'pending',
@@ -854,27 +942,30 @@ export default function runAbstractControlContainerBaseTestSuite<
             ]),
           });
 
-          expect(event2).toEqual({
-            type: 'ChildStateChange',
+          expect(event2).toEqual<IChildControlStateChangeEvent>({
+            type: 'StateChange',
+            subtype: 'Child',
             eventId: expect.any(Number),
             idOfOriginatingEvent: expect.any(Number),
             source: b.id,
             meta: {},
-            key: expect.anything(),
-            childEvent: {
-              type: 'StateChange',
-              eventId: expect.any(Number),
-              idOfOriginatingEvent: expect.any(Number),
-              source: child1.id,
-              meta: {},
-              change: {
-                disabled: expect.any(Function),
-              },
-              changedProps: expect.arrayContaining([
-                'disabled',
-                'enabled',
-                'status',
-              ]),
+            childEvents: {
+              0: {
+                type: 'StateChange',
+                subtype: 'Self',
+                eventId: expect.any(Number),
+                idOfOriginatingEvent: expect.any(Number),
+                source: child1.id,
+                meta: {},
+                change: {
+                  disabled: expect.any(Function),
+                },
+                changedProps: expect.arrayContaining([
+                  'disabled',
+                  'enabled',
+                  'status',
+                ]),
+              } as IControlSelfStateChangeEvent<unknown, unknown>,
             },
             changedProps: expect.arrayContaining([
               'disabled',
@@ -927,27 +1018,30 @@ export default function runAbstractControlContainerBaseTestSuite<
 
           const [event1, event2] = await promise1;
 
-          expect(event1).toEqual({
-            type: 'ChildStateChange',
+          expect(event1).toEqual<IChildControlStateChangeEvent>({
+            type: 'StateChange',
+            subtype: 'Child',
             eventId: expect.any(Number),
             idOfOriginatingEvent: expect.any(Number),
             source: b.id,
             meta: {},
-            key: expect.anything(),
-            childEvent: {
-              type: 'StateChange',
-              eventId: expect.any(Number),
-              idOfOriginatingEvent: expect.any(Number),
-              source: child1.id,
-              meta: {},
-              change: {
-                disabled: expect.any(Function),
-              },
-              changedProps: expect.arrayContaining([
-                'disabled',
-                'enabled',
-                'status',
-              ]),
+            childEvents: {
+              0: {
+                type: 'StateChange',
+                subtype: 'Self',
+                eventId: expect.any(Number),
+                idOfOriginatingEvent: expect.any(Number),
+                source: child1.id,
+                meta: {},
+                change: {
+                  disabled: expect.any(Function),
+                },
+                changedProps: expect.arrayContaining([
+                  'disabled',
+                  'enabled',
+                  'status',
+                ]),
+              } as IControlSelfStateChangeEvent<unknown, unknown>,
             },
             changedProps: expect.arrayContaining([
               'disabled',
@@ -986,27 +1080,30 @@ export default function runAbstractControlContainerBaseTestSuite<
 
           const [event1, event2] = await promise1;
 
-          expect(event1).toEqual({
-            type: 'ChildStateChange',
+          expect(event1).toEqual<IChildControlStateChangeEvent>({
+            type: 'StateChange',
+            subtype: 'Child',
             eventId: expect.any(Number),
             idOfOriginatingEvent: expect.any(Number),
             source: b.id,
             meta: {},
-            key: expect.anything(),
-            childEvent: {
-              type: 'StateChange',
-              eventId: expect.any(Number),
-              idOfOriginatingEvent: expect.any(Number),
-              source: child1.id,
-              meta: {},
-              change: {
-                disabled: expect.any(Function),
-              },
-              changedProps: expect.arrayContaining([
-                'disabled',
-                'enabled',
-                'status',
-              ]),
+            childEvents: {
+              0: {
+                type: 'StateChange',
+                subtype: 'Self',
+                eventId: expect.any(Number),
+                idOfOriginatingEvent: expect.any(Number),
+                source: child1.id,
+                meta: {},
+                change: {
+                  disabled: expect.any(Function),
+                },
+                changedProps: expect.arrayContaining([
+                  'disabled',
+                  'enabled',
+                  'status',
+                ]),
+              } as IControlSelfStateChangeEvent<unknown, unknown>,
             },
             changedProps: expect.arrayContaining([
               'disabled',
@@ -1070,36 +1167,41 @@ export default function runAbstractControlContainerBaseTestSuite<
 
               const [event1, event2] = await promise1;
 
-              expect(event1).toEqual({
-                type: 'ChildStateChange',
+              expect(event1).toEqual<IChildControlStateChangeEvent>({
+                type: 'StateChange',
+                subtype: 'Child',
                 eventId: expect.any(Number),
                 idOfOriginatingEvent: expect.any(Number),
                 source: b.id,
                 meta: {},
-                key: expect.anything(),
-                childEvent: {
-                  type: 'ChildStateChange',
-                  eventId: expect.any(Number),
-                  idOfOriginatingEvent: expect.any(Number),
-                  source: b2.id,
-                  meta: {},
-                  key: expect.anything(),
-                  childEvent: {
+                childEvents: {
+                  0: {
                     type: 'StateChange',
+                    subtype: 'Child',
                     eventId: expect.any(Number),
                     idOfOriginatingEvent: expect.any(Number),
-                    source: child1.id,
+                    source: b2.id,
                     meta: {},
-                    change: {
-                      [PROP_NAME]: expect.any(Function),
+                    childEvents: {
+                      0: {
+                        type: 'StateChange',
+                        subtype: 'Self',
+                        eventId: expect.any(Number),
+                        idOfOriginatingEvent: expect.any(Number),
+                        source: child1.id,
+                        meta: {},
+                        change: {
+                          [PROP_NAME]: expect.any(Function),
+                        },
+                        changedProps: [PROP_NAME],
+                      } as IControlSelfStateChangeEvent<unknown, unknown>,
                     },
-                    changedProps: [PROP_NAME],
-                  },
-                  changedProps: expect.arrayContaining([
-                    PROP_NAME,
-                    CHILD_PROP_NAME,
-                    CHILDREN_PROP_NAME,
-                  ]),
+                    changedProps: expect.arrayContaining([
+                      PROP_NAME,
+                      CHILD_PROP_NAME,
+                      CHILDREN_PROP_NAME,
+                    ]),
+                  } as IChildControlStateChangeEvent,
                 },
                 changedProps: expect.arrayContaining([
                   PROP_NAME,
@@ -1145,32 +1247,37 @@ export default function runAbstractControlContainerBaseTestSuite<
 
               const [event1, event2] = await promise1;
 
-              expect(event1).toEqual({
-                type: 'ChildStateChange',
+              expect(event1).toEqual<IChildControlStateChangeEvent>({
+                type: 'StateChange',
+                subtype: 'Child',
                 eventId: expect.any(Number),
                 idOfOriginatingEvent: expect.any(Number),
                 source: b.id,
                 meta: {},
-                key: expect.anything(),
-                childEvent: {
-                  type: 'ChildStateChange',
-                  eventId: expect.any(Number),
-                  idOfOriginatingEvent: expect.any(Number),
-                  source: b2.id,
-                  meta: {},
-                  key: expect.anything(),
-                  childEvent: {
+                childEvents: {
+                  0: {
                     type: 'StateChange',
+                    subtype: 'Child',
                     eventId: expect.any(Number),
                     idOfOriginatingEvent: expect.any(Number),
-                    source: child1.id,
+                    source: b2.id,
                     meta: {},
-                    change: {
-                      [PROP_NAME]: expect.any(Function),
+                    childEvents: {
+                      0: {
+                        type: 'StateChange',
+                        subtype: 'Self',
+                        eventId: expect.any(Number),
+                        idOfOriginatingEvent: expect.any(Number),
+                        source: child1.id,
+                        meta: {},
+                        change: {
+                          [PROP_NAME]: expect.any(Function),
+                        },
+                        changedProps: [PROP_NAME],
+                      } as IControlSelfStateChangeEvent<unknown, unknown>,
                     },
-                    changedProps: [PROP_NAME],
-                  },
-                  changedProps: [],
+                    changedProps: [],
+                  } as IChildControlStateChangeEvent,
                 },
                 changedProps: [],
               });
@@ -1211,36 +1318,41 @@ export default function runAbstractControlContainerBaseTestSuite<
 
               const [event1, event2, event3] = await promise1;
 
-              expect(event1).toEqual({
-                type: 'ChildStateChange',
+              expect(event1).toEqual<IChildControlStateChangeEvent>({
+                type: 'StateChange',
+                subtype: 'Child',
                 eventId: expect.any(Number),
                 idOfOriginatingEvent: expect.any(Number),
                 source: b.id,
                 meta: {},
-                key: expect.anything(),
-                childEvent: {
-                  type: 'ChildStateChange',
-                  eventId: expect.any(Number),
-                  idOfOriginatingEvent: expect.any(Number),
-                  source: b2.id,
-                  meta: {},
-                  key: expect.anything(),
-                  childEvent: {
+                childEvents: {
+                  0: {
                     type: 'StateChange',
+                    subtype: 'Child',
                     eventId: expect.any(Number),
                     idOfOriginatingEvent: expect.any(Number),
-                    source: child1.id,
+                    source: b2.id,
                     meta: {},
-                    change: {
-                      [PROP_NAME]: expect.any(Function),
+                    childEvents: {
+                      0: {
+                        type: 'StateChange',
+                        subtype: 'Self',
+                        eventId: expect.any(Number),
+                        idOfOriginatingEvent: expect.any(Number),
+                        source: child1.id,
+                        meta: {},
+                        change: {
+                          [PROP_NAME]: expect.any(Function),
+                        },
+                        changedProps: [PROP_NAME],
+                      } as IControlSelfStateChangeEvent<unknown, unknown>,
                     },
-                    changedProps: [PROP_NAME],
-                  },
-                  changedProps: expect.arrayContaining([
-                    PROP_NAME,
-                    CHILD_PROP_NAME,
-                    CHILDREN_PROP_NAME,
-                  ]),
+                    changedProps: expect.arrayContaining([
+                      PROP_NAME,
+                      CHILD_PROP_NAME,
+                      CHILDREN_PROP_NAME,
+                    ]),
+                  } as IChildControlStateChangeEvent,
                 },
                 changedProps: expect.arrayContaining([
                   PROP_NAME,
@@ -1249,47 +1361,52 @@ export default function runAbstractControlContainerBaseTestSuite<
                 ]),
               });
 
-              expect(event2).toEqual({
-                type: 'ChildStateChange',
+              expect(event2).toEqual<IChildControlStateChangeEvent>({
+                type: 'StateChange',
+                subtype: 'Child',
                 eventId: expect.any(Number),
                 idOfOriginatingEvent: expect.any(Number),
                 source: b.id,
                 meta: {},
-                key: expect.anything(),
-                childEvent: {
-                  type: 'ChildStateChange',
-                  eventId: expect.any(Number),
-                  idOfOriginatingEvent: expect.any(Number),
-                  source: b2.id,
-                  meta: {},
-                  key: expect.anything(),
-                  childEvent: {
+                childEvents: {
+                  0: {
                     type: 'StateChange',
+                    subtype: 'Child',
                     eventId: expect.any(Number),
                     idOfOriginatingEvent: expect.any(Number),
-                    source: child1.id,
+                    source: b2.id,
                     meta: {},
-                    change: {
-                      disabled: expect.any(Function),
+                    childEvents: {
+                      0: {
+                        type: 'StateChange',
+                        subtype: 'Self',
+                        eventId: expect.any(Number),
+                        idOfOriginatingEvent: expect.any(Number),
+                        source: child1.id,
+                        meta: {},
+                        change: {
+                          disabled: expect.any(Function),
+                        },
+                        changedProps: expect.arrayContaining([
+                          'disabled',
+                          'enabled',
+                          'status',
+                        ]),
+                      } as IControlSelfStateChangeEvent<unknown, unknown>,
                     },
                     changedProps: expect.arrayContaining([
                       'disabled',
+                      'childDisabled',
+                      'childrenDisabled',
                       'enabled',
+                      'childEnabled',
+                      'childrenEnabled',
                       'status',
+                      PROP_NAME,
+                      CHILD_PROP_NAME,
+                      CHILDREN_PROP_NAME,
                     ]),
-                  },
-                  changedProps: expect.arrayContaining([
-                    'disabled',
-                    'childDisabled',
-                    'childrenDisabled',
-                    'enabled',
-                    'childEnabled',
-                    'childrenEnabled',
-                    'status',
-                    PROP_NAME,
-                    CHILD_PROP_NAME,
-                    CHILDREN_PROP_NAME,
-                  ]),
+                  } as IChildControlStateChangeEvent,
                 },
                 changedProps: expect.arrayContaining([
                   'disabled',
@@ -1346,23 +1463,26 @@ export default function runAbstractControlContainerBaseTestSuite<
 
             const [event1] = await promise1;
 
-            expect(event1).toEqual({
-              type: 'ChildStateChange',
+            expect(event1).toEqual<IChildControlStateChangeEvent>({
+              type: 'StateChange',
+              subtype: 'Child',
               eventId: expect.any(Number),
               idOfOriginatingEvent: expect.any(Number),
               source: b.id,
               meta: {},
-              key: expect.anything(),
-              childEvent: {
-                type: 'StateChange',
-                eventId: expect.any(Number),
-                idOfOriginatingEvent: expect.any(Number),
-                source: child1.id,
-                meta: {},
-                change: {
-                  [PROP_NAME]: expect.any(Function),
-                },
-                changedProps: [PROP_NAME],
+              childEvents: {
+                0: {
+                  type: 'StateChange',
+                  subtype: 'Self',
+                  eventId: expect.any(Number),
+                  idOfOriginatingEvent: expect.any(Number),
+                  source: child1.id,
+                  meta: {},
+                  change: {
+                    [PROP_NAME]: expect.any(Function),
+                  },
+                  changedProps: [PROP_NAME],
+                } as IControlSelfStateChangeEvent<unknown, unknown>,
               },
               changedProps: expect.arrayContaining([
                 PROP_NAME,
@@ -1405,23 +1525,26 @@ export default function runAbstractControlContainerBaseTestSuite<
 
             const [event1, event2] = await promise1;
 
-            expect(event1).toEqual({
-              type: 'ChildStateChange',
+            expect(event1).toEqual<IChildControlStateChangeEvent>({
+              type: 'StateChange',
+              subtype: 'Child',
               eventId: expect.any(Number),
               idOfOriginatingEvent: expect.any(Number),
               source: b.id,
               meta: {},
-              key: expect.anything(),
-              childEvent: {
-                type: 'StateChange',
-                eventId: expect.any(Number),
-                idOfOriginatingEvent: expect.any(Number),
-                source: child1.id,
-                meta: {},
-                change: {
-                  [PROP_NAME]: expect.any(Function),
-                },
-                changedProps: [PROP_NAME],
+              childEvents: {
+                0: {
+                  type: 'StateChange',
+                  subtype: 'Self',
+                  eventId: expect.any(Number),
+                  idOfOriginatingEvent: expect.any(Number),
+                  source: child1.id,
+                  meta: {},
+                  change: {
+                    [PROP_NAME]: expect.any(Function),
+                  },
+                  changedProps: [PROP_NAME],
+                } as IControlSelfStateChangeEvent<unknown, unknown>,
               },
               changedProps: [],
             });
@@ -1462,23 +1585,26 @@ export default function runAbstractControlContainerBaseTestSuite<
 
             const [event1, event2, event3] = await promise1;
 
-            expect(event1).toEqual({
-              type: 'ChildStateChange',
+            expect(event1).toEqual<IChildControlStateChangeEvent>({
+              type: 'StateChange',
+              subtype: 'Child',
               eventId: expect.any(Number),
               idOfOriginatingEvent: expect.any(Number),
               source: b.id,
               meta: {},
-              key: expect.anything(),
-              childEvent: {
-                type: 'StateChange',
-                eventId: expect.any(Number),
-                idOfOriginatingEvent: expect.any(Number),
-                source: child1.id,
-                meta: {},
-                change: {
-                  [PROP_NAME]: expect.any(Function),
-                },
-                changedProps: [PROP_NAME],
+              childEvents: {
+                0: {
+                  type: 'StateChange',
+                  subtype: 'Self',
+                  eventId: expect.any(Number),
+                  idOfOriginatingEvent: expect.any(Number),
+                  source: child1.id,
+                  meta: {},
+                  change: {
+                    [PROP_NAME]: expect.any(Function),
+                  },
+                  changedProps: [PROP_NAME],
+                } as IControlSelfStateChangeEvent<unknown, unknown>,
               },
               changedProps: expect.arrayContaining([
                 PROP_NAME,
@@ -1486,27 +1612,30 @@ export default function runAbstractControlContainerBaseTestSuite<
               ]),
             });
 
-            expect(event2).toEqual({
-              type: 'ChildStateChange',
+            expect(event2).toEqual<IChildControlStateChangeEvent>({
+              type: 'StateChange',
+              subtype: 'Child',
               eventId: expect.any(Number),
               idOfOriginatingEvent: expect.any(Number),
               source: b.id,
               meta: {},
-              key: expect.anything(),
-              childEvent: {
-                type: 'StateChange',
-                eventId: expect.any(Number),
-                idOfOriginatingEvent: expect.any(Number),
-                source: child1.id,
-                meta: {},
-                change: {
-                  disabled: expect.any(Function),
-                },
-                changedProps: expect.arrayContaining([
-                  'disabled',
-                  'enabled',
-                  'status',
-                ]),
+              childEvents: {
+                0: {
+                  type: 'StateChange',
+                  subtype: 'Self',
+                  eventId: expect.any(Number),
+                  idOfOriginatingEvent: expect.any(Number),
+                  source: child1.id,
+                  meta: {},
+                  change: {
+                    disabled: expect.any(Function),
+                  },
+                  changedProps: expect.arrayContaining([
+                    'disabled',
+                    'enabled',
+                    'status',
+                  ]),
+                } as IControlSelfStateChangeEvent<unknown, unknown>,
               },
               changedProps: expect.arrayContaining([
                 'childDisabled',
@@ -1544,23 +1673,26 @@ export default function runAbstractControlContainerBaseTestSuite<
 
             const [event1] = await promise1;
 
-            expect(event1).toEqual({
-              type: 'ChildStateChange',
+            expect(event1).toEqual<IChildControlStateChangeEvent>({
+              type: 'StateChange',
+              subtype: 'Child',
               eventId: expect.any(Number),
               idOfOriginatingEvent: expect.any(Number),
               source: b.id,
               meta: {},
-              key: expect.anything(),
-              childEvent: {
-                type: 'StateChange',
-                eventId: expect.any(Number),
-                idOfOriginatingEvent: expect.any(Number),
-                source: child1.id,
-                meta: {},
-                change: {
-                  [PROP_NAME]: expect.any(Function),
-                },
-                changedProps: [PROP_NAME],
+              childEvents: {
+                0: {
+                  type: 'StateChange',
+                  subtype: 'Self',
+                  eventId: expect.any(Number),
+                  idOfOriginatingEvent: expect.any(Number),
+                  source: child1.id,
+                  meta: {},
+                  change: {
+                    [PROP_NAME]: expect.any(Function),
+                  },
+                  changedProps: [PROP_NAME],
+                } as IControlSelfStateChangeEvent<unknown, unknown>,
               },
               changedProps: expect.arrayContaining([CHILD_PROP_NAME]),
             });
@@ -1600,23 +1732,26 @@ export default function runAbstractControlContainerBaseTestSuite<
 
             const [event1, event2] = await promise1;
 
-            expect(event1).toEqual({
-              type: 'ChildStateChange',
+            expect(event1).toEqual<IChildControlStateChangeEvent>({
+              type: 'StateChange',
+              subtype: 'Child',
               eventId: expect.any(Number),
               idOfOriginatingEvent: expect.any(Number),
               source: b.id,
               meta: {},
-              key: expect.anything(),
-              childEvent: {
-                type: 'StateChange',
-                eventId: expect.any(Number),
-                idOfOriginatingEvent: expect.any(Number),
-                source: child1.id,
-                meta: {},
-                change: {
-                  [PROP_NAME]: expect.any(Function),
-                },
-                changedProps: [PROP_NAME],
+              childEvents: {
+                0: {
+                  type: 'StateChange',
+                  subtype: 'Self',
+                  eventId: expect.any(Number),
+                  idOfOriginatingEvent: expect.any(Number),
+                  source: child1.id,
+                  meta: {},
+                  change: {
+                    [PROP_NAME]: expect.any(Function),
+                  },
+                  changedProps: [PROP_NAME],
+                } as IControlSelfStateChangeEvent<unknown, unknown>,
               },
               changedProps: [],
             });
@@ -1657,48 +1792,54 @@ export default function runAbstractControlContainerBaseTestSuite<
 
             const [event1, event2, event3] = await promise1;
 
-            expect(event1).toEqual({
-              type: 'ChildStateChange',
+            expect(event1).toEqual<IChildControlStateChangeEvent>({
+              type: 'StateChange',
+              subtype: 'Child',
               eventId: expect.any(Number),
               idOfOriginatingEvent: expect.any(Number),
               source: b.id,
               meta: {},
-              key: expect.anything(),
-              childEvent: {
-                type: 'StateChange',
-                eventId: expect.any(Number),
-                idOfOriginatingEvent: expect.any(Number),
-                source: child1.id,
-                meta: {},
-                change: {
-                  [PROP_NAME]: expect.any(Function),
-                },
-                changedProps: [PROP_NAME],
+              childEvents: {
+                0: {
+                  type: 'StateChange',
+                  subtype: 'Self',
+                  eventId: expect.any(Number),
+                  idOfOriginatingEvent: expect.any(Number),
+                  source: child1.id,
+                  meta: {},
+                  change: {
+                    [PROP_NAME]: expect.any(Function),
+                  },
+                  changedProps: [PROP_NAME],
+                } as IControlSelfStateChangeEvent<unknown, unknown>,
               },
               changedProps: expect.arrayContaining([CHILD_PROP_NAME]),
             });
 
-            expect(event2).toEqual({
-              type: 'ChildStateChange',
+            expect(event2).toEqual<IChildControlStateChangeEvent>({
+              type: 'StateChange',
+              subtype: 'Child',
               eventId: expect.any(Number),
               idOfOriginatingEvent: expect.any(Number),
               source: b.id,
               meta: {},
-              key: expect.anything(),
-              childEvent: {
-                type: 'StateChange',
-                eventId: expect.any(Number),
-                idOfOriginatingEvent: expect.any(Number),
-                source: child1.id,
-                meta: {},
-                change: {
-                  disabled: expect.any(Function),
-                },
-                changedProps: expect.arrayContaining([
-                  'disabled',
-                  'enabled',
-                  'status',
-                ]),
+              childEvents: {
+                0: {
+                  type: 'StateChange',
+                  subtype: 'Self',
+                  eventId: expect.any(Number),
+                  idOfOriginatingEvent: expect.any(Number),
+                  source: child1.id,
+                  meta: {},
+                  change: {
+                    disabled: expect.any(Function),
+                  },
+                  changedProps: expect.arrayContaining([
+                    'disabled',
+                    'enabled',
+                    'status',
+                  ]),
+                } as IControlSelfStateChangeEvent<unknown, unknown>,
               },
               changedProps: expect.arrayContaining([
                 'childDisabled',

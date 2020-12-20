@@ -3,6 +3,7 @@ import { skip, take, takeUntil, toArray } from 'rxjs/operators';
 import {
   AbstractControl,
   ControlId,
+  IControlSelfStateChangeEvent,
   IControlStateChangeEvent,
   IControlValidationEvent,
   ValidatorFn,
@@ -389,8 +390,9 @@ describe('FormControl', () => {
       expect.assertions(4);
 
       const promise1 = c.events.pipe(take(1)).forEach((event) => {
-        expect(event).toEqual({
+        expect(event).toEqual<IControlSelfStateChangeEvent<unknown, unknown>>({
           type: 'StateChange',
+          subtype: 'Self',
           eventId: expect.any(Number),
           idOfOriginatingEvent: expect.any(Number),
           source: c.id,
@@ -472,8 +474,9 @@ describe('FormControl', () => {
 
       const [event1, event2, event3, event4] = await promise1;
 
-      expect(event1).toEqual<IControlStateChangeEvent<unknown, unknown>>({
+      expect(event1).toEqual<IControlSelfStateChangeEvent<unknown, unknown>>({
         type: 'StateChange',
+        subtype: 'Self',
         source: c.id,
         change: {
           value: expect.any(Function),
@@ -557,8 +560,9 @@ describe('FormControl', () => {
       //   },
       // });
 
-      expect(one).toEqual({
+      expect(one).toEqual<IControlSelfStateChangeEvent<unknown, unknown>>({
         type: 'StateChange',
+        subtype: 'Self',
         // the "registeredValidators" StateChange is still firing behind the scenes
         eventId: expect.any(Number),
         idOfOriginatingEvent: expect.any(Number),
@@ -579,8 +583,9 @@ describe('FormControl', () => {
         meta: {},
       });
 
-      expect(three).toEqual({
+      expect(three).toEqual<IControlSelfStateChangeEvent<unknown, unknown>>({
         type: 'StateChange',
+        subtype: 'Self',
         eventId: expect.any(Number),
         idOfOriginatingEvent: expect.any(Number),
         source: 'myValidationService',
@@ -649,16 +654,43 @@ describe('FormControl', () => {
       const state = a.replayState();
 
       const changes = [
-        { value: expect.any(Function) },
-        { disabled: expect.any(Function) },
-        { touched: expect.any(Function) },
-        { dirty: expect.any(Function) },
-        { readonly: expect.any(Function) },
-        { submitted: expect.any(Function) },
-        { validatorStore: expect.any(Function) },
-        { pendingStore: expect.any(Function) },
-        { errorsStore: expect.any(Function) },
-        { data: expect.any(Function) },
+        {
+          change: { value: expect.any(Function) },
+          changedProps: ['value'],
+        },
+        {
+          change: { disabled: expect.any(Function) },
+          changedProps: ['disabled', 'enabled'],
+        },
+        {
+          change: { touched: expect.any(Function) },
+          changedProps: ['touched'],
+        },
+        {
+          change: { dirty: expect.any(Function) },
+          changedProps: ['dirty'],
+        },
+        {
+          change: { readonly: expect.any(Function) },
+          changedProps: ['readonly'],
+        },
+        {
+          change: { submitted: expect.any(Function) },
+          changedProps: ['submitted'],
+        },
+        {
+          change: { validatorStore: expect.any(Function) },
+          changedProps: ['validatorStore'],
+        },
+        {
+          change: { pendingStore: expect.any(Function) },
+          changedProps: ['pendingStore'],
+        },
+        {
+          change: { errorsStore: expect.any(Function) },
+          changedProps: ['errorsStore'],
+        },
+        { change: { data: expect.any(Function) }, changedProps: ['data'] },
       ];
 
       const events = await state
@@ -666,14 +698,14 @@ describe('FormControl', () => {
         .toPromise();
 
       events.forEach((event, i) => {
-        expect(event).toEqual({
+        expect(event).toEqual<IControlSelfStateChangeEvent<unknown, unknown>>({
           type: 'StateChange',
+          subtype: 'Self',
           eventId: expect.any(Number),
           idOfOriginatingEvent: expect.any(Number),
           source: a.id,
-          changedProps: [],
           meta: {},
-          change: changes[i],
+          ...changes[i],
         });
       });
     });

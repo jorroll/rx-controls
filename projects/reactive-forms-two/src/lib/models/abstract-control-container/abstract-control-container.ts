@@ -6,6 +6,8 @@ import {
   ValidationErrors,
   IControlStateChange,
   IControlStateChangeEvent,
+  IControlSelfStateChangeEvent,
+  ControlId,
 } from '../abstract-control/abstract-control';
 import { FormControl } from '../form-control';
 
@@ -122,31 +124,25 @@ export interface IControlContainerStateChange<
   >;
 }
 
-export interface IControlContainerStateChangeEvent<
+export interface IControlContainerSelfStateChangeEvent<
   Controls extends GenericControlsObject,
   D
-> extends IControlStateChangeEvent<ControlsValue<Controls>, D> {
+> extends IControlSelfStateChangeEvent<ControlsValue<Controls>, D> {
   change: IControlContainerStateChange<Controls, D>;
 }
 
-export interface IChildControlEvent<Controls extends GenericControlsObject>
-  extends IControlEvent {
-  key: ControlsKey<Controls>;
-  childEvent: IControlEvent;
+export interface IChildControlEvent extends IControlEvent {
+  childEvents: { [key: string]: IControlEvent };
 }
 
-export interface IChildControlStateChangeEvent<
-  Controls extends GenericControlsObject,
-  D
-> extends IChildControlEvent<Controls> {
-  type: 'ChildStateChange';
-  childEvent:
-    | IControlStateChangeEvent<
-        ControlsValue<Controls>[ControlsKey<Controls>],
-        D
-      >
-    | IChildControlStateChangeEvent<Controls, D>;
-  changedProps: string[];
+export interface IChildControlStateChangeEvent
+  extends IChildControlEvent,
+    IControlStateChangeEvent {
+  type: 'StateChange';
+  subtype: 'Child';
+  childEvents: { [key: string]: IControlStateChangeEvent };
+  onEventProcessedId?: ControlId;
+  onEventProcessedFn?: (result?: IControlStateChangeEvent) => void;
 }
 
 export namespace AbstractControlContainer {
@@ -186,88 +182,88 @@ export interface AbstractControlContainer<
   readonly valid: boolean;
   /** Will return true if the `ControlContainer` has no errors. */
   readonly containerValid: boolean;
-  /** Will return true if *any* enabled child control is valid */
+  /** Will return true if *any* `enabled` direct child control is `valid` */
   readonly childValid: boolean;
-  /** Will return true if *all* enabled child control's are valid */
+  /** Will return true if *all* `enabled` direct child control's are `valid` */
   readonly childrenValid: boolean;
 
   /** Will return true if `containerInvalid` or `childInvalid` */
   readonly invalid: boolean;
   /** Will return true if the `ControlContainer` has any errors. */
   readonly containerInvalid: boolean;
-  /** Will return true if *any* enabled child control is invalid */
+  /** Will return true if *any* `enabled` direct child control is `invalid` */
   readonly childInvalid: boolean;
-  /** Will return true if *all* enabled child control's are invalid */
+  /** Will return true if *all* `enabled` direct child control's are `invalid` */
   readonly childrenInvalid: boolean;
 
   /** Will return true if `containerEnabled` and `childEnabled` */
   readonly enabled: boolean;
-  /** Will return true if the `ControlContainer` is enabled. */
+  /** Will return true if the `ControlContainer` is `enabled`. */
   readonly containerEnabled: boolean;
-  /** Will return true if *any* child control is enabled */
+  /** Will return true if *any* direct child control is `enabled` */
   readonly childEnabled: boolean;
-  /** Will return true if *all* child control's are enabled */
+  /** Will return true if *all* direct child control's are `enabled` */
   readonly childrenEnabled: boolean;
 
   /** Will return true if `containerDisabled` or `childrenDisabled` */
   readonly disabled: boolean;
-  /** Will return true if the `ControlContainer` is disabled. */
+  /** Will return true if the `ControlContainer` is `disabled`. */
   readonly containerDisabled: boolean;
-  /** Will return true if *any* child control is disabled */
+  /** Will return true if *any* direct child control is `disabled` */
   readonly childDisabled: boolean;
-  /** Will return true if *all* child control's are disabled */
+  /** Will return true if *all* direct child control's are `disabled` */
   readonly childrenDisabled: boolean;
 
   /** Will return true if `containerReadonly` or `childrenReadonly` */
   readonly readonly: boolean;
-  /** Will return true if the `ControlContainer` is readonly. */
+  /** Will return true if the `ControlContainer` is `readonly`. */
   readonly containerReadonly: boolean;
-  /** Will return true if *any* enabled child control is readonly */
+  /** Will return true if *any* `enabled` direct child control is `readonly` */
   readonly childReadonly: boolean;
-  /** Will return true if *all* enabled child control's are readonly */
+  /** Will return true if *all* `enabled` direct child control's are `readonly` */
   readonly childrenReadonly: boolean;
 
   /** Will return true if `containerPending` or `childPending` */
   readonly pending: boolean;
-  /** Will return true if the `ControlContainer` is pending. */
+  /** Will return true if the `ControlContainer` is `pending`. */
   readonly containerPending: boolean;
-  /** Will return true if *any* enabled child control is pending */
+  /** Will return true if *any* `enabled` direct child control is `pending` */
   readonly childPending: boolean;
-  /** Will return true if *all* enabled child control's are pending */
+  /** Will return true if *all* `enabled` direct child control's are `pending` */
   readonly childrenPending: boolean;
 
   /** Will return true if `containerTouched` or `childTouched` */
   readonly touched: boolean;
-  /** Will return true if the `ControlContainer` is touched. */
+  /** Will return true if the `ControlContainer` is `touched`. */
   readonly containerTouched: boolean;
-  /** Will return true if *any* enabled child control is touched */
+  /** Will return true if *any* `enabled` direct child control is `touched` */
   readonly childTouched: boolean;
-  /** Will return true if *all* enabled child control's are touched */
+  /** Will return true if *all* `enabled` direct child control's are `touched` */
   readonly childrenTouched: boolean;
 
   /** Will return true if `containerDirty` or `childDirty` */
   readonly dirty: boolean;
-  /** Will return true if the `ControlContainer` is dirty. */
+  /** Will return true if the `ControlContainer` is `dirty`. */
   readonly containerDirty: boolean;
-  /** Will return true if *any* enabled child control is dirty */
+  /** Will return true if *any* `enabled` direct child control is `dirty` */
   readonly childDirty: boolean;
-  /** Will return true if *all* enabled child control's are dirty */
+  /** Will return true if *all* `enabled` direct child control's are `dirty` */
   readonly childrenDirty: boolean;
 
   /** Will return true if `containerSubmitted` or `childrenSubmitted` */
   readonly submitted: boolean;
-  /** Will return true if the `ControlContainer` is submitted. */
+  /** Will return true if the `ControlContainer` is `submitted`. */
   readonly containerSubmitted: boolean;
-  /** Will return true if *any* enabled child control is submitted */
+  /** Will return true if *any* `enabled` direct child control is `submitted` */
   readonly childSubmitted: boolean;
-  /** Will return true if *all* enabled child control's are submitted */
+  /** Will return true if *all* `enabled` direct child control's are `submitted` */
   readonly childrenSubmitted: boolean;
 
   /** Contains `{ ...childrenErrors, ...containerErrors }` or `null` if there are none */
   readonly errors: ValidationErrors | null;
   /** Contains this AbstractControlContainer's errors or `null` if there are none */
   readonly containerErrors: ValidationErrors | null;
-  /** Contains *all* enabled child control errors or `null` if there are none */
+  /** Contains *all* `enabled` child control errors or `null` if there are none */
   readonly childrenErrors: ValidationErrors | null;
 
   [AbstractControlContainer.INTERFACE](): this;
@@ -359,12 +355,35 @@ export interface AbstractControlContainer<
   ): void;
   removeControl(name: unknown, options?: IControlEventOptions): void;
 
-  markChildrenDisabled(value: boolean, options?: IControlEventOptions): void;
-  markChildrenTouched(value: boolean, options?: IControlEventOptions): void;
-  markChildrenDirty(value: boolean, options?: IControlEventOptions): void;
-  markChildrenReadonly(value: boolean, options?: IControlEventOptions): void;
-  markChildrenSubmitted(value: boolean, options?: IControlEventOptions): void;
-  markChildrenPending(value: boolean, options?: IControlEventOptions): void;
+  markChildrenDisabled(
+    value: boolean,
+    options?: IControlEventOptions & { deep?: boolean }
+  ): void;
+
+  markChildrenTouched(
+    value: boolean,
+    options?: IControlEventOptions & { deep?: boolean }
+  ): void;
+
+  markChildrenDirty(
+    value: boolean,
+    options?: IControlEventOptions & { deep?: boolean }
+  ): void;
+
+  markChildrenReadonly(
+    value: boolean,
+    options?: IControlEventOptions & { deep?: boolean }
+  ): void;
+
+  markChildrenSubmitted(
+    value: boolean,
+    options?: IControlEventOptions & { deep?: boolean }
+  ): void;
+
+  markChildrenPending(
+    value: boolean,
+    options?: IControlEventOptions & { deep?: boolean }
+  ): void;
 
   clone(): AbstractControlContainer<Controls, Data>;
 }
