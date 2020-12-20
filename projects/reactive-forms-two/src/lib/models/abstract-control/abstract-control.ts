@@ -662,7 +662,9 @@ export interface AbstractControl<RawValue = any, Data = any, Value = RawValue> {
    * identical to this one. This observable will complete upon
    * replaying the necessary state changes.
    */
-  replayState(options?: IControlEventOptions): Observable<IControlEvent>;
+  replayState(
+    options?: Omit<IControlEventOptions, 'idOfOriginatingEvent'>
+  ): Observable<IControlEvent>;
 
   /**
    * Returns a new AbstractControl which is identical to this one except

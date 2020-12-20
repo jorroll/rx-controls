@@ -1,3 +1,4 @@
+import { Observable } from 'rxjs';
 import {
   AbstractControl,
   IControlEvent,
@@ -9,7 +10,6 @@ import {
   IControlSelfStateChangeEvent,
   ControlId,
 } from '../abstract-control/abstract-control';
-import { FormControl } from '../form-control';
 
 // UTILITY TYPES
 
@@ -386,6 +386,17 @@ export interface AbstractControlContainer<
     value: boolean,
     options?: IControlEventOptions & { deep?: boolean }
   ): void;
+
+  replayState(
+    options?: Omit<IControlEventOptions, 'idOfOriginatingEvent'> & {
+      /**
+       * By default, the controls will be cloned so that
+       * mutations to them do not affect the replayState snapshot.
+       * Pass the `preserveControls: true` option to disable this.
+       */
+      preserveControls?: boolean;
+    }
+  ): Observable<IControlEvent>;
 
   clone(): AbstractControlContainer<Controls, Data>;
 }

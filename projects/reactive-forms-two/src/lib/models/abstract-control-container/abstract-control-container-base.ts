@@ -609,9 +609,23 @@ export abstract class AbstractControlContainerBase<
   }
 
   replayState(
-    options: Omit<IControlEventOptions, 'idOfOriginatingEvent'> = {}
+    options: Omit<IControlEventOptions, 'idOfOriginatingEvent'> & {
+      /**
+       * By default, the controls will be cloned so that
+       * mutations to them do not affect the replayState snapshot.
+       * Pass the `preserveControls: true` option to disable this.
+       */
+      preserveControls?: boolean;
+    } = {}
   ): Observable<IControlContainerSelfStateChangeEvent<Controls, Data>> {
-    const { _controlsStore } = this;
+    const _controlsStore = options.preserveControls
+      ? this._controlsStore
+      : new Map(
+          Array.from(this._controlsStore).map(([k, c]) => [
+            k,
+            (c as AbstractControl).clone() as typeof c,
+          ])
+        );
 
     const changes: Array<{
       change: IControlContainerStateChange<Controls, Data>;
