@@ -5,10 +5,17 @@ import {
 
 export type IFormControlArgs<D> = IAbstractControlBaseArgs<D>;
 
-export class FormControl<V = any, D = any> extends AbstractControlBase<V, D> {
+export class FormControl<V = any, D = any> extends AbstractControlBase<
+  V,
+  D,
+  V
+> {
   static id = 0;
 
-  protected _value!: V;
+  /** On FormControl, this is an alias for "rawValue". */
+  get value() {
+    return this.rawValue;
+  }
 
   constructor(value: V = null as any, options: IFormControlArgs<D> = {}) {
     super(options.id || Symbol(`FormControl-${FormControl.id++}`));

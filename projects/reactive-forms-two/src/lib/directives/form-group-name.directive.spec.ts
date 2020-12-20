@@ -99,7 +99,7 @@ describe('ComplexValueMapperTestComponent', () => {
   beforeEach(beforeEachFn(ComplexValueMapperTestComponent, o));
 
   it('initializes', () => {
-    expect(o.component.control.value).toEqual({
+    expect(o.component.control.rawValue).toEqual({
       name: {
         firstName: 'John',
         lastName: 'Carroll',
@@ -113,7 +113,7 @@ describe('ComplexValueMapperTestComponent', () => {
       },
     });
 
-    expect(o.component.alternateRelativeFirstNameControl.value).toEqual(
+    expect(o.component.alternateRelativeFirstNameControl.rawValue).toEqual(
       'Bobby'
     );
 
@@ -159,7 +159,7 @@ describe('ComplexValueMapperTestComponent', () => {
 
     o.component.updateBirthdate(newDate);
 
-    expect(o.component.control.value).toEqual({
+    expect(o.component.control.rawValue).toEqual({
       name: {
         firstName: 'John',
         lastName: 'Carroll',
@@ -187,7 +187,7 @@ describe('ComplexValueMapperTestComponent', () => {
       'Cassidy'
     );
 
-    expect(o.component.control.value).toEqual({
+    expect(o.component.control.rawValue).toEqual({
       name: {
         firstName: 'Cassidy',
         lastName: 'Carroll',
@@ -227,9 +227,11 @@ describe('ComplexValueMapperTestComponent', () => {
   it('updateRelativeFirstName', async () => {
     o.component.updateRelativeFirstName('Jack');
 
-    expect(o.component.alternateRelativeFirstNameControl.value).toEqual('Jack');
+    expect(o.component.alternateRelativeFirstNameControl.rawValue).toEqual(
+      'Jack'
+    );
 
-    expect(o.component.control.value).toEqual({
+    expect(o.component.control.rawValue).toEqual({
       name: {
         firstName: 'John',
         lastName: 'Carroll',
@@ -261,7 +263,9 @@ describe('ComplexValueMapperTestComponent', () => {
 
     await wait(0); // without this, errors inside the event loop are silently suppressed
 
-    expect(o.component.alternateRelativeFirstNameControl.value).toEqual('Jack');
+    expect(o.component.alternateRelativeFirstNameControl.rawValue).toEqual(
+      'Jack'
+    );
     expect(relative_firstName).toHaveProperty('value', 'Jack');
   });
 

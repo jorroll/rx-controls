@@ -20,8 +20,8 @@ import {
 } from '../abstract-control/abstract-control';
 import {
   AbstractControlContainer,
+  ControlsRawValue,
   ControlsValue,
-  ControlsEnabledValue,
   IControlContainerSelfStateChangeEvent,
   IControlContainerStateChange,
   IChildControlStateChangeEvent,
@@ -72,7 +72,11 @@ export abstract class AbstractControlContainerBase<
     Controls extends GenericControlsObject = any,
     Data = any
   >
-  extends AbstractControlBase<ControlsValue<Controls>, Data>
+  extends AbstractControlBase<
+    ControlsRawValue<Controls>,
+    Data,
+    ControlsValue<Controls>
+  >
   implements PrivateAbstractControlContainer<Controls, Data> {
   protected _controls!: Controls;
   get controls() {
@@ -94,9 +98,9 @@ export abstract class AbstractControlContainerBase<
     return this.controlsStore.size;
   }
 
-  protected _enabledValue!: ControlsEnabledValue<Controls>;
-  get enabledValue() {
-    return this._enabledValue;
+  protected _value!: ControlsValue<Controls>;
+  get value() {
+    return this._value;
   }
 
   // VALID
@@ -394,7 +398,7 @@ export abstract class AbstractControlContainerBase<
   }
 
   patchValue(
-    value: DeepPartial<ControlsValue<Controls>>,
+    value: DeepPartial<ControlsRawValue<Controls>>,
     options?: IControlEventOptions
   ) {
     Object.entries(value).forEach(([key, val]) => {
@@ -615,7 +619,7 @@ export abstract class AbstractControlContainerBase<
     }> = [
       {
         change: { controlsStore: () => _controlsStore },
-        changedProps: ['controlsStore', 'value'],
+        changedProps: ['controlsStore', 'rawValue', 'value'],
       },
     ];
 
@@ -760,24 +764,24 @@ export abstract class AbstractControlContainerBase<
     event: IControlContainerSelfStateChangeEvent<Controls, Data>
   ): IControlContainerSelfStateChangeEvent<Controls, Data> | null;
 
-  protected processStateChange_Value(
+  protected processStateChange_RawValue(
     event: IControlContainerSelfStateChangeEvent<Controls, Data>
   ): IChildControlStateChangeEvent | null {
-    const change = event.change.value as NonNullable<
-      IControlContainerStateChange<Controls, Data>['value']
+    const change = event.change.rawValue as NonNullable<
+      IControlContainerStateChange<Controls, Data>['rawValue']
     >;
 
-    const newValue = change(this._value);
+    const newValue = change(this._rawValue);
 
-    if (isEqual(this._value, newValue)) return null;
+    if (isEqual(this._rawValue, newValue)) return null;
 
     const newEvent: IChildControlStateChangeEvent = {
       ...event,
       type: 'StateChange',
       subtype: 'Child',
       childEvents: Object.fromEntries(
-        Object.entries(newValue).map(([key, _value]) => {
-          const value = _value as this['value'][ControlsKey<Controls>];
+        Object.entries(newValue).map(([key, _rawValue]) => {
+          const rawValue = _rawValue as this['rawValue'][ControlsKey<Controls>];
 
           return [
             key,
@@ -785,7 +789,7 @@ export abstract class AbstractControlContainerBase<
               ...event,
               type: 'StateChange',
               subtype: 'Self',
-              change: { value: () => value },
+              change: { rawValue: () => rawValue },
               changedProps: [],
               eventId: AbstractControl.eventId(),
             } as IControlSelfStateChangeEvent<any, any>,
@@ -964,18 +968,18 @@ export abstract class AbstractControlContainerBase<
 
     const changedProps: string[] = [];
 
-    if (changesMap.has('value')) {
+    if (changesMap.has('rawValue')) {
       changedProps.push(
-        ...this.processChildStateChange_Value(event, changesMap.get('value')!)
+        ...this.processChildStateChange_RawValue(
+          event,
+          changesMap.get('rawValue')!
+        )
       );
     }
 
-    if (changesMap.has('enabledValue')) {
+    if (changesMap.has('value')) {
       changedProps.push(
-        ...this.processChildStateChange_EnabledValue(
-          event,
-          changesMap.get('enabledValue')!
-        )
+        ...this.processChildStateChange_Value(event, changesMap.get('value')!)
       );
     }
 
@@ -1025,14 +1029,16 @@ export abstract class AbstractControlContainerBase<
 
       if (
         control.disabled &&
-        !childEvent.changedProps.some((p) => p === 'disabled' || p === 'value')
+        !childEvent.changedProps.some(
+          (p) => p === 'disabled' || p === 'rawValue'
+        )
       ) {
         return;
       }
 
       childEvent.changedProps.forEach((prop) => {
-        if (prop === 'value' || prop === 'disabled') {
-          addChange('enabledValue', key as ControlsKey<Controls>);
+        if (prop === 'rawValue' || prop === 'disabled') {
+          addChange('value', key as ControlsKey<Controls>);
         }
 
         addChange(prop, key as ControlsKey<Controls>);
@@ -1042,8 +1048,27 @@ export abstract class AbstractControlContainerBase<
     return normalizedChanges;
   }
 
-  protected processChildStateChange_Value(
+  protected processChildStateChange_RawValue(
     event: IChildControlStateChangeEvent,
+    changedKeys: Set<ControlsKey<Controls>>
+  ): string[] {
+    const newRawValue = this.shallowCloneValue(this.rawValue);
+
+    for (const key of changedKeys) {
+      const control = this.controlsStore.get(key) as AbstractControl;
+
+      newRawValue[key] = control.rawValue;
+    }
+
+    if (isEqual(this._rawValue, newRawValue)) return [];
+
+    this._rawValue = newRawValue;
+
+    return ['rawValue', ...this.runValidation(event)];
+  }
+
+  protected processChildStateChange_Value(
+    _event: IChildControlStateChangeEvent,
     changedKeys: Set<ControlsKey<Controls>>
   ): string[] {
     const newValue = this.shallowCloneValue(this.value);
@@ -1051,42 +1076,19 @@ export abstract class AbstractControlContainerBase<
     for (const key of changedKeys) {
       const control = this.controlsStore.get(key) as AbstractControl;
 
-      newValue[key] = control.value;
-    }
-
-    if (isEqual(this._value, newValue)) return [];
-
-    this._value = newValue;
-
-    return ['value', ...this.runValidation(event)];
-  }
-
-  protected processChildStateChange_EnabledValue(
-    _event: IChildControlStateChangeEvent,
-    changedKeys: Set<ControlsKey<Controls>>
-  ): string[] {
-    const newEnabledValue = this.shallowCloneValue(this.enabledValue);
-
-    for (const key of changedKeys) {
-      const control = this.controlsStore.get(key) as AbstractControl;
-
       if (control.disabled) {
-        delete newEnabledValue[key];
+        delete newValue[key];
         continue;
       }
 
-      newEnabledValue[key] = AbstractControlContainer.isControlContainer(
-        control
-      )
-        ? control.enabledValue
-        : control.value;
+      newValue[key] = control.value;
     }
 
-    if (isEqual(this.enabledValue, newEnabledValue)) return [];
+    if (isEqual(this.value, newValue)) return [];
 
-    this._enabledValue = newEnabledValue;
+    this._value = newValue;
 
-    return ['enabledValue'];
+    return ['value'];
   }
 
   protected processMetaProps() {
@@ -1325,7 +1327,7 @@ export abstract class AbstractControlContainerBase<
   }
 
   protected abstract shallowCloneValue<
-    T extends this['value'] | this['enabledValue']
+    T extends this['rawValue'] | this['value']
   >(value: T): T;
 
   protected updateErrorsProp(changedProps: string[]) {

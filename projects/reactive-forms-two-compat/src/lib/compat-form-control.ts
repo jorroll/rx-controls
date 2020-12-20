@@ -11,8 +11,9 @@ export class CompatFormControl extends OldFormControl {
     this.swControl.events.pipe(filter(isStateChange)).subscribe((event) => {
       event.changedProps.forEach((prop) => {
         switch (prop) {
+          case 'rawValue':
           case 'value': {
-            this.setValue(this.swControl.value, {
+            this.setValue(this.swControl.rawValue, {
               [FROM_SWCONTROL]: true,
             });
             break;

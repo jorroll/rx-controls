@@ -40,7 +40,7 @@ describe('SelectNoOptionsComponent', () => {
     expect(o.select.value).toEqual('');
     expect(o.select.selectedOptions.length).toEqual(0);
     expect(o.accessor.deactivated).toBe(false);
-    expect(o.control.value).toEqual([]);
+    expect(o.control.rawValue).toEqual([]);
     expect(o.control.dirty).toEqual(false);
     expect(o.control.touched).toEqual(false);
   });
@@ -51,7 +51,7 @@ describe('SelectNoOptionsComponent', () => {
     expect(o.select.disabled).toEqual(true);
     expect(o.select.selectedOptions.length).toEqual(0);
     expect(o.accessor.deactivated).toBe(false);
-    expect(o.control.value).toEqual([]);
+    expect(o.control.rawValue).toEqual([]);
     expect(o.control.dirty).toEqual(false);
     expect(o.control.touched).toEqual(false);
 
@@ -60,7 +60,7 @@ describe('SelectNoOptionsComponent', () => {
     expect(o.select.disabled).toEqual(false);
     expect(o.select.selectedOptions.length).toEqual(0);
     expect(o.accessor.deactivated).toBe(false);
-    expect(o.control.value).toEqual([]);
+    expect(o.control.rawValue).toEqual([]);
     expect(o.control.dirty).toEqual(false);
     expect(o.control.touched).toEqual(false);
   });
@@ -93,7 +93,7 @@ describe('SelectWithOptionsComponent', () => {
     expect(o.select.value).toEqual('');
     expect(o.select.selectedOptions.length).toEqual(0);
     expect(o.accessor.deactivated).toBe(false);
-    expect(o.control.value).toEqual([]);
+    expect(o.control.rawValue).toEqual([]);
     expect(o.control.dirty).toEqual(false);
     expect(o.control.touched).toEqual(false);
   });
@@ -104,7 +104,7 @@ describe('SelectWithOptionsComponent', () => {
     expect(o.select.value).toEqual("1: 'linux'");
     expect(o.select.selectedIndex).toEqual(1);
     expect(o.select.selectedOptions.length).toEqual(1);
-    expect(o.control.value).toEqual(['linux']);
+    expect(o.control.rawValue).toEqual(['linux']);
     expect(o.control.dirty).toEqual(true);
     expect(o.control.touched).toEqual(false);
 
@@ -113,7 +113,7 @@ describe('SelectWithOptionsComponent', () => {
     expect(o.select.value).toEqual("0: 'mac'");
     expect(o.select.selectedIndex).toEqual(0);
     expect(o.select.selectedOptions.length).toEqual(2);
-    expect(o.control.value).toEqual(['mac', 'linux']);
+    expect(o.control.rawValue).toEqual(['mac', 'linux']);
     expect(o.control.dirty).toEqual(true);
     expect(o.control.touched).toEqual(false);
   });
@@ -127,7 +127,7 @@ describe('SelectWithOptionsComponent', () => {
 
     expect(o.select.value).toEqual('3: Object');
     expect(o.select.selectedOptions.length).toEqual(1);
-    expect(o.control.value).toEqual([o.component.objectValue]);
+    expect(o.control.rawValue).toEqual([o.component.objectValue]);
     expect(o.control.dirty).toEqual(true);
     expect(o.control.touched).toEqual(false);
   });
@@ -145,7 +145,7 @@ describe('SelectWithOptionsComponent', () => {
       expect(o.select.value).toEqual("0: 'mac'");
       expect(o.select.selectedIndex).toEqual(0);
       expect(o.select.selectedOptions.length).toEqual(1);
-      expect(o.control.value).toEqual(['mac']);
+      expect(o.control.rawValue).toEqual(['mac']);
       expect(o.control.dirty).toEqual(false);
       expect(o.control.touched).toEqual(false);
     });
@@ -155,7 +155,7 @@ describe('SelectWithOptionsComponent', () => {
       expect(o.select.value).toEqual("0: 'mac'");
       expect(o.select.selectedIndex).toEqual(0);
       expect(o.select.selectedOptions.length).toEqual(2);
-      expect(o.control.value).toEqual(['linux', 'mac']);
+      expect(o.control.rawValue).toEqual(['linux', 'mac']);
       expect(o.control.dirty).toEqual(false);
       expect(o.control.touched).toEqual(false);
     });
@@ -165,7 +165,7 @@ describe('SelectWithOptionsComponent', () => {
       expect(o.select.value).toEqual('');
       expect(o.select.selectedOptions.length).toEqual(0);
       expect(o.select.selectedIndex).toEqual(-1);
-      expect(o.control.value).toEqual(['pizza']);
+      expect(o.control.rawValue).toEqual(['pizza']);
       expect(o.control.dirty).toEqual(false);
       expect(o.control.touched).toEqual(false);
     });
@@ -175,7 +175,7 @@ describe('SelectWithOptionsComponent', () => {
       expect(o.select.value).toEqual('');
       expect(o.select.selectedIndex).toEqual(-1);
       expect(o.select.selectedOptions.length).toEqual(0);
-      expect(o.control.value).toEqual(o.component.stringValue);
+      expect(o.control.rawValue).toEqual(o.component.stringValue);
       expect(o.control.dirty).toEqual(false);
       expect(o.control.touched).toEqual(false);
     });
@@ -185,7 +185,7 @@ describe('SelectWithOptionsComponent', () => {
       expect(o.select.value).toEqual("1: 'linux'");
       expect(o.select.selectedIndex).toEqual(1);
       expect(o.select.selectedOptions.length).toEqual(1);
-      expect(o.control.value).toEqual(['linux', 'pizza']);
+      expect(o.control.rawValue).toEqual(['linux', 'pizza']);
       expect(o.control.dirty).toEqual(false);
       expect(o.control.touched).toEqual(false);
     });
@@ -217,7 +217,7 @@ describe('SelectNgIfComponent', () => {
     expect(o.select.selectedIndex).toEqual(-1);
     expect(o.select.selectedOptions.length).toEqual(0);
     expect(o.accessor.deactivated).toBe(false);
-    expect(o.control.value).toEqual([]);
+    expect(o.control.rawValue).toEqual([]);
     expect(o.control.dirty).toEqual(false);
     expect(o.control.touched).toEqual(false);
   });
@@ -229,7 +229,7 @@ describe('SelectNgIfComponent', () => {
     expect(o.select.value).toEqual('');
     expect(o.select.selectedIndex).toEqual(-1);
     expect(o.select.selectedOptions.length).toEqual(0);
-    expect(o.control.value).toEqual([]);
+    expect(o.control.rawValue).toEqual([]);
     expect(o.control.dirty).toEqual(false);
     expect(o.control.touched).toEqual(false);
 
@@ -238,7 +238,7 @@ describe('SelectNgIfComponent', () => {
     expect(o.select.value).toEqual("2: 'mac'");
     expect(o.select.selectedIndex).toEqual(0);
     expect(o.select.selectedOptions.length).toEqual(2);
-    expect(o.control.value).toEqual(['mac', 'windows']);
+    expect(o.control.rawValue).toEqual(['mac', 'windows']);
     expect(o.control.dirty).toEqual(false);
     expect(o.control.touched).toEqual(false);
 
@@ -248,7 +248,7 @@ describe('SelectNgIfComponent', () => {
     expect(o.select.value).toEqual("1: 'windows'");
     expect(o.select.selectedIndex).toEqual(1);
     expect(o.select.selectedOptions.length).toEqual(1);
-    expect(o.control.value).toEqual(['windows']);
+    expect(o.control.rawValue).toEqual(['windows']);
     expect(o.control.dirty).toEqual(false);
     expect(o.control.touched).toEqual(false);
   });

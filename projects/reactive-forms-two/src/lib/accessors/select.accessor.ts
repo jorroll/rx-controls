@@ -443,9 +443,9 @@ export class SelectMultipleAccessor
 
     this.optionMap.delete(id);
 
-    if (!Array.isArray(this.control.value)) return;
+    if (!Array.isArray(this.control.rawValue)) return;
 
-    const newValue = this.control.value.slice();
+    const newValue = this.control.rawValue.slice();
     newValue.splice(newValue.indexOf(value), 1);
     this.control.setValue(newValue);
   }

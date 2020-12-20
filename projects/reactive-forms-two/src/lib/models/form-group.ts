@@ -6,8 +6,8 @@ import {
 import {
   AbstractControlContainer,
   ContainerControls,
-  ControlsEnabledValue,
   ControlsValue,
+  ControlsRawValue,
   IControlContainerStateChange,
   IControlContainerSelfStateChangeEvent,
   ControlsKey,
@@ -39,9 +39,9 @@ export class FormGroup<
     // if a non-default value is provided. In the case of a default value,
     // the following properties need be manually set.
     if (!this._controls) this._controls = {} as Controls;
-    if (!this._value) this._value = {} as ControlsValue<Controls>;
-    if (!this._enabledValue) {
-      this._enabledValue = {} as ControlsEnabledValue<Controls>;
+    if (!this._rawValue) this._rawValue = {} as ControlsRawValue<Controls>;
+    if (!this._value) {
+      this._value = {} as ControlsValue<Controls>;
     }
   }
 
@@ -57,17 +57,15 @@ export class FormGroup<
     if (isEqual(this._controlsStore, controlsStore)) return null;
 
     const controls = (Object.fromEntries(controlsStore) as unknown) as Controls;
+    const newRawValue = { ...this._rawValue } as Mutable<this['rawValue']>;
     const newValue = { ...this._value } as Mutable<this['value']>;
-    const newEnabledValue = { ...this._enabledValue } as Mutable<
-      this['enabledValue']
-    >;
 
     // controls that need to be removed
     for (const [key, control] of this._controlsStore) {
       if (controlsStore.get(key) === control) continue;
       this.unregisterControl(control);
-      delete newValue[key];
-      delete newEnabledValue[key as keyof this['enabledValue']];
+      delete newRawValue[key];
+      delete newValue[key as keyof this['value']];
     }
 
     // controls that need to be added
@@ -78,14 +76,10 @@ export class FormGroup<
       // This is needed because the call to "registerControl" can clone
       // the provided control (returning a new one);
       controls[key] = this.registerControl(key, _control);
-      newValue[key] = control.value;
+      newRawValue[key] = control.rawValue;
 
       if (control.enabled) {
-        newEnabledValue[
-          key as keyof this['enabledValue']
-        ] = AbstractControlContainer.isControlContainer(control)
-          ? control.enabledValue
-          : control.value;
+        newValue[key as keyof this['value']] = control.value;
       }
     }
 
@@ -93,8 +87,8 @@ export class FormGroup<
     // This is needed because the call to "registerControl" can clone
     // the provided control (returning a new one);
     this._controlsStore = new Map(Object.entries(controls)) as any;
+    this._rawValue = newRawValue as this['rawValue'];
     this._value = newValue as this['value'];
-    this._enabledValue = newEnabledValue as this['enabledValue'];
 
     return {
       ...event,
@@ -102,13 +96,13 @@ export class FormGroup<
       changedProps: [
         'controlsStore',
         'value',
-        'enabledValue',
+        'rawValue',
         ...this.runValidation(event),
       ],
     };
   }
 
-  protected shallowCloneValue<T extends this['value'] | this['enabledValue']>(
+  protected shallowCloneValue<T extends this['rawValue'] | this['value']>(
     value: T
   ) {
     return { ...value };

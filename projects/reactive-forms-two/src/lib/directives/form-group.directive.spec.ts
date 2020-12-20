@@ -74,7 +74,7 @@ describe('SimpleGroupComponent', () => {
   beforeEach(beforeEachFn(SimpleGroupComponent, o));
 
   it('initializes', () => {
-    expect(o.component.control.value).toEqual({
+    expect(o.component.control.rawValue).toEqual({
       firstName: 'John',
       lastName: 'Carroll',
     });

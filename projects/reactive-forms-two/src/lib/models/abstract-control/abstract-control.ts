@@ -40,13 +40,13 @@ export interface IControlEventOptions {
 
 export interface IControlValidationEvent<V> extends IControlEvent {
   type: 'ValidationStart' | 'AsyncValidationStart' | 'ValidationComplete';
-  value: V;
+  rawValue: V;
 }
 
 export type IStateChange<V = unknown> = (old: V) => V;
 
 export interface IControlStateChange<V, D> {
-  value?: IStateChange<V>;
+  rawValue?: IStateChange<V>;
   disabled?: IStateChange<boolean>;
   touched?: IStateChange<boolean>;
   dirty?: IStateChange<boolean>;
@@ -140,7 +140,7 @@ export namespace AbstractControl {
       ) => void);
 }
 
-export interface AbstractControl<Value = any, Data = any> {
+export interface AbstractControl<RawValue = any, Data = any, Value = RawValue> {
   /**
    * The ID is used to determine where StateChanges originated,
    * and to ensure that a given AbstractControl only processes
@@ -169,6 +169,7 @@ export interface AbstractControl<Value = any, Data = any> {
   >;
 
   readonly value: Value;
+  readonly rawValue: RawValue;
   readonly enabled: boolean;
   readonly disabled: boolean;
   readonly touched: boolean;
@@ -555,7 +556,7 @@ export interface AbstractControl<Value = any, Data = any> {
     options?: { ignoreNoEmit?: boolean }
   ): Observable<T>;
 
-  setValue(value: Value, options?: IControlEventOptions): void;
+  setValue(value: RawValue, options?: IControlEventOptions): void;
   // patchValue(value: any, options?: IControlEventOptions): void;
 
   /**
@@ -612,7 +613,7 @@ export interface AbstractControl<Value = any, Data = any> {
     source: ControlId,
     options?: IControlEventOptions
   ): Observable<
-    IControlValidationEvent<Value> & {
+    IControlValidationEvent<RawValue> & {
       type: 'ValidationStart';
     }
   >;
@@ -626,7 +627,7 @@ export interface AbstractControl<Value = any, Data = any> {
     source: ControlId,
     options?: IControlEventOptions
   ): Observable<
-    IControlValidationEvent<Value> & {
+    IControlValidationEvent<RawValue> & {
       type: 'AsyncValidationStart';
     }
   >;
@@ -667,7 +668,7 @@ export interface AbstractControl<Value = any, Data = any> {
    * Returns a new AbstractControl which is identical to this one except
    * for the `id` and `parent` properties.
    */
-  clone(): AbstractControl<Value, Data>;
+  clone(): AbstractControl<RawValue, Data, Value>;
 
   /**
    * A convenience method for emitting an arbitrary control event.

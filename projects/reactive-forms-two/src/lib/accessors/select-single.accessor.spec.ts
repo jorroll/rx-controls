@@ -39,7 +39,7 @@ describe('SelectNoOptionsComponent', () => {
   it('initializes', () => {
     expect(o.select.value).toEqual('');
     expect(o.accessor.deactivated).toBe(false);
-    expect(o.control.value).toEqual(null);
+    expect(o.control.rawValue).toEqual(null);
     expect(o.control.dirty).toEqual(false);
     expect(o.control.touched).toEqual(false);
   });
@@ -49,7 +49,7 @@ describe('SelectNoOptionsComponent', () => {
 
     expect(o.select.disabled).toEqual(true);
     expect(o.accessor.deactivated).toBe(false);
-    expect(o.control.value).toEqual(null);
+    expect(o.control.rawValue).toEqual(null);
     expect(o.control.dirty).toEqual(false);
     expect(o.control.touched).toEqual(false);
 
@@ -57,7 +57,7 @@ describe('SelectNoOptionsComponent', () => {
 
     expect(o.select.disabled).toEqual(false);
     expect(o.accessor.deactivated).toBe(false);
-    expect(o.control.value).toEqual(null);
+    expect(o.control.rawValue).toEqual(null);
     expect(o.control.dirty).toEqual(false);
     expect(o.control.touched).toEqual(false);
   });
@@ -89,7 +89,7 @@ describe('SelectWithOptionsComponent', () => {
   it('initializes', () => {
     expect(o.select.value).toEqual("0: 'mac'");
     expect(o.accessor.deactivated).toBe(false);
-    expect(o.control.value).toEqual(null);
+    expect(o.control.rawValue).toEqual(null);
     expect(o.control.dirty).toEqual(false);
     expect(o.control.touched).toEqual(false);
   });
@@ -98,7 +98,7 @@ describe('SelectWithOptionsComponent', () => {
     userEvent.selectOptions(o.select, "1: 'linux'");
 
     expect(o.select.value).toEqual("1: 'linux'");
-    expect(o.control.value).toEqual('linux');
+    expect(o.control.rawValue).toEqual('linux');
     expect(o.control.dirty).toEqual(true);
     expect(o.control.touched).toEqual(false);
   });
@@ -111,7 +111,7 @@ describe('SelectWithOptionsComponent', () => {
     userEvent.selectOptions(o.select, option);
 
     expect(o.select.value).toEqual('3: Object');
-    expect(o.control.value).toEqual(o.component.objectValue);
+    expect(o.control.rawValue).toEqual(o.component.objectValue);
     expect(o.control.dirty).toEqual(true);
     expect(o.control.touched).toEqual(false);
   });
@@ -128,7 +128,7 @@ describe('SelectWithOptionsComponent', () => {
       o.control.setValue('mac');
       expect(o.select.value).toEqual("0: 'mac'");
       expect(o.select.selectedIndex).toEqual(0);
-      expect(o.control.value).toEqual('mac');
+      expect(o.control.rawValue).toEqual('mac');
       expect(o.control.dirty).toEqual(false);
       expect(o.control.touched).toEqual(false);
     });
@@ -137,7 +137,7 @@ describe('SelectWithOptionsComponent', () => {
       o.control.setValue('linux');
       expect(o.select.value).toEqual("1: 'linux'");
       expect(o.select.selectedIndex).toEqual(1);
-      expect(o.control.value).toEqual('linux');
+      expect(o.control.rawValue).toEqual('linux');
       expect(o.control.dirty).toEqual(false);
       expect(o.control.touched).toEqual(false);
     });
@@ -147,7 +147,7 @@ describe('SelectWithOptionsComponent', () => {
       expect(o.select.value).toEqual('');
       expect(o.select.selectedOptions.length).toEqual(0);
       expect(o.select.selectedIndex).toEqual(-1);
-      expect(o.control.value).toEqual('pizza');
+      expect(o.control.rawValue).toEqual('pizza');
       expect(o.control.dirty).toEqual(false);
       expect(o.control.touched).toEqual(false);
     });
@@ -156,7 +156,7 @@ describe('SelectWithOptionsComponent', () => {
       o.control.setValue(o.component.stringValue);
       expect(o.select.value).toEqual("2: 'windows'");
       expect(o.select.selectedIndex).toEqual(2);
-      expect(o.control.value).toEqual('windows');
+      expect(o.control.rawValue).toEqual('windows');
       expect(o.control.dirty).toEqual(false);
       expect(o.control.touched).toEqual(false);
     });
@@ -165,7 +165,7 @@ describe('SelectWithOptionsComponent', () => {
       o.control.setValue(o.component.objectValue);
       expect(o.select.value).toEqual('3: Object');
       expect(o.select.selectedIndex).toEqual(3);
-      expect(o.control.value).toEqual(o.component.objectValue);
+      expect(o.control.rawValue).toEqual(o.component.objectValue);
       expect(o.control.dirty).toEqual(false);
       expect(o.control.touched).toEqual(false);
     });
@@ -176,7 +176,7 @@ describe('SelectWithOptionsComponent', () => {
       o.control.setValue(set);
       expect(o.select.value).toEqual('');
       expect(o.select.selectedIndex).toEqual(-1);
-      expect(o.control.value).toEqual(set);
+      expect(o.control.rawValue).toEqual(set);
       expect(o.control.dirty).toEqual(false);
       expect(o.control.touched).toEqual(false);
     });
@@ -207,7 +207,7 @@ describe('SelectNgIfComponent', () => {
     expect(o.select.value).toEqual("0: 'linux'");
     expect(o.select.selectedIndex).toEqual(0);
     expect(o.accessor.deactivated).toBe(false);
-    expect(o.control.value).toEqual(null);
+    expect(o.control.rawValue).toEqual(null);
     expect(o.control.dirty).toEqual(false);
     expect(o.control.touched).toEqual(false);
   });
@@ -218,7 +218,7 @@ describe('SelectNgIfComponent', () => {
 
     expect(o.select.value).toEqual("0: 'linux'");
     expect(o.select.selectedIndex).toEqual(1);
-    expect(o.control.value).toEqual(null);
+    expect(o.control.rawValue).toEqual(null);
     expect(o.control.dirty).toEqual(false);
     expect(o.control.touched).toEqual(false);
 
@@ -226,7 +226,7 @@ describe('SelectNgIfComponent', () => {
 
     expect(o.select.value).toEqual("2: 'mac'");
     expect(o.select.selectedIndex).toEqual(0);
-    expect(o.control.value).toEqual('mac');
+    expect(o.control.rawValue).toEqual('mac');
     expect(o.control.dirty).toEqual(false);
     expect(o.control.touched).toEqual(false);
 
@@ -235,7 +235,7 @@ describe('SelectNgIfComponent', () => {
 
     expect(o.select.value).toEqual("0: 'linux'");
     expect(o.select.selectedIndex).toEqual(0);
-    expect(o.control.value).toEqual('linux');
+    expect(o.control.rawValue).toEqual('linux');
     expect(o.control.dirty).toEqual(false);
     expect(o.control.touched).toEqual(false);
   });

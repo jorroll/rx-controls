@@ -29,7 +29,7 @@ describe('TextInputComponent', () => {
   it('initializes', () => {
     expect(o.input.value).toEqual('');
     expect(o.accessor.deactivated).toBe(false);
-    expect(o.control.value).toEqual(null);
+    expect(o.control.rawValue).toEqual(null);
     expect(o.control.dirty).toEqual(false);
     expect(o.control.touched).toEqual(false);
   });
@@ -51,7 +51,7 @@ describe('InitialValueTextInputComponent', () => {
   it('initializes', () => {
     expect(o.input.value).toEqual('hi');
     expect(o.accessor.deactivated).toBe(false);
-    expect(o.control.value).toEqual(null);
+    expect(o.control.rawValue).toEqual(null);
     expect(o.control.dirty).toEqual(false);
     expect(o.control.touched).toEqual(false);
   });
