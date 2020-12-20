@@ -3,18 +3,18 @@ import {
   OnChanges,
   Renderer2,
   ElementRef,
-  InjectionToken,
   Directive,
   Input,
 } from '@angular/core';
 import { Subscription } from 'rxjs';
-import { AbstractControl, IControlEvent } from '../models';
+import { AbstractControl, IControlEvent, isStateChange } from '../models';
 import { IControlDirectiveCallback, IControlValueMapper } from './interface';
 import { ControlAccessor } from '../accessors/interface';
-import { isStateChangeOrChildStateChange, isValueStateChange } from './util';
-import { IControlStateChangeEvent } from '../models/abstract-control/abstract-control';
+import {
+  IControlSelfStateChangeEvent,
+  IControlStateChangeEvent,
+} from '../models/abstract-control/abstract-control';
 import { filter } from 'rxjs/operators';
-import { IChildControlStateChangeEvent } from '../models/abstract-control-container/abstract-control-container';
 
 @Directive()
 export abstract class BaseDirective<T extends AbstractControl, D = any>
@@ -62,8 +62,8 @@ export abstract class BaseDirective<T extends AbstractControl, D = any>
 
     this.subscriptions.push(
       this.control.events
-        .pipe(filter(isStateChangeOrChildStateChange))
-        .subscribe((e) => this.onControlStateChangeOrChildStateChange(e))
+        .pipe(filter(isStateChange))
+        .subscribe((e) => this.onControlStateChange(e))
     );
   }
 
@@ -97,12 +97,16 @@ export abstract class BaseDirective<T extends AbstractControl, D = any>
     }
   }
 
-  protected toAccessorEventMapFn() {
+  protected toAccessorEventMapFn(control: AbstractControl) {
     const valueMapperToFn = this.valueMapper?.to;
 
     return (event: IControlEvent) => {
-      if (isValueStateChange<T['value']>(event) && valueMapperToFn) {
-        return this.mapValueEvent(event, valueMapperToFn);
+      if (
+        isStateChange(event) &&
+        event.changedProps.includes('value') &&
+        valueMapperToFn
+      ) {
+        return this.mapValueEvent(control, event, valueMapperToFn);
       }
 
       if (event.type === 'Focus') {
@@ -121,8 +125,12 @@ export abstract class BaseDirective<T extends AbstractControl, D = any>
     const valueMapperFromFn = this.valueMapper?.from;
 
     return (event: IControlEvent) => {
-      if (isValueStateChange<T['value']>(event) && valueMapperFromFn) {
-        return this.mapValueEvent(event, valueMapperFromFn);
+      if (
+        isStateChange(event) &&
+        event.changedProps.includes('value') &&
+        valueMapperFromFn
+      ) {
+        return this.mapValueEvent(this.control, event, valueMapperFromFn);
       }
 
       return event;
@@ -130,22 +138,39 @@ export abstract class BaseDirective<T extends AbstractControl, D = any>
   }
 
   private mapValueEvent(
-    event: IControlStateChangeEvent<unknown, unknown>,
+    control: AbstractControl,
+    event: IControlStateChangeEvent,
     mapperFn: (value: unknown) => unknown
   ) {
-    const change = event.change.value!;
+    const value = mapperFn(control.value);
 
-    return {
-      ...event,
-      change: { value: (old: unknown) => mapperFn(change(old)) },
+    // TODO:
+    // If a Assessor implements ControlContainerAccessor and a user
+    // links a `swFormControl` to it, then if the ControlContainerAccessor
+    // adds a new control it's value could change as well as it's disabled
+    // status, readonly status, touched, etc. I don't think the FormControl
+    // `value` state change handler is currently setup to catch all of these
+    // other state changes. AbstractControl might need to be updated to
+    // support handling multiple disperate changes
+    const newEvent: IControlSelfStateChangeEvent<T['value'], T['data']> = {
+      type: 'StateChange',
+      subtype: 'Self',
+      source: event.source,
+      eventId: event.eventId,
+      idOfOriginatingEvent: event.idOfOriginatingEvent,
+      change: { value: () => value },
+      changedProps: event.changedProps,
+      meta: event.meta,
     };
+
+    if (event.noEmit) {
+      newEvent.noEmit = event.noEmit;
+    }
+
+    return newEvent;
   }
 
-  protected onControlStateChangeOrChildStateChange(
-    e:
-      | IControlStateChangeEvent<T['value'], T['data']>
-      | IChildControlStateChangeEvent<any, any>
-  ) {
+  protected onControlStateChange(e: IControlStateChangeEvent) {
     if (e.changedProps.includes('touched')) {
       this.updateTouchedCSS();
     }

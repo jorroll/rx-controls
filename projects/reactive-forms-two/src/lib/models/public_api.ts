@@ -21,7 +21,7 @@ export {
   ControlsEnabledValue,
   ContainerControls,
   IControlContainerStateChange,
-  IControlContainerStateChangeEvent,
+  IControlContainerSelfStateChangeEvent,
   IChildControlEvent,
   IChildControlStateChangeEvent,
   AbstractControlContainer,
@@ -34,3 +34,5 @@ export { IFormGroupArgs, FormGroup } from './form-group';
 export { IFormArrayArgs, FormArray } from './form-array';
 
 export { isStateChange } from './util';
+
+export { composeValidators } from './abstract-control/abstract-control-base';

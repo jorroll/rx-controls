@@ -28,7 +28,6 @@ import {
 import {
   resolveControlAccessor,
   resolveControlContainerAccessor,
-  syncAccessorToControl,
 } from './util';
 import { ControlNameDirective } from './control-name.directive';
 

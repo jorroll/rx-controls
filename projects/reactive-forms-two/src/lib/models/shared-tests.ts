@@ -3,6 +3,7 @@ import { takeUntil, toArray } from 'rxjs/operators';
 import {
   AbstractControl,
   ControlId,
+  IControlSelfStateChangeEvent,
   ValidationErrors,
 } from './abstract-control/abstract-control';
 import {
@@ -661,8 +662,9 @@ export default function runSharedTestSuite(
           changedProps.push('containerTouched');
         }
 
-        expect(event1).toEqual({
+        expect(event1).toEqual<IControlSelfStateChangeEvent<unknown, unknown>>({
           type: 'StateChange',
+          subtype: 'Self',
           eventId: expect.any(Number),
           idOfOriginatingEvent: expect.any(Number),
           source: a.id,
@@ -718,8 +720,9 @@ export default function runSharedTestSuite(
           changedProps.push('containerDirty');
         }
 
-        expect(event1).toEqual({
+        expect(event1).toEqual<IControlSelfStateChangeEvent<unknown, unknown>>({
           type: 'StateChange',
+          subtype: 'Self',
           eventId: expect.any(Number),
           idOfOriginatingEvent: expect.any(Number),
           source: a.id,
@@ -775,8 +778,9 @@ export default function runSharedTestSuite(
           changedProps.push('containerReadonly');
         }
 
-        expect(event1).toEqual({
+        expect(event1).toEqual<IControlSelfStateChangeEvent<unknown, unknown>>({
           type: 'StateChange',
+          subtype: 'Self',
           eventId: expect.any(Number),
           idOfOriginatingEvent: expect.any(Number),
           source: a.id,
@@ -838,8 +842,9 @@ export default function runSharedTestSuite(
           changedProps.push('containerEnabled', 'containerDisabled');
         }
 
-        expect(event1).toEqual({
+        expect(event1).toEqual<IControlSelfStateChangeEvent<unknown, unknown>>({
           type: 'StateChange',
+          subtype: 'Self',
           eventId: expect.any(Number),
           idOfOriginatingEvent: expect.any(Number),
           source: a.id,
@@ -900,8 +905,9 @@ export default function runSharedTestSuite(
           changedProps.push('containerSubmitted');
         }
 
-        expect(event1).toEqual({
+        expect(event1).toEqual<IControlSelfStateChangeEvent<unknown, unknown>>({
           type: 'StateChange',
+          subtype: 'Self',
           eventId: expect.any(Number),
           idOfOriginatingEvent: expect.any(Number),
           source: a.id,
@@ -960,8 +966,11 @@ export default function runSharedTestSuite(
             changedProps.push('containerPending');
           }
 
-          expect(event1).toEqual({
+          expect(event1).toEqual<
+            IControlSelfStateChangeEvent<unknown, unknown>
+          >({
             type: 'StateChange',
+            subtype: 'Self',
             eventId: expect.any(Number),
             idOfOriginatingEvent: expect.any(Number),
             source: a.id,
@@ -1023,8 +1032,11 @@ export default function runSharedTestSuite(
             changedProps.push('containerPending');
           }
 
-          expect(event1).toEqual({
+          expect(event1).toEqual<
+            IControlSelfStateChangeEvent<unknown, unknown>
+          >({
             type: 'StateChange',
+            subtype: 'Self',
             eventId: expect.any(Number),
             idOfOriginatingEvent: expect.any(Number),
             source: a.id,
@@ -1053,8 +1065,9 @@ export default function runSharedTestSuite(
 
         const [event1] = await promise1;
 
-        expect(event1).toEqual({
+        expect(event1).toEqual<IControlSelfStateChangeEvent<unknown, unknown>>({
           type: 'StateChange',
+          subtype: 'Self',
           eventId: expect.any(Number),
           idOfOriginatingEvent: expect.any(Number),
           source: a.id,
@@ -1084,8 +1097,9 @@ export default function runSharedTestSuite(
 
         const [event1] = await promise1;
 
-        expect(event1).toEqual({
+        expect(event1).toEqual<IControlSelfStateChangeEvent<unknown, unknown>>({
           type: 'StateChange',
+          subtype: 'Self',
           eventId: expect.any(Number),
           idOfOriginatingEvent: expect.any(Number),
           source: a.id,
@@ -1115,8 +1129,9 @@ export default function runSharedTestSuite(
 
         const [event1] = await promise1;
 
-        expect(event1).toEqual({
+        expect(event1).toEqual<IControlSelfStateChangeEvent<unknown, unknown>>({
           type: 'StateChange',
+          subtype: 'Self',
           eventId: expect.any(Number),
           idOfOriginatingEvent: expect.any(Number),
           source: a.id,
@@ -1276,8 +1291,11 @@ export default function runSharedTestSuite(
             );
           }
 
-          expect(event1).toEqual({
+          expect(event1).toEqual<
+            IControlSelfStateChangeEvent<unknown, unknown>
+          >({
             type: 'StateChange',
+            subtype: 'Self',
             eventId: expect.any(Number),
             idOfOriginatingEvent: expect.any(Number),
             source: a.id,
@@ -1327,8 +1345,11 @@ export default function runSharedTestSuite(
             changedProps.push('containerErrors');
           }
 
-          expect(event1).toEqual({
+          expect(event1).toEqual<
+            IControlSelfStateChangeEvent<unknown, unknown>
+          >({
             type: 'StateChange',
+            subtype: 'Self',
             eventId: expect.any(Number),
             idOfOriginatingEvent: expect.any(Number),
             source: a.id,
@@ -1377,8 +1398,11 @@ export default function runSharedTestSuite(
             changedProps.push('containerErrors');
           }
 
-          expect(event1).toEqual({
+          expect(event1).toEqual<
+            IControlSelfStateChangeEvent<unknown, unknown>
+          >({
             type: 'StateChange',
+            subtype: 'Self',
             eventId: expect.any(Number),
             idOfOriginatingEvent: expect.any(Number),
             source: a.id,
@@ -1432,8 +1456,11 @@ export default function runSharedTestSuite(
             );
           }
 
-          expect(event1).toEqual({
+          expect(event1).toEqual<
+            IControlSelfStateChangeEvent<unknown, unknown>
+          >({
             type: 'StateChange',
+            subtype: 'Self',
             eventId: expect.any(Number),
             idOfOriginatingEvent: expect.any(Number),
             source: a.id,
@@ -1488,8 +1515,11 @@ export default function runSharedTestSuite(
             );
           }
 
-          expect(event1).toEqual({
+          expect(event1).toEqual<
+            IControlSelfStateChangeEvent<unknown, unknown>
+          >({
             type: 'StateChange',
+            subtype: 'Self',
             eventId: expect.any(Number),
             idOfOriginatingEvent: expect.any(Number),
             source: a.id,
@@ -1563,8 +1593,11 @@ export default function runSharedTestSuite(
             );
           }
 
-          expect(event1).toEqual({
+          expect(event1).toEqual<
+            IControlSelfStateChangeEvent<unknown, unknown>
+          >({
             type: 'StateChange',
+            subtype: 'Self',
             eventId: expect.any(Number),
             idOfOriginatingEvent: expect.any(Number),
             source: a.id,
@@ -1668,8 +1701,11 @@ export default function runSharedTestSuite(
             );
           }
 
-          expect(event1).toEqual({
+          expect(event1).toEqual<
+            IControlSelfStateChangeEvent<unknown, unknown>
+          >({
             type: 'StateChange',
+            subtype: 'Self',
             eventId: expect.any(Number),
             idOfOriginatingEvent: expect.any(Number),
             source: a.id,
@@ -1714,8 +1750,11 @@ export default function runSharedTestSuite(
             changedProps.push('containerErrors');
           }
 
-          expect(event1).toEqual({
+          expect(event1).toEqual<
+            IControlSelfStateChangeEvent<unknown, unknown>
+          >({
             type: 'StateChange',
+            subtype: 'Self',
             eventId: expect.any(Number),
             idOfOriginatingEvent: expect.any(Number),
             source: a.id,
@@ -1766,8 +1805,11 @@ export default function runSharedTestSuite(
             );
           }
 
-          expect(event1).toEqual({
+          expect(event1).toEqual<
+            IControlSelfStateChangeEvent<unknown, unknown>
+          >({
             type: 'StateChange',
+            subtype: 'Self',
             eventId: expect.any(Number),
             idOfOriginatingEvent: expect.any(Number),
             source: a.id,
@@ -1869,8 +1911,11 @@ export default function runSharedTestSuite(
             );
           }
 
-          expect(event1).toEqual({
+          expect(event1).toEqual<
+            IControlSelfStateChangeEvent<unknown, unknown>
+          >({
             type: 'StateChange',
+            subtype: 'Self',
             eventId: expect.any(Number),
             idOfOriginatingEvent: expect.any(Number),
             source: a.id,
@@ -1925,8 +1970,11 @@ export default function runSharedTestSuite(
             changedProps.push('containerErrors');
           }
 
-          expect(event1).toEqual({
+          expect(event1).toEqual<
+            IControlSelfStateChangeEvent<unknown, unknown>
+          >({
             type: 'StateChange',
+            subtype: 'Self',
             eventId: expect.any(Number),
             idOfOriginatingEvent: expect.any(Number),
             source: a.id,
@@ -1969,8 +2017,11 @@ export default function runSharedTestSuite(
             changedProps.push('containerErrors');
           }
 
-          expect(event1).toEqual({
+          expect(event1).toEqual<
+            IControlSelfStateChangeEvent<unknown, unknown>
+          >({
             type: 'StateChange',
+            subtype: 'Self',
             eventId: expect.any(Number),
             idOfOriginatingEvent: expect.any(Number),
             source: a.id,
@@ -2016,8 +2067,11 @@ export default function runSharedTestSuite(
             changedProps.push('containerErrors');
           }
 
-          expect(event1).toEqual({
+          expect(event1).toEqual<
+            IControlSelfStateChangeEvent<unknown, unknown>
+          >({
             type: 'StateChange',
+            subtype: 'Self',
             eventId: expect.any(Number),
             idOfOriginatingEvent: expect.any(Number),
             source: a.id,

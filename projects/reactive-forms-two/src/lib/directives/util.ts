@@ -42,35 +42,35 @@ export function resolveControlContainerAccessor<T extends ControlAccessor>(
   return accessor;
 }
 
-export function isStateChangeOrChildStateChange(
-  event: IControlEvent
-): event is
-  | IControlStateChangeEvent<any, any>
-  | IChildControlStateChangeEvent<any, any> {
-  return event.type === 'StateChange' || event.type === 'ChildStateChange';
-}
+// export function isStateChangeOrChildStateChange(
+//   event: IControlEvent
+// ): event is
+//   | IControlStateChangeEvent<any, any>
+//   | IChildControlStateChangeEvent<any, any> {
+//   return event.type === 'StateChange' || event.type === 'ChildStateChange';
+// }
 
-export function isValueStateChange<T = unknown>(
-  event: IControlEvent
-): event is IControlStateChangeEvent<T, any> & {
-  change: { value: IStateChange<T> };
-} {
-  return (
-    event.type === 'StateChange' &&
-    !!(event as IControlStateChangeEvent<T, any>).change.value
-  );
-}
+// export function isValueStateChange<T = unknown>(
+//   event: IControlEvent
+// ): event is IControlStateChangeEvent<T, any> & {
+//   change: { value: IStateChange<T> };
+// } {
+//   return (
+//     event.type === 'StateChange' &&
+//     !!(event as IControlStateChangeEvent<T, any>).change.value
+//   );
+// }
 
-export function syncAccessorToControl(
-  accessor: ControlAccessor,
-  control: AbstractControl
-) {
-  const sub = concat(
-    accessor.control.replayState(),
-    accessor.control.events
-  ).subscribe(control.source);
+// export function syncAccessorToControl(
+//   accessor: ControlAccessor,
+//   control: AbstractControl
+// ) {
+//   const sub = concat(
+//     accessor.control.replayState(),
+//     accessor.control.events
+//   ).subscribe(control.source);
 
-  sub.add(control.events.subscribe(accessor.control.source));
+//   sub.add(control.events.subscribe(accessor.control.source));
 
-  return sub;
-}
+//   return sub;
+// }

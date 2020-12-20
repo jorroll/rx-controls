@@ -1,12 +1,10 @@
 import {
   ElementRef,
   Renderer2,
-  forwardRef,
   Directive,
   OnInit,
   OnDestroy,
   Injector,
-  Input,
 } from '@angular/core';
 import { setupStdControlEventHandlers, setupListeners } from './util';
 import { FormControl } from '../models';
@@ -15,7 +13,6 @@ import {
   ControlAccessor,
   CONTROL_ACCESSOR_SPECIFICITY,
 } from './interface';
-import { Subscription } from 'rxjs';
 import { BaseAccessor } from './base.accessor';
 
 /**

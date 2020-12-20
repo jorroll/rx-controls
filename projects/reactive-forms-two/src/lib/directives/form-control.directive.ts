@@ -17,7 +17,7 @@ import {
   SW_CONTROL_DIRECTIVE,
   SW_CONTROL_DIRECTIVE_CALLBACK,
 } from './interface';
-import { resolveControlAccessor, syncAccessorToControl } from './util';
+import { resolveControlAccessor } from './util';
 import { ControlAccessor, SW_CONTROL_ACCESSOR } from '../accessors/interface';
 import { ControlDirective } from './control.directive';
 import { IControlValueMapper } from './interface';
