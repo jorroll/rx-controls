@@ -9,6 +9,7 @@ import {
   SimpleChanges,
   forwardRef,
   Renderer2,
+  Optional,
 } from '@angular/core';
 
 import {
@@ -26,6 +27,10 @@ import {
 } from '@angular/forms';
 
 import { CompatFormControl } from './compat-form-control';
+import {
+  IControlDirectiveCallback,
+  SW_CONTROL_DIRECTIVE_CALLBACK,
+} from '@service-work/reactive-forms/src/lib/directives/interface';
 
 @Directive({
   selector: '[swFormControl][formControl]',
@@ -54,7 +59,7 @@ export class CompatFormControlDirective
     })
   );
 
-  control = this.ngControl.swControl;
+  readonly control = this.ngControl.swControl;
 
   protected valueAccessor: ControlValueAccessor | null;
 
@@ -62,6 +67,11 @@ export class CompatFormControlDirective
     @Self()
     @Inject(NgControl)
     protected ngDirective: FormControlDirective,
+    @Optional()
+    @Inject(SW_CONTROL_DIRECTIVE_CALLBACK)
+    protected controlDirectiveCallbacks:
+      | IControlDirectiveCallback<FormControl>[]
+      | null,
     renderer: Renderer2,
     el: ElementRef
   ) {

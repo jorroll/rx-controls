@@ -11,6 +11,7 @@ import {
   SkipSelf,
   forwardRef,
   Renderer2,
+  Optional,
 } from '@angular/core';
 
 import {
@@ -31,6 +32,10 @@ import {
 } from '@angular/forms';
 
 import { CompatFormControl } from './compat-form-control';
+import {
+  IControlDirectiveCallback,
+  SW_CONTROL_DIRECTIVE_CALLBACK,
+} from '@service-work/reactive-forms/src/lib/directives/interface';
 
 @Directive({
   selector: '[swFormControlName][formControl]',
@@ -59,7 +64,7 @@ export class CompatFormControlNameDirective
     })
   );
 
-  control = this.ngControl.swControl;
+  readonly control = this.ngControl.swControl;
 
   protected valueAccessor: ControlValueAccessor | null;
 
@@ -69,6 +74,11 @@ export class CompatFormControlNameDirective
     @Self()
     @Inject(NgControl)
     protected ngDirective: FormControlDirective,
+    @Optional()
+    @Inject(SW_CONTROL_DIRECTIVE_CALLBACK)
+    protected controlDirectiveCallbacks:
+      | IControlDirectiveCallback<FormControl>[]
+      | null,
     @SkipSelf()
     @Inject(SW_CONTROL_ACCESSOR)
     parentAccessors: ControlAccessor[],
