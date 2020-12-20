@@ -18,6 +18,8 @@ import {
   SW_CONTROL_DIRECTIVE,
   ɵControlDirective as ControlDirective,
   IControlValueMapper,
+  IControlDirectiveCallback,
+  SW_CONTROL_DIRECTIVE_CALLBACK,
 } from '@service-work/reactive-forms';
 
 import {
@@ -27,10 +29,6 @@ import {
 } from '@angular/forms';
 
 import { CompatFormControl } from './compat-form-control';
-import {
-  IControlDirectiveCallback,
-  SW_CONTROL_DIRECTIVE_CALLBACK,
-} from '@service-work/reactive-forms/src/lib/directives/interface';
 
 @Directive({
   selector: '[swFormControl][formControl]',

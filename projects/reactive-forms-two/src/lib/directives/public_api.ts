@@ -2,6 +2,8 @@ export {
   SW_CONTROL_DIRECTIVE,
   IControlValueMapper,
   IControlAccessorControlEvent,
+  IControlDirectiveCallback,
+  SW_CONTROL_DIRECTIVE_CALLBACK,
 } from './interface';
 
 export { FormArrayNameDirective } from './form-array-name.directive';

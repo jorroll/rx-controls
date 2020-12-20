@@ -23,6 +23,8 @@ import {
   ɵControlNameDirective as ControlNameDirective,
   ɵresolveControlContainerAccessor as resolveControlContainerAccessor,
   IControlValueMapper,
+  IControlDirectiveCallback,
+  SW_CONTROL_DIRECTIVE_CALLBACK,
 } from '@service-work/reactive-forms';
 
 import {
@@ -32,10 +34,6 @@ import {
 } from '@angular/forms';
 
 import { CompatFormControl } from './compat-form-control';
-import {
-  IControlDirectiveCallback,
-  SW_CONTROL_DIRECTIVE_CALLBACK,
-} from '@service-work/reactive-forms/src/lib/directives/interface';
 
 @Directive({
   selector: '[swFormControlName][formControl]',
