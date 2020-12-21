@@ -23,4 +23,8 @@ export {
   SW_CONTROL_ACCESSOR,
 } from './interface';
 
-export { selectControlAccessor, selectControlContainerAccessor } from './util';
+export {
+  selectControlAccessor,
+  selectControlContainerAccessor,
+  isAncestorControlPropTruthy$,
+} from './util';

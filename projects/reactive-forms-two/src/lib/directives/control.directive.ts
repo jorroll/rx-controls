@@ -35,6 +35,15 @@ export abstract class ControlDirective<T extends AbstractControl>
       label: 'PreInit',
     });
 
+    // need to clear any leftover validators before syncing with
+    // providedControl because one of the first changes from
+    // providedControl will be a rawValue state change and it's
+    // value type might be different from what the existing validators
+    // expect
+    this.control.setValidators(new Map());
+    this.control.setParent(null);
+    this.control.setParent(this.providedControl.parent);
+
     this.onChangesSubscriptions.push(
       concat(this.providedControl.replayState(), this.providedControl.events)
         .pipe(map(this.toAccessorEventMapFn(this.providedControl)))

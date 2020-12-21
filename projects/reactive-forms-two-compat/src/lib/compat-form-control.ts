@@ -2,7 +2,7 @@ import { FormControl as OldFormControl } from '@angular/forms';
 import { FormControl, isStateChange } from '@service-work/reactive-forms';
 import { filter } from 'rxjs/operators';
 
-const FROM_SWCONTROL = Symbol('change from swControl');
+export const FROM_SWCONTROL = Symbol('change from swControl');
 
 export class CompatFormControl extends OldFormControl {
   constructor(readonly swControl: FormControl) {
@@ -34,14 +34,15 @@ export class CompatFormControl extends OldFormControl {
             }
             break;
           }
-          case 'disabled': {
-            if (this.swControl.disabled) {
-              this.disable({ [FROM_SWCONTROL]: true });
-            } else {
-              this.enable({ [FROM_SWCONTROL]: true });
-            }
-            break;
-          }
+          // this is handled in the ControlDirective
+          // case 'disabled': {
+          //   if (this.swControl.disabled) {
+          //     this.disable({ [FROM_SWCONTROL]: true });
+          //   } else {
+          //     this.enable({ [FROM_SWCONTROL]: true });
+          //   }
+          //   break;
+          // }
           case 'pending': {
             if (this.swControl.pending) {
               this.markAsPending({ [FROM_SWCONTROL]: true });

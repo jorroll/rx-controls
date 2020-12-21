@@ -394,6 +394,7 @@ export default function runAbstractControlContainerBaseTestSuite<
         }
 
         const [
+          resetValidatorStoreEvent,
           controlsStoreEvent,
           valueEvent,
           disabledEvent,
@@ -408,6 +409,13 @@ export default function runAbstractControlContainerBaseTestSuite<
         ] = await state.pipe(toArray()).toPromise();
 
         [
+          [
+            resetValidatorStoreEvent,
+            {
+              change: { validatorStore: expect.any(Function) },
+              changedProps: ['validatorStore'],
+            },
+          ] as const,
           [
             controlsStoreEvent,
             {

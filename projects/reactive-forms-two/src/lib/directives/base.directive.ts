@@ -17,19 +17,20 @@ import {
 import { filter } from 'rxjs/operators';
 
 function assertEventShape(
-  event: IControlStateChangeEvent
+  event: IControlStateChangeEvent,
+  prop: 'rawValue' | 'parent'
 ): asserts event is IControlSelfStateChangeEvent<any, any> {
   if (
     event.subtype !== 'Self' ||
-    !(event as IControlSelfStateChangeEvent<any, any>).change.rawValue
+    !(event as IControlSelfStateChangeEvent<any, any>).change[prop]
   ) {
     // because the swFormControlValueMapper returns a `IControlSelfStateChangeEvent`
     // state change, we want to ensure that this doesn't accidently destroy a custom
-    // event returned by a user. The standard FormControl only changes the rawValue
-    // via a IControlSelfStateChangeEvent "rawValue" event.
+    // event returned by a user. The standard FormControl only changes rawValue/parent
+    // via a IControlSelfStateChangeEvent rawValue/parent event.
     throw new Error(
       `swFormControlValueMapper expects all changes to a control's ` +
-        `rawValue to come from IControlSelfStateChangeEvent "rawValue" ` +
+        `${prop} to come from IControlSelfStateChangeEvent "${prop}" ` +
         `changes but it received a StateChange that didn't conform to this. ` +
         `Are you using a custom accessor that doesn't implement ` +
         `ControlAccessor<FormControl>?`
@@ -122,13 +123,18 @@ export abstract class BaseDirective<T extends AbstractControl, D = any>
     const valueMapperToFn = this.valueMapper?.to;
 
     return (event: IControlEvent) => {
-      if (
-        isStateChange(event) &&
-        valueMapperToFn &&
-        event.changedProps.includes('rawValue')
-      ) {
-        assertEventShape(event);
-        return this.mapValueEvent(control, event, valueMapperToFn);
+      if (isStateChange(event)) {
+        if (valueMapperToFn && event.changedProps.includes('rawValue')) {
+          assertEventShape(event, 'rawValue');
+          return this.mapValueEvent(control, event, valueMapperToFn);
+        } else if (event.changedProps.includes('parent')) {
+          assertEventShape(event, 'parent');
+          return {
+            ...event,
+            eventId: AbstractControl.eventId(),
+            source: this.control.id,
+          };
+        }
       }
 
       if (event.type === 'Focus') {
@@ -152,7 +158,7 @@ export abstract class BaseDirective<T extends AbstractControl, D = any>
         valueMapperFromFn &&
         event.changedProps.includes('rawValue')
       ) {
-        assertEventShape(event);
+        assertEventShape(event, 'rawValue');
         return this.mapValueEvent(this.control, event, valueMapperFromFn);
       }
 

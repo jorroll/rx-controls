@@ -727,6 +727,10 @@ describe('FormControl', () => {
 
       const changes = [
         {
+          change: { validatorStore: expect.any(Function) },
+          changedProps: ['validatorStore'],
+        },
+        {
           change: { rawValue: expect.any(Function) },
           changedProps: ['value', 'rawValue'],
         },

@@ -1,4 +1,6 @@
 import {
+  AbstractControl,
+  ControlId,
   IControlEventArgs,
   IControlEventOptions,
   IControlStateChange,
@@ -121,3 +123,27 @@ export const getSimpleContainerStateChangeEventArgs: <
 //     return !(v instanceof Map);
 //   }
 // }
+
+export function buildReplayStateEvent<
+  C extends IControlStateChange<any, any>
+>(args: {
+  change: {
+    change: C;
+    changedProps: string[];
+  };
+  id: ControlId;
+  options?: IControlEventOptions;
+}) {
+  let eventId: number;
+
+  return {
+    source: args.id,
+    meta: {},
+    ...pluckOptions(args.options),
+    eventId: (eventId = AbstractControl.eventId()),
+    idOfOriginatingEvent: eventId,
+    type: 'StateChange' as const,
+    subtype: 'Self' as const,
+    ...args.change,
+  };
+}

@@ -20,7 +20,7 @@ import {
   mapControlsToId,
 } from './test-util';
 import runSharedTestSuite from './shared-tests';
-import { map, tap } from 'rxjs/operators';
+import { map, tap, toArray } from 'rxjs/operators';
 import { isStateChange } from './util';
 import { IChildControlStateChangeEvent } from './abstract-control-container/abstract-control-container';
 
@@ -1030,6 +1030,34 @@ describe('FormGroup', () => {
       expect(b.valid).toEqual(true);
       expect(b.value).toEqual({ one: { two: 'hi' } });
       expect(b.errors).toEqual(null);
+    });
+
+    it.only('controls preserveControls = false', async () => {
+      const aControls = {
+        two: new FormControl('', {
+          validators: (c) => (c.value.length > 0 ? null : { required: true }),
+        }),
+      };
+
+      const a = new FormGroup(aControls);
+
+      const bControls = { one: a };
+
+      const b = new FormGroup(bControls);
+
+      await wait(0);
+
+      const replay = b.replayState({ preserveControls: false });
+
+      const [event1, event2, event3, event4, event5] = await replay
+        .pipe(toArray())
+        .toPromise();
+
+      const controlsStore = event2.change.controlsStore!(null as any);
+      const controlTwo = controlsStore.get('one')!.controlsStore.get('two')!;
+
+      expect(controlTwo).not.toBe(aControls.two);
+      expect(controlTwo.value).toEqual('');
     });
   });
 

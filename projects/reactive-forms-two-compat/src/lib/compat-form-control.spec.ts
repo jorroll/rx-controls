@@ -1,16 +1,35 @@
 import { FormControl as OldFormControl } from '@angular/forms';
-import { FormControl } from '@service-work/reactive-forms';
+import {
+  FormControl,
+  isAncestorControlPropTruthy$,
+} from '@service-work/reactive-forms';
 import { testAllAbstractControlDefaultsExcept } from '@service-work/reactive-forms/src/lib/models/test-util';
-import { CompatFormControl } from './compat-form-control';
+import { combineLatest, Subscription } from 'rxjs';
+import { CompatFormControl, FROM_SWCONTROL } from './compat-form-control';
 import { testAllCompatControlDefaultsExcept } from './test-utils';
 
 describe('CompatFormControl', () => {
   let compat: CompatFormControl;
   let control: FormControl;
+  let subscription: Subscription | undefined;
 
   beforeEach(() => {
+    if (subscription) {
+      subscription.unsubscribe();
+    }
+
     control = new FormControl();
     compat = new CompatFormControl(control);
+    subscription = combineLatest([
+      control.observe('disabled'),
+      isAncestorControlPropTruthy$(control, 'containerDisabled'),
+    ]).subscribe(([a, b]) => {
+      if (a || b) {
+        compat.disable({ [FROM_SWCONTROL]: true });
+      } else {
+        compat.enable({ [FROM_SWCONTROL]: true });
+      }
+    });
   });
 
   it('initializes', () => {

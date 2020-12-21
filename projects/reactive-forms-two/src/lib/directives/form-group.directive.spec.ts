@@ -21,8 +21,10 @@ import { DefaultFormGroupDirectiveAccessor } from './default-form-group.directiv
 @Component({
   selector: 'my-accessor',
   template: `
-    <input swFormControlName="firstName" />
-    <input swFormControlName="lastName" />
+    <ng-container [swFormGroup]="control">
+      <input swFormControlName="firstName" />
+      <input swFormControlName="lastName" />
+    </ng-container>
   `,
   providers: [
     {
@@ -66,6 +68,46 @@ const beforeEachFn = TestMultiChild.buildBeforeEachFn({
     SimpleGroupAccessorComponent,
     DefaultFormGroupDirectiveAccessor,
   ],
+});
+
+describe('SimpleGroupAccessorComponent', () => {
+  const o: TestMultiChild.TestArgs<SimpleGroupAccessorComponent> = {} as any;
+
+  beforeEach(beforeEachFn(SimpleGroupAccessorComponent, o));
+
+  it('initializes', () => {
+    expect(o.component.control.rawValue).toEqual({
+      firstName: '',
+      lastName: '',
+    });
+
+    const firstName = o.container.querySelector(
+      '[swFormControlName="firstName"]'
+    ) as HTMLInputElement;
+
+    expect(firstName).toHaveProperty('value', '');
+
+    const lastName = o.container.querySelector(
+      '[swFormControlName="lastName"]'
+    ) as HTMLInputElement;
+
+    expect(lastName).toHaveProperty('value', '');
+  });
+
+  it('disables', () => {
+    o.component.control.markDisabled(true);
+
+    const firstName = o.container.querySelector(
+      '[swFormControlName="firstName"]'
+    ) as HTMLInputElement;
+
+    const lastName = o.container.querySelector(
+      '[swFormControlName="lastName"]'
+    ) as HTMLInputElement;
+
+    expect(firstName.disabled).toBe(true);
+    expect(lastName.disabled).toBe(true);
+  });
 });
 
 describe('SimpleGroupComponent', () => {

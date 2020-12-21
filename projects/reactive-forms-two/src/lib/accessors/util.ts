@@ -1,4 +1,4 @@
-import { filter, map, distinctUntilChanged, switchMap } from 'rxjs/operators';
+import { distinctUntilChanged, switchMap } from 'rxjs/operators';
 import { isStateChange } from '../models/util';
 import {
   ControlAccessor,
@@ -141,15 +141,17 @@ export function isAncestorControlPropTruthy$(
   prop: keyof AbstractControlContainer
 ): Observable<boolean> {
   return control.observe('parent').pipe(
-    switchMap((parent) => {
-      if (!parent) return of(false);
-      if ((parent as AbstractControlContainer)[prop]) return of(true);
-      if (parent.parent) {
-        return isAncestorControlPropTruthy$(parent, prop);
-      }
-
-      return of(false);
-    }),
+    switchMap((parent) =>
+      !parent
+        ? of(false)
+        : parent
+            .observe(prop as keyof AbstractControl)
+            .pipe(
+              switchMap((value) =>
+                value ? of(true) : isAncestorControlPropTruthy$(parent, prop)
+              )
+            )
+    ),
     distinctUntilChanged()
   );
 }

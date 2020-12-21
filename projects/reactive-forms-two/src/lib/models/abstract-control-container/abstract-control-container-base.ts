@@ -37,6 +37,7 @@ import {
   IAbstractControlBaseArgs,
 } from '../abstract-control/abstract-control-base';
 import {
+  buildReplayStateEvent,
   getSimpleContainerStateChangeEventArgs,
   isStateChange,
   isTruthy,
@@ -628,31 +629,42 @@ export abstract class AbstractControlContainerBase<
           ])
         );
 
+    const { _rawValue } = this;
+
     const changes: Array<{
       change: IControlContainerStateChange<Controls, Data>;
       changedProps: string[];
     }> = [
+      // we start by clearing the validator store in case whatever
+      // the current validator is doesn't like the new value
+      {
+        change: { validatorStore: () => new Map() },
+        changedProps: ['validatorStore'],
+      },
       {
         change: { controlsStore: () => controlsStore },
         changedProps: ['controlsStore', 'rawValue', 'value'],
       },
+      // this rawValue state change isn't strictly necessary since,
+      // theoretically, it will produce the same value as the
+      // controlsStore state change, above, but we'll include it
+      // in case the end user wants to filter out the controlsStore
+      // state change but keep the rawValue one for whatever reason
+      {
+        change: { rawValue: () => _rawValue },
+        changedProps: ['value', 'rawValue'],
+      },
     ];
-
-    let eventId: number;
 
     return concat(
       from(
         changes.map<IControlContainerSelfStateChangeEvent<Controls, Data>>(
-          (change) => ({
-            source: this.id,
-            meta: {},
-            ...pluckOptions(options),
-            type: 'StateChange',
-            subtype: 'Self',
-            eventId: (eventId = AbstractControl.eventId()),
-            idOfOriginatingEvent: eventId,
-            ...change,
-          })
+          (change) =>
+            buildReplayStateEvent({
+              change,
+              id: this.id,
+              options,
+            })
         )
       ),
       super.replayState(options)

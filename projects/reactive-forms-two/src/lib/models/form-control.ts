@@ -1,14 +1,22 @@
+import { concat, from, Observable } from 'rxjs';
+import {
+  AbstractControl,
+  IControlEventOptions,
+  IControlSelfStateChangeEvent,
+  IControlStateChange,
+} from './abstract-control/abstract-control';
 import {
   AbstractControlBase,
   IAbstractControlBaseArgs,
 } from './abstract-control/abstract-control-base';
+import { buildReplayStateEvent, pluckOptions } from './util';
 
 export type IFormControlArgs<D> = IAbstractControlBaseArgs<D>;
 
-export class FormControl<V = any, D = any> extends AbstractControlBase<
-  V,
-  D,
-  V
+export class FormControl<Value = any, Data = any> extends AbstractControlBase<
+  Value,
+  Data,
+  Value
 > {
   static id = 0;
 
@@ -17,7 +25,10 @@ export class FormControl<V = any, D = any> extends AbstractControlBase<
     return this.rawValue;
   }
 
-  constructor(value: V = null as any, options: IFormControlArgs<D> = {}) {
+  constructor(
+    value: Value = null as any,
+    options: IFormControlArgs<Data> = {}
+  ) {
     super(options.id || Symbol(`FormControl-${FormControl.id++}`));
 
     this.data = options.data!;
@@ -31,5 +42,47 @@ export class FormControl<V = any, D = any> extends AbstractControlBase<
     if (options.pending) this.markPending(options.pending);
     // this needs to be last to ensure that the errors aren't overwritten
     if (options.errors) this.patchErrors(options.errors);
+  }
+
+  replayState(
+    options: Omit<IControlEventOptions, 'idOfOriginatingEvent'> & {
+      /**
+       * By default, the controls will be cloned so that
+       * mutations to them do not affect the replayState snapshot.
+       * Pass the `preserveControls: true` option to disable this.
+       */
+      preserveControls?: boolean;
+    } = {}
+  ): Observable<IControlSelfStateChangeEvent<Value, Data>> {
+    const { _rawValue } = this;
+
+    const changes: Array<{
+      change: IControlStateChange<Value, Data>;
+      changedProps: string[];
+    }> = [
+      // we start by clearing the validator store in case whatever
+      // the current validator is isn't expecting the new rawValue
+      {
+        change: { validatorStore: () => new Map() },
+        changedProps: ['validatorStore'],
+      },
+      {
+        change: { rawValue: () => _rawValue },
+        changedProps: ['value', 'rawValue'],
+      },
+    ];
+
+    return concat(
+      from(
+        changes.map<IControlSelfStateChangeEvent<Value, Data>>((change) =>
+          buildReplayStateEvent({
+            change,
+            id: this.id,
+            options,
+          })
+        )
+      ),
+      super.replayState(options)
+    );
   }
 }

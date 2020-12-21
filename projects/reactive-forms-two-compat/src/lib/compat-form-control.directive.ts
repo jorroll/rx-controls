@@ -20,6 +20,7 @@ import {
   IControlValueMapper,
   IControlDirectiveCallback,
   SW_CONTROL_DIRECTIVE_CALLBACK,
+  isAncestorControlPropTruthy$,
 } from '@service-work/reactive-forms';
 
 import {
@@ -28,7 +29,8 @@ import {
   ControlValueAccessor,
 } from '@angular/forms';
 
-import { CompatFormControl } from './compat-form-control';
+import { CompatFormControl, FROM_SWCONTROL } from './compat-form-control';
+import { combineLatest } from 'rxjs';
 
 @Directive({
   selector: '[swFormControl][formControl]',
@@ -92,6 +94,19 @@ export class CompatFormControlDirective
     };
 
     this.valueAccessor = this.ngDirective.valueAccessor;
+
+    this.subscriptions.push(
+      combineLatest([
+        this.control.observe('disabled'),
+        isAncestorControlPropTruthy$(this.control, 'containerDisabled'),
+      ]).subscribe(([a, b]) => {
+        if (a || b) {
+          this.ngControl.disable({ [FROM_SWCONTROL]: true });
+        } else {
+          this.ngControl.enable({ [FROM_SWCONTROL]: true });
+        }
+      })
+    );
   }
 
   ngOnChanges(_: {

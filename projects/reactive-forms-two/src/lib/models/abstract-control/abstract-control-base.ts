@@ -21,7 +21,12 @@ import {
   Subscriber,
   Subscription,
 } from 'rxjs';
-import { pluckOptions, isTruthy, getSimpleStateChangeEventArgs } from '../util';
+import {
+  pluckOptions,
+  isTruthy,
+  getSimpleStateChangeEventArgs,
+  buildReplayStateEvent,
+} from '../util';
 import {
   map,
   filter,
@@ -1036,7 +1041,6 @@ export abstract class AbstractControlBase<RawValue, Data, Value>
     options: Omit<IControlEventOptions, 'idOfOriginatingEvent'> = {}
   ): Observable<IControlSelfStateChangeEvent<RawValue, Data>> {
     const {
-      _rawValue,
       _disabled,
       _touched,
       _dirty,
@@ -1052,10 +1056,6 @@ export abstract class AbstractControlBase<RawValue, Data, Value>
       change: IControlStateChange<RawValue, Data>;
       changedProps: string[];
     }> = [
-      {
-        change: { rawValue: () => _rawValue },
-        changedProps: ['value', 'rawValue'],
-      },
       {
         change: { disabled: () => _disabled },
         changedProps: ['disabled', 'enabled'],
@@ -1081,19 +1081,14 @@ export abstract class AbstractControlBase<RawValue, Data, Value>
       },
     ];
 
-    let eventId: number;
-
     return from(
-      changes.map<IControlSelfStateChangeEvent<RawValue, Data>>((change) => ({
-        source: this.id,
-        meta: {},
-        ...pluckOptions(options),
-        eventId: (eventId = AbstractControl.eventId()),
-        idOfOriginatingEvent: eventId,
-        type: 'StateChange',
-        subtype: 'Self',
-        ...change,
-      }))
+      changes.map<IControlSelfStateChangeEvent<RawValue, Data>>((change) =>
+        buildReplayStateEvent({
+          change,
+          id: this.id,
+          options,
+        })
+      )
     );
   }
 
@@ -1532,8 +1527,8 @@ export abstract class AbstractControlBase<RawValue, Data, Value>
       const validators = Array.from(this._validatorStore.values());
 
       this._validator = (control) => {
-        const e = validators.reduce<ValidationErrors>((p, c) => {
-          return { ...p, ...c(control) };
+        const e = validators.reduce<ValidationErrors>((err, v) => {
+          return { ...err, ...v(control) };
         }, {});
 
         return Object.keys(e).length === 0 ? null : e;
