@@ -316,9 +316,10 @@ export abstract class AbstractControlContainerBase<
     if (options.dirty) this.markDirty(options.dirty);
     if (options.readonly) this.markReadonly(options.readonly);
     if (options.submitted) this.markSubmitted(options.submitted);
-    if (options.errors) this.setErrors(options.errors);
     if (options.validators) this.setValidators(options.validators);
     if (options.pending) this.markPending(options.pending);
+    // this needs to be last to ensure that the errors aren't overwritten
+    if (options.errors) this.patchErrors(options.errors);
 
     this.processMetaProps();
     // updateDisabledProp(this);
@@ -618,52 +619,16 @@ export abstract class AbstractControlContainerBase<
       preserveControls?: boolean;
     } = {}
   ): Observable<IControlContainerSelfStateChangeEvent<Controls, Data>> {
-    let controlsStore: this['controlsStore'];
-    let validatorStore: this['validatorStore'];
-    let pendingStore: this['pendingStore'];
-    let errorsStore: this['errorsStore'];
+    const controlsStore = options.preserveControls
+      ? this._controlsStore
+      : new Map(
+          Array.from(this._controlsStore).map(([k, c]) => [
+            k,
+            (c as AbstractControl).clone() as typeof c,
+          ])
+        );
 
-    if (options.preserveControls) {
-      controlsStore = this._controlsStore;
-      validatorStore = this._validatorStore;
-      pendingStore = this._pendingStore;
-      errorsStore = this._errorsStore;
-    } else {
-      controlsStore = new Map(
-        Array.from(this._controlsStore).map(([k, c]) => [
-          k,
-          (c as AbstractControl).clone() as typeof c,
-        ])
-      );
-
-      // If we are cloning the child controls, then we also need to migrate any
-      // ControlId entries in `validatorStore`, `errorsStore`, `pendingStore`
-      // that are associated with the original child controls and update
-      // them to the appropriate cloned child control ids.
-
-      const controlIdMap = new Map(
-        Array.from(this._controlsStore).map(([k, c]) => [
-          (c as AbstractControl).id,
-          k,
-        ])
-      );
-
-      const getId = (k: ControlId) =>
-        controlIdMap.has(k)
-          ? (controlsStore.get(controlIdMap.get(k)!) as AbstractControl).id
-          : k;
-
-      const transformMap = <T>(map: ReadonlyMap<ControlId, T>) =>
-        new Map(Array.from(map).map(([k, v]) => [getId(k), v]));
-
-      validatorStore = transformMap(this._validatorStore);
-      errorsStore = transformMap(this._errorsStore);
-      pendingStore = new Set(
-        Array.from(this._pendingStore).map((k) => getId(k))
-      );
-    }
-
-    const changes1: Array<{
+    const changes: Array<{
       change: IControlContainerStateChange<Controls, Data>;
       changedProps: string[];
     }> = [
@@ -673,31 +638,11 @@ export abstract class AbstractControlContainerBase<
       },
     ];
 
-    const changes2: Array<{
-      change: IControlContainerStateChange<Controls, Data>;
-      changedProps: string[];
-    }> = [
-      {
-        change: { validatorStore: () => validatorStore },
-        changedProps: ['validatorStore'],
-      },
-      {
-        change: { pendingStore: () => pendingStore },
-        changedProps: ['pendingStore'],
-      },
-      // important for errorsStore to come at the end because otherwise
-      // the value/validatorStore state change would overwrite the errors
-      {
-        change: { errorsStore: () => errorsStore },
-        changedProps: ['errorsStore'],
-      },
-    ];
-
     let eventId: number;
 
     return concat(
       from(
-        changes1.map<IControlContainerSelfStateChangeEvent<Controls, Data>>(
+        changes.map<IControlContainerSelfStateChangeEvent<Controls, Data>>(
           (change) => ({
             source: this.id,
             meta: {},
@@ -710,32 +655,7 @@ export abstract class AbstractControlContainerBase<
           })
         )
       ),
-      super
-        .replayState(options)
-        .pipe(
-          filter(
-            (e) =>
-              !(
-                e.change.validatorStore ||
-                e.change.pendingStore ||
-                e.change.errorsStore
-              )
-          )
-        ),
-      from(
-        changes2.map<IControlContainerSelfStateChangeEvent<Controls, Data>>(
-          (change) => ({
-            source: this.id,
-            meta: {},
-            ...pluckOptions(options),
-            type: 'StateChange',
-            subtype: 'Self',
-            eventId: (eventId = AbstractControl.eventId()),
-            idOfOriginatingEvent: eventId,
-            ...change,
-          })
-        )
-      )
+      super.replayState(options)
     );
   }
 
@@ -1152,7 +1072,9 @@ export abstract class AbstractControlContainerBase<
     for (const key of changedKeys) {
       const control = this.controlsStore.get(key) as AbstractControl;
 
-      newRawValue[key] = control.rawValue;
+      newRawValue[
+        key
+      ] = control.rawValue as ControlsRawValue<Controls>[ControlsKey<Controls>];
     }
 
     if (isEqual(this._rawValue, newRawValue)) return [];
@@ -1176,7 +1098,9 @@ export abstract class AbstractControlContainerBase<
         continue;
       }
 
-      newValue[key] = control.value;
+      newValue[
+        key
+      ] = control.value as ControlsValue<Controls>[ControlsKey<Controls>];
     }
 
     if (isEqual(this.value, newValue)) return [];

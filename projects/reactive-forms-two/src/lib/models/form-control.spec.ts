@@ -337,6 +337,44 @@ describe('FormControl', () => {
         expect(c.status).toEqual('VALID');
         testAllDefaultsExcept(c, 'pending', 'pendingStore', 'status');
       });
+
+      it('all options', () => {
+        const c = new FormControl('one', {
+          data: 'one',
+          dirty: true,
+          disabled: true,
+          errors: { error: true },
+          id: 'controlId',
+          pending: true,
+          readonly: true,
+          submitted: true,
+          touched: true,
+          validators: (c) => null,
+        });
+
+        expect(c).toImplementObject({
+          value: 'one',
+          rawValue: 'one',
+          invalid: true,
+          status: 'DISABLED',
+          valid: false,
+          data: 'one',
+          dirty: true,
+          parent: null,
+          disabled: true,
+          enabled: false,
+          errors: { error: true },
+          errorsStore: new Map([[c.id, { error: true }]]),
+          id: 'controlId',
+          pending: true,
+          pendingStore: new Set([c.id]),
+          readonly: true,
+          submitted: true,
+          touched: true,
+          validator: expect.any(Function),
+          validatorStore: new Map([[c.id, expect.any(Function)]]),
+        });
+      });
     });
   });
 
@@ -358,12 +396,35 @@ describe('FormControl', () => {
       });
 
       original.setParent(parent);
+      expect(original.pendingStore).toEqual(new Set([original.id]));
+      expect(original.errors).toEqual({ error: true });
+      expect(original.errorsStore).toEqual(
+        new Map([[original.id, { error: true }]])
+      );
+      expect(original.validatorStore).toEqual(
+        new Map([[original.id, expect.any(Function)]])
+      );
 
       const clone = original.clone();
 
       expect(clone).not.toBe(original);
+      expect(clone.pendingStore).toEqual(new Set([clone.id]));
+      expect(clone.errors).toEqual({ error: true });
+      expect(clone.errorsStore).toEqual(new Map([[clone.id, { error: true }]]));
+      expect(clone.validatorStore).toEqual(
+        new Map([[clone.id, expect.any(Function)]])
+      );
+
       expect(clone).toEqualControl(original, {
-        skip: ['parent'],
+        skip: [
+          'parent',
+          '_pendingStore',
+          'pendingStore',
+          '_errorsStore',
+          'errorsStore',
+          '_validatorStore',
+          'validatorStore',
+        ],
       });
     });
   });

@@ -61,7 +61,7 @@ export interface IControlStateChange<V, D> {
   pendingStore?: IStateChange<ReadonlySet<ControlId>>;
   parent?: IStateChange<AbstractControl | null>;
   data?: IStateChange<D>;
-  [key: string]: unknown;
+  [key: string]: IStateChange<any> | undefined;
 }
 
 export interface IControlStateChangeEvent extends IControlEvent {

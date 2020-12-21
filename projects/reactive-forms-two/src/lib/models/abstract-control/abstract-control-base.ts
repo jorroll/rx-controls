@@ -1099,7 +1099,51 @@ export abstract class AbstractControlBase<RawValue, Data, Value>
 
   clone(): this {
     const control = new (this.constructor as any)();
-    this.replayState().subscribe(control.source);
+    this.replayState()
+      .pipe(
+        map((e) => {
+          const changeProp = getControlSelfStateChangeProp(e.change);
+
+          if (!changeProp.endsWith('Store')) return e;
+
+          // "Store" properies (e.g. "controlsStore", "pendingStore", etc)
+          // have ControlId keys that may be associated with the original
+          // (pre-cloning) control's ID. These keys need to be migrated
+          // to the new (cloned) control's ID.
+          const changeFn = e.change[changeProp]!;
+          // replayState changeFns don't have arguments
+          const change = changeFn(null);
+          let newChange: Map<ControlId, unknown> | Set<ControlId>;
+
+          if (change instanceof Map) {
+            newChange = new Map(
+              Array.from(change).map(([k, v]) =>
+                k === this.id ? [control.id, v] : [k, v]
+              )
+            );
+          } else if (change instanceof Set) {
+            newChange = new Set(
+              Array.from(change).map((k) => (k === this.id ? control.id : k))
+            );
+          } else {
+            throw new Error(
+              `Unexpected IControlSelfStateChangeEvent for property ending in "Store". ` +
+                `Expected all properties ending in "Store" to be either a Map or a Set ` +
+                ` and expected the key of the Map/Set to be a ControlId. ` +
+                `Examples: "controlsStore", "pendingStore", "errorsStore", etc.`
+            );
+          }
+
+          return {
+            ...e,
+            change: {
+              [changeProp]: () => newChange,
+            },
+          };
+        })
+      )
+      .subscribe(control.source);
+
     return control;
   }
 
@@ -1789,3 +1833,15 @@ export abstract class AbstractControlBase<RawValue, Data, Value>
 // ): change is Required<IControlStateChanges>[T] {
 //   return prop === type;
 // }
+
+function getControlSelfStateChangeProp(change: IControlStateChange<any, any>) {
+  const keys = Object.keys(change);
+
+  if (keys.length !== 1) {
+    throw new Error(
+      `IControlSelfStateChangeEvent must have a "change" property with exactly one key`
+    );
+  }
+
+  return keys[0] as keyof IControlStateChange<any, any> & string;
+}

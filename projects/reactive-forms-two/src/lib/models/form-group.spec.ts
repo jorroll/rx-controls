@@ -938,6 +938,101 @@ describe('FormGroup', () => {
     AbstractControl.eventId(0);
   });
 
+  describe('replayState()', () => {
+    it('preserveControls = true', async () => {
+      const aControls = {
+        two: new FormControl('', {
+          validators: (c) => (c.value.length > 0 ? null : { required: true }),
+        }),
+      };
+
+      const a = new FormGroup(aControls);
+
+      const bControls = { one: a };
+
+      const b = new FormGroup(bControls);
+
+      await wait(0);
+
+      const replay = b.replayState({ preserveControls: true });
+
+      expect(b.valid).toEqual(false);
+      expect(b.value).toEqual({ one: { two: '' } });
+      expect(b.errors).toEqual({ required: true });
+
+      b.setValue({ one: { two: 'hi' } });
+
+      expect(b.valid).toEqual(true);
+      expect(b.value).toEqual({ one: { two: 'hi' } });
+      expect(b.errors).toEqual(null);
+
+      replay.subscribe(b.source);
+
+      expect(b.valid).toEqual(false);
+      expect(b.value).toEqual({ one: { two: '' } });
+      expect(b.errors).toEqual({ required: true });
+      expect(b.controls.one).toBe(bControls.one);
+
+      b.setValue({ one: { two: 'hi' } });
+
+      expect(b.valid).toEqual(true);
+      expect(b.value).toEqual({ one: { two: 'hi' } });
+      expect(b.errors).toEqual(null);
+    });
+
+    it('preserveControls = false', async () => {
+      const aControls = {
+        two: new FormControl('', {
+          validators: (c) => (c.value.length > 0 ? null : { required: true }),
+        }),
+      };
+
+      const a = new FormGroup(aControls);
+
+      const bControls = { one: a };
+
+      const b = new FormGroup(bControls);
+
+      await wait(0);
+
+      expect(b.valid).toEqual(false);
+      expect(b.value).toEqual({ one: { two: '' } });
+      expect(b.errors).toEqual({ required: true });
+
+      const replay = b.replayState({ preserveControls: false });
+
+      b.setValue({ one: { two: 'hi' } });
+
+      expect(b.valid).toEqual(true);
+      expect(b.value).toEqual({ one: { two: 'hi' } });
+      expect(b.errors).toEqual(null);
+
+      replay.subscribe(b.source);
+
+      const clonedTwo = b.controls.one.controls.two;
+      const originalTwo = aControls.two;
+
+      expect(clonedTwo).not.toBe(originalTwo);
+      expect(clonedTwo.validatorStore.get(clonedTwo.id)).toEqual(
+        expect.any(Function)
+      );
+      expect(originalTwo.validatorStore.get(originalTwo.id)).toEqual(
+        expect.any(Function)
+      );
+
+      expect(b.valid).toEqual(false);
+      expect(b.value).toEqual({ one: { two: '' } });
+      expect(b.errors).toEqual({ required: true });
+      expect(b.controls.one).not.toBe(bControls.one);
+
+      b.setValue({ one: { two: 'hi' } });
+
+      expect(b.valid).toEqual(true);
+      expect(b.value).toEqual({ one: { two: 'hi' } });
+      expect(b.errors).toEqual(null);
+    });
+  });
+
   describe('children', () => {
     describe('markDisabled', () => {
       it('one child', async () => {

@@ -27,8 +27,9 @@ export class FormControl<V = any, D = any> extends AbstractControlBase<
     if (options.dirty) this.markDirty(options.dirty);
     if (options.readonly) this.markReadonly(options.readonly);
     if (options.submitted) this.markSubmitted(options.submitted);
-    if (options.errors) this.setErrors(options.errors);
     if (options.validators) this.setValidators(options.validators);
     if (options.pending) this.markPending(options.pending);
+    // this needs to be last to ensure that the errors aren't overwritten
+    if (options.errors) this.patchErrors(options.errors);
   }
 }

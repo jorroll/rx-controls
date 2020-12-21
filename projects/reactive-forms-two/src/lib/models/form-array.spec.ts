@@ -9,7 +9,6 @@ import {
 } from './test-util';
 import runAbstractControlContainerBaseTestSuite from './abstract-control-container/abstract-control-container-base-tests';
 import runSharedTestSuite from './shared-tests';
-import { AbstractControlContainer } from './abstract-control-container/abstract-control-container';
 
 runAbstractControlContainerBaseTestSuite<FormArray<AbstractControl[]>>(
   'FormArray',
@@ -95,6 +94,101 @@ describe('FormArray', () => {
           'size'
         );
       });
+    });
+  });
+
+  describe('replayState()', () => {
+    it('preserveControls = true', async () => {
+      const aControls = [
+        new FormControl('', {
+          validators: (c) => (c.value.length > 0 ? null : { required: true }),
+        }),
+      ];
+
+      const a = new FormArray(aControls);
+
+      const bControls = [a];
+
+      const b = new FormArray(bControls);
+
+      await wait(0);
+
+      const replay = b.replayState({ preserveControls: true });
+
+      expect(b.valid).toEqual(false);
+      expect(b.value).toEqual([['']]);
+      expect(b.errors).toEqual({ required: true });
+
+      b.setValue([['hi']]);
+
+      expect(b.valid).toEqual(true);
+      expect(b.value).toEqual([['hi']]);
+      expect(b.errors).toEqual(null);
+
+      replay.subscribe(b.source);
+
+      expect(b.valid).toEqual(false);
+      expect(b.value).toEqual([['']]);
+      expect(b.errors).toEqual({ required: true });
+      expect(b.controls[0]).toBe(bControls[0]);
+
+      b.setValue([['hi']]);
+
+      expect(b.valid).toEqual(true);
+      expect(b.value).toEqual([['hi']]);
+      expect(b.errors).toEqual(null);
+    });
+
+    it('preserveControls = false', async () => {
+      const aControls = [
+        new FormControl('', {
+          validators: (c) => (c.value.length > 0 ? null : { required: true }),
+        }),
+      ];
+
+      const a = new FormArray(aControls);
+
+      const bControls = [a];
+
+      const b = new FormArray(bControls);
+
+      await wait(0);
+
+      expect(b.valid).toEqual(false);
+      expect(b.value).toEqual([['']]);
+      expect(b.errors).toEqual({ required: true });
+
+      const replay = b.replayState({ preserveControls: false });
+
+      b.setValue([['hi']]);
+
+      expect(b.valid).toEqual(true);
+      expect(b.value).toEqual([['hi']]);
+      expect(b.errors).toEqual(null);
+
+      replay.subscribe(b.source);
+
+      const clonedTwo = b.controls[0].controls[0];
+      const originalTwo = aControls[0];
+
+      expect(clonedTwo).not.toBe(originalTwo);
+      expect(clonedTwo.validatorStore.get(clonedTwo.id)).toEqual(
+        expect.any(Function)
+      );
+      expect(originalTwo.validatorStore.get(originalTwo.id)).toEqual(
+        expect.any(Function)
+      );
+
+      expect(b.valid).toEqual(false);
+      expect(b.value).toEqual([['']]);
+      expect(b.errors).toEqual({ required: true });
+      expect(b.controls[0]).not.toBe(bControls[0]);
+
+      b.setValue([['hi']]);
+
+      expect(b.valid).toEqual(true);
+      expect(b.value).toEqual([['hi']]);
+      expect(b.errors).toEqual(null);
     });
   });
 });

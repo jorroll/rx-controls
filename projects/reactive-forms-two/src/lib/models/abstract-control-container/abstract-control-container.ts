@@ -21,7 +21,7 @@ type PickRequiredKeys<T> = {
   [K in keyof T]: undefined extends T[K] ? never : K;
 }[keyof T];
 
-type ObjectControlsOptionalValue<
+type ObjectControlsOptionalRawValue<
   T extends { [key: string]: AbstractControl | undefined }
 > = {
   [P in Exclude<PickUndefinedKeys<T>, undefined>]?: NonNullable<
@@ -29,47 +29,37 @@ type ObjectControlsOptionalValue<
   >['rawValue'];
 };
 
-type ObjectControlsRequiredValue<
+type ObjectControlsRequiredRawValue<
   T extends { [key: string]: AbstractControl | undefined }
 > = {
   [P in Exclude<PickRequiredKeys<T>, undefined>]: NonNullable<T[P]>['rawValue'];
+};
+
+type ArrayControlsRawValue<
+  T extends ReadonlyArray<AbstractControl>
+> = T extends ReadonlyArray<infer C>
+  ? C extends AbstractControl
+    ? ReadonlyArray<C['rawValue']>
+    : never
+  : never;
+
+type ObjectControlsOptionalValue<
+  T extends { [key: string]: AbstractControl | undefined }
+> = {
+  [P in Exclude<PickUndefinedKeys<T>, undefined>]?: NonNullable<T[P]>['value'];
+};
+
+type ObjectControlsRequiredValue<
+  T extends { [key: string]: AbstractControl | undefined }
+> = {
+  [P in Exclude<PickRequiredKeys<T>, undefined>]: NonNullable<T[P]>['value'];
 };
 
 type ArrayControlsValue<
   T extends ReadonlyArray<AbstractControl>
 > = T extends ReadonlyArray<infer C>
   ? C extends AbstractControl
-    ? C['rawValue']
-    : never
-  : never;
-
-type ObjectControlsOptionalEnabledValue<
-  T extends { [key: string]: AbstractControl | undefined }
-> = {
-  [P in Exclude<PickUndefinedKeys<T>, undefined>]?: NonNullable<
-    T[P]
-  > extends AbstractControlContainer
-    ? NonNullable<T[P]>['value']
-    : NonNullable<T[P]>['rawValue'];
-};
-
-type ObjectControlsRequiredEnabledValue<
-  T extends { [key: string]: AbstractControl | undefined }
-> = {
-  [P in Exclude<PickRequiredKeys<T>, undefined>]: NonNullable<
-    T[P]
-  > extends AbstractControlContainer
-    ? NonNullable<T[P]>['value']
-    : NonNullable<T[P]>['rawValue'];
-};
-
-type ArrayControlsEnabledValue<
-  T extends ReadonlyArray<AbstractControl>
-> = T extends ReadonlyArray<infer C>
-  ? C extends AbstractControlContainer
-    ? C['value']
-    : C extends AbstractControl
-    ? C['rawValue']
+    ? ReadonlyArray<C['value']>
     : never
   : never;
 
@@ -81,33 +71,39 @@ export type GenericControlsObject =
     }
   | ReadonlyArray<AbstractControl>;
 
+// need to add the `keyof ControlsRawValue<Controls>` as well as
+// `keyof ControlsValue<Controls>` as well as the `keyof Controls` etc
+// because typescript doesn't realize that all three are the same keys
+// and without all three, then ControlsKey can't be used to index all three
 export type ControlsKey<
   Controls extends GenericControlsObject
-> = Controls extends ReadonlyArray<any>
-  ? keyof Controls & number
-  : Controls extends object
-  ? // the `& string` is needed or else
-    // ControlsKey<{[key: string]: AbstractControl}> is type string | number
-    keyof Controls & string
-  : any;
+> = keyof ControlsRawValue<Controls> &
+  keyof ControlsValue<Controls> &
+  (Controls extends ReadonlyArray<any>
+    ? keyof Controls & number
+    : Controls extends object
+    ? // the `& string` is needed or else
+      // ControlsKey<{[key: string]: AbstractControl}> is type string | number
+      keyof Controls & string
+    : any);
 
 export type ControlsRawValue<
   Controls extends GenericControlsObject
 > = Controls extends ReadonlyArray<AbstractControl>
-  ? ArrayControlsValue<Controls>
+  ? ArrayControlsRawValue<Controls>
   : Controls extends { readonly [key: string]: AbstractControl | undefined }
-  ? ObjectControlsRequiredValue<Controls> &
-      ObjectControlsOptionalValue<Controls>
+  ? ObjectControlsRequiredRawValue<Controls> &
+      ObjectControlsOptionalRawValue<Controls>
   : never;
 
 export type ControlsValue<
   Controls extends GenericControlsObject
 > = Controls extends ReadonlyArray<AbstractControl>
-  ? ArrayControlsEnabledValue<Controls>
+  ? ArrayControlsValue<Controls>
   : Controls extends { readonly [key: string]: AbstractControl | undefined }
   ? Partial<
-      ObjectControlsRequiredEnabledValue<Controls> &
-        ObjectControlsOptionalEnabledValue<Controls>
+      ObjectControlsRequiredValue<Controls> &
+        ObjectControlsOptionalValue<Controls>
     >
   : never;
 

@@ -90,15 +90,20 @@ export class FormGroup<
     this._rawValue = newRawValue as this['rawValue'];
     this._value = newValue as this['value'];
 
+    const changedProps = [
+      'controlsStore',
+      'value',
+      'rawValue',
+      ...this.runValidation(event),
+      ...this.processMetaProps(),
+    ];
+
+    this.updateChildrenErrors(changedProps);
+
     return {
       ...event,
       change: { controlsStore: change },
-      changedProps: [
-        'controlsStore',
-        'value',
-        'rawValue',
-        ...this.runValidation(event),
-      ],
+      changedProps,
     };
   }
 

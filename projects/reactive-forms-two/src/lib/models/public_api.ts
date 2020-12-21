@@ -17,8 +17,8 @@ export {
 export {
   GenericControlsObject,
   ControlsKey,
-  ControlsRawValue as ControlsValue,
-  ControlsValue as ControlsEnabledValue,
+  ControlsRawValue,
+  ControlsValue,
   ContainerControls,
   IControlContainerStateChange,
   IControlContainerSelfStateChangeEvent,
