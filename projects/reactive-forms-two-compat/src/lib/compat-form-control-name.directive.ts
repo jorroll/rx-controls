@@ -106,6 +106,7 @@ export class CompatFormControlNameDirective
 
     this.valueAccessor = this.ngDirective.valueAccessor;
 
+    // respond to control and control ancestor disabled changes
     this.subscriptions.push(
       combineLatest([
         this.control.observe('disabled'),
