@@ -205,71 +205,79 @@ export abstract class BaseDirective<T extends AbstractControl, D = any>
 
   protected updateTouchedCSS() {
     if (this.control.touched) {
-      this.renderer.addClass(this.el.nativeElement, 'sw-touched');
-      this.renderer.removeClass(this.el.nativeElement, 'sw-untouched');
+      this.addClass('sw-touched');
+      this.removeClass('sw-untouched');
     } else {
-      this.renderer.addClass(this.el.nativeElement, 'sw-untouched');
-      this.renderer.removeClass(this.el.nativeElement, 'sw-touched');
+      this.addClass('sw-untouched');
+      this.removeClass('sw-touched');
     }
   }
 
   protected updateReadonlyCSS() {
     if (this.control.readonly) {
-      this.renderer.addClass(this.el.nativeElement, 'sw-readonly');
-      this.renderer.removeClass(this.el.nativeElement, 'sw-not-readonly');
+      this.addClass('sw-readonly');
+      this.removeClass('sw-not-readonly');
     } else {
-      this.renderer.addClass(this.el.nativeElement, 'sw-not-readonly');
-      this.renderer.removeClass(this.el.nativeElement, 'sw-readonly');
+      this.addClass('sw-not-readonly');
+      this.removeClass('sw-readonly');
     }
   }
 
   protected updateDisabledCSS() {
     if (this.control.disabled) {
-      this.renderer.addClass(this.el.nativeElement, 'sw-disabled');
-      this.renderer.removeClass(this.el.nativeElement, 'sw-enabled');
+      this.addClass('sw-disabled');
+      this.removeClass('sw-enabled');
     } else {
-      this.renderer.addClass(this.el.nativeElement, 'sw-enabled');
-      this.renderer.removeClass(this.el.nativeElement, 'sw-disabled');
+      this.addClass('sw-enabled');
+      this.removeClass('sw-disabled');
     }
   }
 
   protected updateInvalidCSS() {
     if (this.control.invalid) {
-      this.renderer.addClass(this.el.nativeElement, 'sw-invalid');
-      this.renderer.removeClass(this.el.nativeElement, 'sw-valid');
+      this.addClass('sw-invalid');
+      this.removeClass('sw-valid');
     } else {
-      this.renderer.addClass(this.el.nativeElement, 'sw-valid');
-      this.renderer.removeClass(this.el.nativeElement, 'sw-invalid');
+      this.addClass('sw-valid');
+      this.removeClass('sw-invalid');
     }
   }
 
   protected updateSubmittedCSS() {
     if (this.control.submitted) {
-      this.renderer.addClass(this.el.nativeElement, 'sw-submitted');
-      this.renderer.removeClass(this.el.nativeElement, 'sw-not-submitted');
+      this.addClass('sw-submitted');
+      this.removeClass('sw-not-submitted');
     } else {
-      this.renderer.addClass(this.el.nativeElement, 'sw-not-submitted');
-      this.renderer.removeClass(this.el.nativeElement, 'sw-submitted');
+      this.addClass('sw-not-submitted');
+      this.removeClass('sw-submitted');
     }
   }
 
   protected updateDirtyCSS() {
     if (this.control.dirty) {
-      this.renderer.addClass(this.el.nativeElement, 'sw-dirty');
-      this.renderer.removeClass(this.el.nativeElement, 'sw-pristine');
+      this.addClass('sw-dirty');
+      this.removeClass('sw-pristine');
     } else {
-      this.renderer.addClass(this.el.nativeElement, 'sw-pristine');
-      this.renderer.removeClass(this.el.nativeElement, 'sw-dirty');
+      this.addClass('sw-pristine');
+      this.removeClass('sw-dirty');
     }
   }
 
   protected updatePendingCSS() {
     if (this.control.pending) {
-      this.renderer.addClass(this.el.nativeElement, 'sw-pending');
-      this.renderer.removeClass(this.el.nativeElement, 'sw-not-pending');
+      this.addClass('sw-pending');
+      this.removeClass('sw-not-pending');
     } else {
-      this.renderer.addClass(this.el.nativeElement, 'sw-not-pending');
-      this.renderer.removeClass(this.el.nativeElement, 'sw-pending');
+      this.addClass('sw-not-pending');
+      this.removeClass('sw-pending');
     }
+  }
+
+  private addClass(text: string) {
+    this.renderer.addClass(this.el.nativeElement, text);
+  }
+
+  private removeClass(text: string) {
+    this.renderer.removeClass(this.el.nativeElement, text);
   }
 }
