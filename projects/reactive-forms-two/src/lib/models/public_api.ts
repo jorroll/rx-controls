@@ -16,7 +16,6 @@ export {
   ControlsRawValue,
   ControlsValue,
   ContainerControls,
-  IChildControlEvent,
   AbstractControlContainer,
 } from './abstract-control-container/abstract-control-container';
 
