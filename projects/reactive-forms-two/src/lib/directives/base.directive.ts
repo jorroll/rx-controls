@@ -7,36 +7,38 @@ import {
   Input,
 } from '@angular/core';
 import { Subscription } from 'rxjs';
-import { AbstractControl, IControlEvent, isStateChange } from '../models';
+import {
+  AbstractControl,
+  IControlEvent,
+  isStateChange,
+  transformRawValueStateChange,
+} from '../models';
 import { IControlDirectiveCallback, IControlValueMapper } from './interface';
 import { ControlAccessor } from '../accessors/interface';
-import {
-  IControlSelfStateChangeEvent,
-  IControlStateChangeEvent,
-} from '../models/abstract-control/abstract-control';
+import { IControlStateChangeEvent } from '../models/abstract-control/abstract-control';
 import { filter } from 'rxjs/operators';
 
-function assertEventShape(
-  event: IControlStateChangeEvent,
-  prop: 'rawValue' | 'parent'
-): asserts event is IControlSelfStateChangeEvent<any, any> {
-  if (
-    event.subtype !== 'Self' ||
-    !(event as IControlSelfStateChangeEvent<any, any>).change[prop]
-  ) {
-    // because the swFormControlValueMapper returns a `IControlSelfStateChangeEvent`
-    // state change, we want to ensure that this doesn't accidently destroy a custom
-    // event returned by a user. The standard FormControl only changes rawValue/parent
-    // via a IControlSelfStateChangeEvent rawValue/parent event.
-    throw new Error(
-      `swFormControlValueMapper expects all changes to a control's ` +
-        `${prop} to come from IControlSelfStateChangeEvent "${prop}" ` +
-        `changes but it received a StateChange that didn't conform to this. ` +
-        `Are you using a custom accessor that doesn't implement ` +
-        `ControlAccessor<FormControl>?`
-    );
-  }
-}
+// function assertEventShape(
+//   event: IControlStateChangeEvent,
+//   prop: 'rawValue' | 'parent'
+// ): asserts event is IControlStateChangeEvent {
+//   if (
+//     event.subtype !== 'Self' ||
+//     !(event as IControlStateChangeEvent).change[prop]
+//   ) {
+//     // because the swFormControlValueMapper returns a `IControlStateChangeEvent`
+//     // state change, we want to ensure that this doesn't accidently destroy a custom
+//     // event returned by a user. The standard FormControl only changes rawValue/parent
+//     // via a IControlStateChangeEvent rawValue/parent event.
+//     throw new Error(
+//       `swFormControlValueMapper expects all changes to a control's ` +
+//         `${prop} to come from IControlStateChangeEvent "${prop}" ` +
+//         `changes but it received a StateChange that didn't conform to this. ` +
+//         `Are you using a custom accessor that doesn't implement ` +
+//         `ControlAccessor<FormControl>?`
+//     );
+//   }
+// }
 
 @Directive()
 export abstract class BaseDirective<T extends AbstractControl, D = any>
@@ -119,19 +121,18 @@ export abstract class BaseDirective<T extends AbstractControl, D = any>
     }
   }
 
-  protected toAccessorEventMapFn(control: AbstractControl) {
+  protected toAccessorEventMapFn() {
     const valueMapperToFn = this.valueMapper?.to;
 
     return (event: IControlEvent) => {
       if (isStateChange(event)) {
-        if (valueMapperToFn && event.changedProps.includes('rawValue')) {
-          assertEventShape(event, 'rawValue');
-          return this.mapValueEvent(control, event, valueMapperToFn);
-        } else if (event.changedProps.includes('parent')) {
-          assertEventShape(event, 'parent');
+        if (valueMapperToFn && event.changes.has('rawValue')) {
+          // assertEventShape(event, 'rawValue');
+          return this.mapValueEvent(event, valueMapperToFn);
+        } else if (event.changes.has('parent')) {
+          // assertEventShape(event, 'parent');
           return {
             ...event,
-            eventId: AbstractControl.eventId(),
             source: this.control.id,
           };
         }
@@ -140,7 +141,6 @@ export abstract class BaseDirective<T extends AbstractControl, D = any>
       if (event.type === 'Focus') {
         return {
           ...event,
-          eventId: AbstractControl.eventId(),
           source: this.control.id,
         };
       }
@@ -156,10 +156,10 @@ export abstract class BaseDirective<T extends AbstractControl, D = any>
       if (
         isStateChange(event) &&
         valueMapperFromFn &&
-        event.changedProps.includes('rawValue')
+        event.changes.has('rawValue')
       ) {
-        assertEventShape(event, 'rawValue');
-        return this.mapValueEvent(this.control, event, valueMapperFromFn);
+        // assertEventShape(event, 'rawValue');
+        return this.mapValueEvent(event, valueMapperFromFn);
       }
 
       return event;
@@ -167,64 +167,38 @@ export abstract class BaseDirective<T extends AbstractControl, D = any>
   }
 
   private mapValueEvent(
-    control: AbstractControl,
     event: IControlStateChangeEvent,
     mapperFn: (rawValue: unknown) => unknown
   ) {
-    const rawValue = mapperFn(control.rawValue);
-
-    // TODO:
-    // If a Assessor implements ControlContainerAccessor and a user
-    // links a `swFormControl` to it, then if the ControlContainerAccessor
-    // adds a new control it's value could change as well as it's disabled
-    // status, readonly status, touched, etc. I don't think the FormControl
-    // `value` state change handler is currently setup to catch all of these
-    // other state changes. AbstractControl might need to be updated to
-    // support handling multiple disperate changes
-    const newEvent: IControlSelfStateChangeEvent<T['rawValue'], T['data']> = {
-      type: 'StateChange',
-      subtype: 'Self',
-      source: event.source,
-      eventId: event.eventId,
-      idOfOriginatingEvent: event.idOfOriginatingEvent,
-      change: { rawValue: () => rawValue },
-      changedProps: event.changedProps,
-      meta: event.meta,
-    };
-
-    if (event.noEmit) {
-      newEvent.noEmit = event.noEmit;
-    }
-
-    return newEvent;
+    return transformRawValueStateChange(event, mapperFn);
   }
 
   protected onControlStateChange(e: IControlStateChangeEvent) {
-    if (e.changedProps.includes('touched')) {
+    if (e.changes.has('touched')) {
       this.updateTouchedCSS();
     }
 
-    if (e.changedProps.includes('readonly')) {
+    if (e.changes.has('readonly')) {
       this.updateReadonlyCSS();
     }
 
-    if (e.changedProps.includes('disabled')) {
+    if (e.changes.has('disabled')) {
       this.updateDisabledCSS();
     }
 
-    if (e.changedProps.includes('invalid')) {
+    if (e.changes.has('invalid')) {
       this.updateInvalidCSS();
     }
 
-    if (e.changedProps.includes('submitted')) {
+    if (e.changes.has('submitted')) {
       this.updateSubmittedCSS();
     }
 
-    if (e.changedProps.includes('dirty')) {
+    if (e.changes.has('dirty')) {
       this.updateDirtyCSS();
     }
 
-    if (e.changedProps.includes('pending')) {
+    if (e.changes.has('pending')) {
       this.updatePendingCSS();
     }
   }

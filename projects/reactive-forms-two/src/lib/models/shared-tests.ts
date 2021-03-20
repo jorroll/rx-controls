@@ -3,11 +3,12 @@ import { takeUntil, toArray } from 'rxjs/operators';
 import {
   AbstractControl,
   ControlId,
-  IControlSelfStateChangeEvent,
+  IControlStateChangeEvent,
   ValidationErrors,
 } from './abstract-control/abstract-control';
 import {
   AbstractControlBase,
+  CONTROL_SELF_ID,
   IAbstractControlBaseArgs,
 } from './abstract-control/abstract-control-base';
 import { getControlEventsUntilEnd, setExistingErrors } from './test-util';
@@ -21,7 +22,7 @@ export default function runSharedTestSuite(
 ) {
   const IS_CONTROL_CONTAINER_TEST = !!options.controlContainer;
 
-  describe(name, () => {
+  describe(`SharedTests`, () => {
     let a: AbstractControlBase<any, any, any>;
 
     beforeEach(() => {
@@ -35,7 +36,7 @@ export default function runSharedTestSuite(
       >(
         control: T,
         prop: keyof T,
-        options: { end?: Subject<void>; ignoreNoEmit?: boolean } = {}
+        options: { end?: Subject<void>; ignoreNoObserve?: boolean } = {}
       ) {
         const end = options.end || new Subject();
 
@@ -139,7 +140,7 @@ export default function runSharedTestSuite(
         const [event0, event1, event2] = await promise1;
 
         expect(event0).toEqual(new Map());
-        expect(event1).toEqual(new Map([[a.id, errors]]));
+        expect(event1).toEqual(new Map([[CONTROL_SELF_ID, errors]]));
         expect(event2).toEqual(undefined);
       });
 
@@ -186,7 +187,7 @@ export default function runSharedTestSuite(
         const [event0, event1, event2] = await promise1;
 
         expect(event0).toEqual(new Set());
-        expect(event1).toEqual(new Set([a.id]));
+        expect(event1).toEqual(new Set([CONTROL_SELF_ID]));
         expect(event2).toEqual(undefined);
       });
 
@@ -291,14 +292,16 @@ export default function runSharedTestSuite(
         const [event0, event1, event2] = await promise1;
 
         expect(event0).toEqual(new Map());
-        expect(event1).toEqual(new Map([[a.id, expect.any(Function)]]));
+        expect(event1).toEqual(
+          new Map([[CONTROL_SELF_ID, expect.any(Function)]])
+        );
         expect(event2).toEqual(undefined);
       });
 
       it('parent', async () => {
         const [promise1, end] = observeControlUntilEnd(a, 'parent');
 
-        a.setParent(a);
+        a._setParent(a);
 
         end.next();
         end.complete();
@@ -313,7 +316,7 @@ export default function runSharedTestSuite(
         it('noEmit', async () => {
           const [promise1, end] = observeControlUntilEnd(a, 'parent');
 
-          a.setParent(a, { noEmit: true });
+          a._setParent(a, { noObserve: true });
 
           end.next();
           end.complete();
@@ -326,10 +329,10 @@ export default function runSharedTestSuite(
 
         it('ignoreNoEmit', async () => {
           const [promise1, end] = observeControlUntilEnd(a, 'parent', {
-            ignoreNoEmit: true,
+            ignoreNoObserve: true,
           });
 
-          a.setParent(a, { noEmit: true });
+          a._setParent(a, { noObserve: true });
 
           end.next();
           end.complete();
@@ -348,7 +351,7 @@ export default function runSharedTestSuite(
       >(
         control: T,
         prop: keyof T,
-        options: { end?: Subject<void>; ignoreNoEmit?: boolean } = {}
+        options: { end?: Subject<void>; ignoreNoObserve?: boolean } = {}
       ) {
         const end = options.end || new Subject();
 
@@ -446,7 +449,7 @@ export default function runSharedTestSuite(
 
         const [event1, event2] = await promise1;
 
-        expect(event1).toEqual(new Map([[a.id, errors]]));
+        expect(event1).toEqual(new Map([[CONTROL_SELF_ID, errors]]));
         expect(event2).toEqual(undefined);
       });
 
@@ -493,7 +496,7 @@ export default function runSharedTestSuite(
 
         const [event1, event2] = await promise1;
 
-        expect(event1).toEqual(new Set([a.id]));
+        expect(event1).toEqual(new Set([CONTROL_SELF_ID]));
         expect(event2).toEqual(undefined);
       });
 
@@ -594,14 +597,16 @@ export default function runSharedTestSuite(
 
         const [event1, event2] = await promise1;
 
-        expect(event1).toEqual(new Map([[a.id, expect.any(Function)]]));
+        expect(event1).toEqual(
+          new Map([[CONTROL_SELF_ID, expect.any(Function)]])
+        );
         expect(event2).toEqual(undefined);
       });
 
       it('parent', async () => {
         const [promise1, end] = observeControlChangesUntilEnd(a, 'parent');
 
-        a.setParent(a);
+        a._setParent(a);
 
         end.next();
         end.complete();
@@ -616,7 +621,7 @@ export default function runSharedTestSuite(
         it('noEmit', async () => {
           const [promise1, end] = observeControlChangesUntilEnd(a, 'parent');
 
-          a.setParent(a, { noEmit: true });
+          a._setParent(a, { noObserve: true });
 
           end.next();
           end.complete();
@@ -628,10 +633,10 @@ export default function runSharedTestSuite(
 
         it('ignoreNoEmit', async () => {
           const [promise1, end] = observeControlChangesUntilEnd(a, 'parent', {
-            ignoreNoEmit: true,
+            ignoreNoObserve: true,
           });
 
-          a.setParent(a, { noEmit: true });
+          a._setParent(a, { noObserve: true });
 
           end.next();
           end.complete();
@@ -654,29 +659,20 @@ export default function runSharedTestSuite(
 
         expect(a).toImplementObject({
           touched: true,
+          selfTouched: true,
         });
 
         const [event1] = await promise1;
 
-        const changedProps = ['touched'];
-
-        if (IS_CONTROL_CONTAINER_TEST) {
-          expect(a).toImplementObject({ containerTouched: true });
-
-          changedProps.push('containerTouched');
-        }
-
-        expect(event1).toEqual<IControlSelfStateChangeEvent<unknown, unknown>>({
+        expect(event1).toEqual<IControlStateChangeEvent>({
           type: 'StateChange',
-          subtype: 'Self',
-          eventId: expect.any(Number),
-          idOfOriginatingEvent: expect.any(Number),
           source: a.id,
           meta: {},
-          change: {
-            touched: expect.any(Function),
-          },
-          changedProps: expect.arrayContaining(changedProps),
+          trigger: { label: expect.any(String), source: expect.any(Symbol) },
+          changes: new Map([
+            ['selfTouched', true],
+            ['touched', true],
+          ]),
         });
       });
 
@@ -690,11 +686,8 @@ export default function runSharedTestSuite(
 
         expect(a).toImplementObject({
           touched: false,
+          selfTouched: false,
         });
-
-        if (IS_CONTROL_CONTAINER_TEST) {
-          expect(a).toImplementObject({ containerTouched: false });
-        }
 
         const [event1] = await promise1;
 
@@ -713,28 +706,20 @@ export default function runSharedTestSuite(
 
         expect(a).toImplementObject({
           dirty: true,
+          selfDirty: true,
         });
 
         const [event1] = await promise1;
 
-        const changedProps = ['dirty'];
-
-        if (IS_CONTROL_CONTAINER_TEST) {
-          expect(a).toImplementObject({ containerDirty: true });
-          changedProps.push('containerDirty');
-        }
-
-        expect(event1).toEqual<IControlSelfStateChangeEvent<unknown, unknown>>({
+        expect(event1).toEqual<IControlStateChangeEvent>({
           type: 'StateChange',
-          subtype: 'Self',
-          eventId: expect.any(Number),
-          idOfOriginatingEvent: expect.any(Number),
           source: a.id,
           meta: {},
-          change: {
-            dirty: expect.any(Function),
-          },
-          changedProps: expect.arrayContaining(changedProps),
+          trigger: { label: expect.any(String), source: expect.any(Symbol) },
+          changes: new Map([
+            ['selfDirty', true],
+            ['dirty', true],
+          ]),
         });
       });
 
@@ -748,11 +733,8 @@ export default function runSharedTestSuite(
 
         expect(a).toImplementObject({
           dirty: false,
+          selfDirty: false,
         });
-
-        if (IS_CONTROL_CONTAINER_TEST) {
-          expect(a).toImplementObject({ containerDirty: false });
-        }
 
         const [event1] = await promise1;
 
@@ -771,28 +753,20 @@ export default function runSharedTestSuite(
 
         expect(a).toImplementObject({
           readonly: true,
+          selfReadonly: true,
         });
 
         const [event1] = await promise1;
 
-        const changedProps = ['readonly'];
-
-        if (IS_CONTROL_CONTAINER_TEST) {
-          expect(a).toImplementObject({ containerReadonly: true });
-          changedProps.push('containerReadonly');
-        }
-
-        expect(event1).toEqual<IControlSelfStateChangeEvent<unknown, unknown>>({
+        expect(event1).toEqual<IControlStateChangeEvent>({
           type: 'StateChange',
-          subtype: 'Self',
-          eventId: expect.any(Number),
-          idOfOriginatingEvent: expect.any(Number),
           source: a.id,
           meta: {},
-          change: {
-            readonly: expect.any(Function),
-          },
-          changedProps: expect.arrayContaining(changedProps),
+          trigger: { label: expect.any(String), source: expect.any(Symbol) },
+          changes: new Map([
+            ['selfReadonly', true],
+            ['readonly', true],
+          ]),
         });
       });
 
@@ -806,11 +780,8 @@ export default function runSharedTestSuite(
 
         expect(a).toImplementObject({
           readonly: false,
+          selfReadonly: false,
         });
-
-        if (IS_CONTROL_CONTAINER_TEST) {
-          expect(a).toImplementObject({ containerReadonly: false });
-        }
 
         const [event1] = await promise1;
 
@@ -829,34 +800,26 @@ export default function runSharedTestSuite(
 
         expect(a).toImplementObject({
           disabled: true,
+          selfDisabled: true,
           enabled: false,
+          selfEnabled: false,
           status: 'DISABLED',
         });
 
         const [event1] = await promise1;
 
-        const changedProps = ['status', 'enabled', 'disabled'];
-
-        if (IS_CONTROL_CONTAINER_TEST) {
-          expect(a).toImplementObject({
-            containerDisabled: true,
-            containerEnabled: false,
-          });
-
-          changedProps.push('containerEnabled', 'containerDisabled');
-        }
-
-        expect(event1).toEqual<IControlSelfStateChangeEvent<unknown, unknown>>({
+        expect(event1).toEqual<IControlStateChangeEvent>({
           type: 'StateChange',
-          subtype: 'Self',
-          eventId: expect.any(Number),
-          idOfOriginatingEvent: expect.any(Number),
           source: a.id,
           meta: {},
-          change: {
-            disabled: expect.any(Function),
-          },
-          changedProps: expect.arrayContaining(changedProps),
+          trigger: { label: expect.any(String), source: expect.any(Symbol) },
+          changes: new Map<string, any>([
+            ['selfDisabled', true],
+            ['disabled', true],
+            ['selfEnabled', false],
+            ['enabled', false],
+            ['status', 'DISABLED'],
+          ]),
         });
       });
 
@@ -870,16 +833,11 @@ export default function runSharedTestSuite(
 
         expect(a).toImplementObject({
           disabled: false,
+          selfDisabled: false,
           enabled: true,
+          selfEnabled: true,
           status: 'VALID',
         });
-
-        if (IS_CONTROL_CONTAINER_TEST) {
-          expect(a).toImplementObject({
-            containerDisabled: false,
-            containerEnabled: true,
-          });
-        }
 
         const [event1] = await promise1;
 
@@ -898,28 +856,20 @@ export default function runSharedTestSuite(
 
         expect(a).toImplementObject({
           submitted: true,
+          selfSubmitted: true,
         });
 
         const [event1] = await promise1;
 
-        const changedProps = ['submitted'];
-
-        if (IS_CONTROL_CONTAINER_TEST) {
-          expect(a).toImplementObject({ containerSubmitted: true });
-          changedProps.push('containerSubmitted');
-        }
-
-        expect(event1).toEqual<IControlSelfStateChangeEvent<unknown, unknown>>({
+        expect(event1).toEqual<IControlStateChangeEvent>({
           type: 'StateChange',
-          subtype: 'Self',
-          eventId: expect.any(Number),
-          idOfOriginatingEvent: expect.any(Number),
           source: a.id,
           meta: {},
-          change: {
-            submitted: expect.any(Function),
-          },
-          changedProps: expect.arrayContaining(changedProps),
+          trigger: { label: expect.any(String), source: expect.any(Symbol) },
+          changes: new Map<string, any>([
+            ['selfSubmitted', true],
+            ['submitted', true],
+          ]),
         });
       });
 
@@ -933,11 +883,8 @@ export default function runSharedTestSuite(
 
         expect(a).toImplementObject({
           submitted: false,
+          selfSubmitted: false,
         });
-
-        if (IS_CONTROL_CONTAINER_TEST) {
-          expect(a).toImplementObject({ containerSubmitted: false });
-        }
 
         const [event1] = await promise1;
 
@@ -957,32 +904,24 @@ export default function runSharedTestSuite(
 
           expect(a).toImplementObject({
             pending: true,
-            pendingStore: new Set([a.id]),
+            selfPending: true,
+            pendingStore: new Set([CONTROL_SELF_ID]),
             status: 'PENDING',
           });
 
           const [event1] = await promise1;
 
-          const changedProps = ['status', 'pending'];
-
-          if (IS_CONTROL_CONTAINER_TEST) {
-            expect(a).toImplementObject({ containerPending: true });
-            changedProps.push('containerPending');
-          }
-
-          expect(event1).toEqual<
-            IControlSelfStateChangeEvent<unknown, unknown>
-          >({
+          expect(event1).toEqual<IControlStateChangeEvent>({
             type: 'StateChange',
-            subtype: 'Self',
-            eventId: expect.any(Number),
-            idOfOriginatingEvent: expect.any(Number),
             source: a.id,
             meta: {},
-            change: {
-              pendingStore: expect.any(Function),
-            },
-            changedProps: expect.arrayContaining(changedProps),
+            trigger: { label: expect.any(String), source: expect.any(Symbol) },
+            changes: new Map<string, any>([
+              ['pendingStore', new Set([CONTROL_SELF_ID])],
+              ['selfPending', true],
+              ['pending', true],
+              ['status', 'PENDING'],
+            ]),
           });
         });
 
@@ -996,13 +935,10 @@ export default function runSharedTestSuite(
 
           expect(a).toImplementObject({
             pending: false,
+            selfPending: false,
             pendingStore: new Set(),
             status: 'VALID',
           });
-
-          if (IS_CONTROL_CONTAINER_TEST) {
-            expect(a).toImplementObject({ containerPending: false });
-          }
 
           const [event1] = await promise1;
 
@@ -1023,32 +959,24 @@ export default function runSharedTestSuite(
 
           expect(a).toImplementObject({
             pending: true,
+            selfPending: true,
             pendingStore,
             status: 'PENDING',
           });
 
           const [event1] = await promise1;
 
-          const changedProps = ['status', 'pending'];
-
-          if (IS_CONTROL_CONTAINER_TEST) {
-            expect(a).toImplementObject({ containerPending: true });
-            changedProps.push('containerPending');
-          }
-
-          expect(event1).toEqual<
-            IControlSelfStateChangeEvent<unknown, unknown>
-          >({
+          expect(event1).toEqual<IControlStateChangeEvent>({
             type: 'StateChange',
-            subtype: 'Self',
-            eventId: expect.any(Number),
-            idOfOriginatingEvent: expect.any(Number),
             source: a.id,
             meta: {},
-            change: {
-              pendingStore: expect.any(Function),
-            },
-            changedProps: expect.arrayContaining(changedProps),
+            trigger: { label: expect.any(String), source: expect.any(Symbol) },
+            changes: new Map<string, any>([
+              ['selfPending', true],
+              ['pending', true],
+              ['pendingStore', pendingStore],
+              ['status', 'PENDING'],
+            ]),
           });
         });
       });
@@ -1058,7 +986,7 @@ export default function runSharedTestSuite(
       it('sets the parent', async () => {
         const [promise1, end] = getControlEventsUntilEnd(a);
 
-        a.setParent(a);
+        a._setParent(a);
 
         end.next();
         end.complete();
@@ -1069,17 +997,12 @@ export default function runSharedTestSuite(
 
         const [event1] = await promise1;
 
-        expect(event1).toEqual<IControlSelfStateChangeEvent<unknown, unknown>>({
+        expect(event1).toEqual<IControlStateChangeEvent>({
           type: 'StateChange',
-          subtype: 'Self',
-          eventId: expect.any(Number),
-          idOfOriginatingEvent: expect.any(Number),
           source: a.id,
           meta: {},
-          change: {
-            parent: expect.any(Function),
-          },
-          changedProps: expect.arrayContaining(['parent']),
+          trigger: { label: expect.any(String), source: expect.any(Symbol) },
+          changes: new Map([['parent', a]]),
         });
       });
     });
@@ -1101,149 +1024,18 @@ export default function runSharedTestSuite(
 
         const [event1] = await promise1;
 
-        expect(event1).toEqual<IControlSelfStateChangeEvent<unknown, unknown>>({
+        expect(event1).toEqual<IControlStateChangeEvent>({
           type: 'StateChange',
-          subtype: 'Self',
-          eventId: expect.any(Number),
-          idOfOriginatingEvent: expect.any(Number),
           source: a.id,
           meta: {},
-          change: {
-            data: expect.any(Function),
-          },
-          changedProps: expect.arrayContaining(['data']),
-        });
-      });
-
-      it('when passed a function', async () => {
-        const data = (old: any) => [...old, 'two'];
-
-        a.data = ['one'];
-
-        const [promise1, end] = getControlEventsUntilEnd(a);
-
-        a.setData(data);
-
-        end.next();
-        end.complete();
-
-        expect(a).toImplementObject({
-          data: ['one', 'two'],
-        });
-
-        const [event1] = await promise1;
-
-        expect(event1).toEqual<IControlSelfStateChangeEvent<unknown, unknown>>({
-          type: 'StateChange',
-          subtype: 'Self',
-          eventId: expect.any(Number),
-          idOfOriginatingEvent: expect.any(Number),
-          source: a.id,
-          meta: {},
-          change: {
-            data: expect.any(Function),
-          },
-          changedProps: expect.arrayContaining(['data']),
-        });
-      });
-    });
-
-    describe('emitEvent', () => {
-      it('ignores unknown event', async () => {
-        const [promise1, end] = getControlEventsUntilEnd(a);
-
-        a.emitEvent({ type: 'CustomEvent' });
-
-        end.next();
-        end.complete();
-
-        const [event1] = await promise1;
-
-        expect(event1).toEqual(undefined);
-      });
-
-      it('accepts options', async () => {
-        const end = new Subject();
-        const promise1 = a.source.pipe(takeUntil(end), toArray()).toPromise();
-
-        a.emitEvent(
-          {
-            type: 'CustomEvent',
-            noEmit: true,
-            myCustomProp: {
-              three: true,
-            },
-          },
-          {
-            idOfOriginatingEvent: 2,
-            meta: { two: true },
-            noEmit: false,
-            source: 'two',
-          }
-        );
-
-        end.next();
-        end.complete();
-
-        const [event1] = await promise1;
-
-        expect(event1).toEqual({
-          type: 'CustomEvent',
-          eventId: expect.any(Number),
-          idOfOriginatingEvent: 2,
-          source: 'two',
-          meta: { two: true },
-          noEmit: true,
-          myCustomProp: {
-            three: true,
-          },
-        });
-      });
-
-      it('primary args take precidence over options', async () => {
-        const end = new Subject();
-        const promise1 = a.source.pipe(takeUntil(end), toArray()).toPromise();
-
-        a.emitEvent(
-          {
-            type: 'CustomEvent',
-            idOfOriginatingEvent: 3,
-            meta: { one: true },
-            noEmit: true,
-            source: 'one',
-            myCustomProp: {
-              three: true,
-            },
-          },
-          {
-            idOfOriginatingEvent: 2,
-            meta: { two: true },
-            noEmit: false,
-            source: 'two',
-          }
-        );
-
-        end.next();
-        end.complete();
-
-        const [event1] = await promise1;
-
-        expect(event1).toEqual({
-          type: 'CustomEvent',
-          eventId: expect.any(Number),
-          idOfOriginatingEvent: 3,
-          source: 'one',
-          meta: { one: true },
-          noEmit: true,
-          myCustomProp: {
-            three: true,
-          },
+          trigger: { label: expect.any(String), source: expect.any(Symbol) },
+          changes: new Map([['data', data]]),
         });
       });
     });
   });
 
-  describe(name, () => {
+  describe(`SharedTests`, () => {
     let a: AbstractControlBase<unknown, unknown, unknown>;
 
     beforeEach(() => {
@@ -1260,7 +1052,7 @@ export default function runSharedTestSuite(
       describe('ValidationErrors', () => {
         it('sets a ValidationErrors object for the control', async () => {
           const error = { required: 'This control is required' };
-          const errorsStore = new Map([[a.id, error]]);
+          const errorsStore = new Map([[CONTROL_SELF_ID, error]]);
 
           const [promise1, end] = getControlEventsUntilEnd(a);
 
@@ -1271,43 +1063,32 @@ export default function runSharedTestSuite(
 
           expect(a).toImplementObject({
             errors: error,
+            selfErrors: error,
             errorsStore,
             valid: false,
+            selfValid: false,
             invalid: true,
+            selfInvalid: true,
             status: 'INVALID',
           });
 
           const [event1] = await promise1;
 
-          const changedProps = [
-            'status',
-            'errors',
-            'errorsStore',
-            'valid',
-            'invalid',
-          ];
-
-          if (IS_CONTROL_CONTAINER_TEST) {
-            changedProps.push(
-              'containerErrors',
-              'containerValid',
-              'containerInvalid'
-            );
-          }
-
-          expect(event1).toEqual<
-            IControlSelfStateChangeEvent<unknown, unknown>
-          >({
+          expect(event1).toEqual<IControlStateChangeEvent>({
             type: 'StateChange',
-            subtype: 'Self',
-            eventId: expect.any(Number),
-            idOfOriginatingEvent: expect.any(Number),
             source: a.id,
             meta: {},
-            change: {
-              errorsStore: expect.any(Function),
-            },
-            changedProps: expect.arrayContaining(changedProps),
+            trigger: { label: expect.any(String), source: expect.any(Symbol) },
+            changes: new Map<string, any>([
+              ['errorsStore', errorsStore],
+              ['selfErrors', error],
+              ['errors', error],
+              ['valid', false],
+              ['selfValid', false],
+              ['invalid', true],
+              ['selfInvalid', true],
+              ['status', 'INVALID'],
+            ]),
           });
         });
 
@@ -1320,10 +1101,21 @@ export default function runSharedTestSuite(
             new Map([['one', prexistingError]])
           );
 
+          expect(a).toImplementObject({
+            errors: prexistingError,
+            selfErrors: prexistingError,
+            errorsStore: new Map([['one', prexistingError]]),
+            valid: false,
+            selfValid: false,
+            invalid: true,
+            selfInvalid: true,
+            status: 'INVALID',
+          });
+
           const newError = { spelling: 'Text is mispelled' };
           const newErrorsStore = new Map<ControlId, ValidationErrors>([
-            [a.id, newError],
             ['one', prexistingError],
+            [CONTROL_SELF_ID, newError],
           ]);
 
           const [promise1, end] = getControlEventsUntilEnd(a);
@@ -1333,35 +1125,31 @@ export default function runSharedTestSuite(
           end.next();
           end.complete();
 
+          const errors = { ...prexistingError, ...newError };
+
           expect(a).toImplementObject({
-            errors: { ...prexistingError, ...newError },
+            errors,
+            selfErrors: errors,
             errorsStore: newErrorsStore,
             valid: false,
+            selfValid: false,
             invalid: true,
+            selfInvalid: true,
             status: 'INVALID',
           });
 
           const [event1] = await promise1;
 
-          const changedProps = ['errors', 'errorsStore'];
-
-          if (IS_CONTROL_CONTAINER_TEST) {
-            changedProps.push('containerErrors');
-          }
-
-          expect(event1).toEqual<
-            IControlSelfStateChangeEvent<unknown, unknown>
-          >({
+          expect(event1).toEqual<IControlStateChangeEvent>({
             type: 'StateChange',
-            subtype: 'Self',
-            eventId: expect.any(Number),
-            idOfOriginatingEvent: expect.any(Number),
             source: a.id,
             meta: {},
-            change: {
-              errorsStore: expect.any(Function),
-            },
-            changedProps: expect.arrayContaining(changedProps),
+            trigger: { label: expect.any(String), source: expect.any(Symbol) },
+            changes: new Map<string, any>([
+              ['errorsStore', newErrorsStore],
+              ['selfErrors', errors],
+              ['errors', errors],
+            ]),
           });
         });
 
@@ -1371,12 +1159,23 @@ export default function runSharedTestSuite(
           setExistingErrors(
             a,
             prexistingError,
-            new Map([[a.id, prexistingError]])
+            new Map([[CONTROL_SELF_ID, prexistingError]])
           );
+
+          expect(a).toImplementObject({
+            errors: prexistingError,
+            selfErrors: prexistingError,
+            errorsStore: new Map([[CONTROL_SELF_ID, prexistingError]]),
+            valid: false,
+            selfValid: false,
+            invalid: true,
+            selfInvalid: true,
+            status: 'INVALID',
+          });
 
           const newError = { spelling: 'Text is mispelled' };
           const newErrorsStore = new Map<ControlId, ValidationErrors>([
-            [a.id, newError],
+            [CONTROL_SELF_ID, newError],
           ]);
 
           const [promise1, end] = getControlEventsUntilEnd(a);
@@ -1388,33 +1187,27 @@ export default function runSharedTestSuite(
 
           expect(a).toImplementObject({
             errors: newError,
+            selfErrors: newError,
             errorsStore: newErrorsStore,
             valid: false,
+            selfValid: false,
             invalid: true,
+            selfInvalid: true,
             status: 'INVALID',
           });
 
           const [event1] = await promise1;
 
-          const changedProps = ['errors', 'errorsStore'];
-
-          if (IS_CONTROL_CONTAINER_TEST) {
-            changedProps.push('containerErrors');
-          }
-
-          expect(event1).toEqual<
-            IControlSelfStateChangeEvent<unknown, unknown>
-          >({
+          expect(event1).toEqual<IControlStateChangeEvent>({
             type: 'StateChange',
-            subtype: 'Self',
-            eventId: expect.any(Number),
-            idOfOriginatingEvent: expect.any(Number),
             source: a.id,
             meta: {},
-            change: {
-              errorsStore: expect.any(Function),
-            },
-            changedProps: expect.arrayContaining(changedProps),
+            trigger: { label: expect.any(String), source: expect.any(Symbol) },
+            changes: new Map<string, any>([
+              ['errorsStore', newErrorsStore],
+              ['selfErrors', newError],
+              ['errors', newError],
+            ]),
           });
         });
 
@@ -1424,7 +1217,7 @@ export default function runSharedTestSuite(
           setExistingErrors(
             a,
             prexistingError,
-            new Map([[a.id, prexistingError]])
+            new Map([[CONTROL_SELF_ID, prexistingError]])
           );
 
           const [promise1, end] = getControlEventsUntilEnd(a);
@@ -1436,43 +1229,32 @@ export default function runSharedTestSuite(
 
           expect(a).toImplementObject({
             errors: null,
+            selfErrors: null,
             errorsStore: new Map(),
             valid: true,
+            selfValid: true,
             invalid: false,
+            selfInvalid: false,
             status: 'VALID',
           });
 
           const [event1] = await promise1;
 
-          const changedProps = [
-            'status',
-            'errors',
-            'errorsStore',
-            'valid',
-            'invalid',
-          ];
-
-          if (IS_CONTROL_CONTAINER_TEST) {
-            changedProps.push(
-              'containerErrors',
-              'containerValid',
-              'containerInvalid'
-            );
-          }
-
-          expect(event1).toEqual<
-            IControlSelfStateChangeEvent<unknown, unknown>
-          >({
+          expect(event1).toEqual<IControlStateChangeEvent>({
             type: 'StateChange',
-            subtype: 'Self',
-            eventId: expect.any(Number),
-            idOfOriginatingEvent: expect.any(Number),
             source: a.id,
             meta: {},
-            change: {
-              errorsStore: expect.any(Function),
-            },
-            changedProps: expect.arrayContaining(changedProps),
+            trigger: { label: expect.any(String), source: expect.any(Symbol) },
+            changes: new Map<string, any>([
+              ['errorsStore', new Map()],
+              ['selfErrors', null],
+              ['errors', null],
+              ['valid', true],
+              ['selfValid', true],
+              ['invalid', false],
+              ['selfInvalid', false],
+              ['status', 'VALID'],
+            ]),
           });
         });
       });
@@ -1482,7 +1264,7 @@ export default function runSharedTestSuite(
           const error1 = { required: 'This control is required' };
           const error2 = { spelling: 'Text is mispelled' };
           const errorsStore = new Map<ControlId, ValidationErrors>([
-            [a.id, error1],
+            [CONTROL_SELF_ID, error1],
             ['two', error2],
           ]);
 
@@ -1493,45 +1275,36 @@ export default function runSharedTestSuite(
           end.next();
           end.complete();
 
+          const errors = { ...error1, ...error2 };
+
           expect(a).toImplementObject({
-            errors: { ...error1, ...error2 },
+            errors,
+            selfErrors: errors,
             errorsStore,
             valid: false,
+            selfValid: false,
             invalid: true,
+            selfInvalid: true,
             status: 'INVALID',
           });
 
           const [event1] = await promise1;
 
-          const changedProps = [
-            'status',
-            'errors',
-            'errorsStore',
-            'valid',
-            'invalid',
-          ];
-
-          if (IS_CONTROL_CONTAINER_TEST) {
-            changedProps.push(
-              'containerErrors',
-              'containerValid',
-              'containerInvalid'
-            );
-          }
-
-          expect(event1).toEqual<
-            IControlSelfStateChangeEvent<unknown, unknown>
-          >({
+          expect(event1).toEqual<IControlStateChangeEvent>({
             type: 'StateChange',
-            subtype: 'Self',
-            eventId: expect.any(Number),
-            idOfOriginatingEvent: expect.any(Number),
             source: a.id,
             meta: {},
-            change: {
-              errorsStore: expect.any(Function),
-            },
-            changedProps: expect.arrayContaining(changedProps),
+            trigger: { label: expect.any(String), source: expect.any(Symbol) },
+            changes: new Map<string, any>([
+              ['errorsStore', errorsStore],
+              ['selfErrors', errors],
+              ['errors', errors],
+              ['valid', false],
+              ['selfValid', false],
+              ['invalid', true],
+              ['selfInvalid', true],
+              ['status', 'INVALID'],
+            ]),
           });
         });
       });
@@ -1547,9 +1320,12 @@ export default function runSharedTestSuite(
 
           expect(a).toImplementObject({
             errors: null,
+            selfErrors: null,
             errorsStore: new Map(),
             valid: true,
+            selfValid: true,
             invalid: false,
+            selfInvalid: false,
             status: 'VALID',
           });
 
@@ -1560,7 +1336,9 @@ export default function runSharedTestSuite(
 
         it('should clear existing errors for this ControlId', async () => {
           const prexistingError = { required: 'This control is required' };
-          const preexistingErrorsStore = new Map([[a.id, prexistingError]]);
+          const preexistingErrorsStore = new Map([
+            [CONTROL_SELF_ID, prexistingError],
+          ]);
 
           setExistingErrors(a, prexistingError, preexistingErrorsStore);
 
@@ -1573,43 +1351,32 @@ export default function runSharedTestSuite(
 
           expect(a).toImplementObject({
             errors: null,
+            selfErrors: null,
             errorsStore: new Map(),
             valid: true,
+            selfValid: true,
             invalid: false,
+            selfInvalid: false,
             status: 'VALID',
           });
 
           const [event1] = await promise1;
 
-          const changedProps = [
-            'status',
-            'errors',
-            'errorsStore',
-            'valid',
-            'invalid',
-          ];
-
-          if (IS_CONTROL_CONTAINER_TEST) {
-            changedProps.push(
-              'containerErrors',
-              'containerValid',
-              'containerInvalid'
-            );
-          }
-
-          expect(event1).toEqual<
-            IControlSelfStateChangeEvent<unknown, unknown>
-          >({
+          expect(event1).toEqual<IControlStateChangeEvent>({
             type: 'StateChange',
-            subtype: 'Self',
-            eventId: expect.any(Number),
-            idOfOriginatingEvent: expect.any(Number),
             source: a.id,
             meta: {},
-            change: {
-              errorsStore: expect.any(Function),
-            },
-            changedProps: expect.arrayContaining(changedProps),
+            trigger: { label: expect.any(String), source: expect.any(Symbol) },
+            changes: new Map<string, any>([
+              ['errorsStore', new Map()],
+              ['selfErrors', null],
+              ['errors', null],
+              ['valid', true],
+              ['selfValid', true],
+              ['invalid', false],
+              ['selfInvalid', false],
+              ['status', 'VALID'],
+            ]),
           });
         });
 
@@ -1628,9 +1395,12 @@ export default function runSharedTestSuite(
 
           expect(a).toImplementObject({
             errors: prexistingError,
+            selfErrors: prexistingError,
             errorsStore: new Map([['one', prexistingError]]),
             valid: false,
+            selfValid: false,
             invalid: true,
+            selfInvalid: true,
             status: 'INVALID',
           });
 
@@ -1645,7 +1415,9 @@ export default function runSharedTestSuite(
       describe('ValidationErrors', () => {
         it('should ignore {}', async () => {
           const prexistingError = { required: 'This control is required' };
-          const preexistingErrorsStore = new Map([[a.id, prexistingError]]);
+          const preexistingErrorsStore = new Map([
+            [CONTROL_SELF_ID, prexistingError],
+          ]);
 
           setExistingErrors(a, prexistingError, preexistingErrorsStore);
 
@@ -1658,9 +1430,12 @@ export default function runSharedTestSuite(
 
           expect(a).toImplementObject({
             errors: prexistingError,
+            selfErrors: prexistingError,
             errorsStore: preexistingErrorsStore,
             valid: false,
+            selfValid: false,
             invalid: true,
+            selfInvalid: true,
             status: 'INVALID',
           });
 
@@ -1681,51 +1456,53 @@ export default function runSharedTestSuite(
 
           expect(a).toImplementObject({
             errors: error,
-            errorsStore: new Map([[a.id, error]]),
+            selfErrors: error,
+            errorsStore: new Map([[CONTROL_SELF_ID, error]]),
             valid: false,
+            selfValid: false,
             invalid: true,
+            selfInvalid: true,
             status: 'INVALID',
           });
 
           const [event1] = await promise1;
 
-          const changedProps = [
-            'status',
-            'errors',
-            'errorsStore',
-            'valid',
-            'invalid',
-          ];
-
-          if (IS_CONTROL_CONTAINER_TEST) {
-            changedProps.push(
-              'containerErrors',
-              'containerValid',
-              'containerInvalid'
-            );
-          }
-
-          expect(event1).toEqual<
-            IControlSelfStateChangeEvent<unknown, unknown>
-          >({
+          expect(event1).toEqual<IControlStateChangeEvent>({
             type: 'StateChange',
-            subtype: 'Self',
-            eventId: expect.any(Number),
-            idOfOriginatingEvent: expect.any(Number),
             source: a.id,
             meta: {},
-            change: {
-              errorsStore: expect.any(Function),
-            },
-            changedProps: expect.arrayContaining(changedProps),
+            trigger: { label: expect.any(String), source: expect.any(Symbol) },
+            changes: new Map<string, any>([
+              ['errorsStore', new Map([[CONTROL_SELF_ID, error]])],
+              ['errors', error],
+              ['selfErrors', error],
+              ['valid', false],
+              ['selfValid', false],
+              ['invalid', true],
+              ['selfInvalid', true],
+              ['status', 'INVALID'],
+            ]),
           });
         });
 
         it('should merge into existing errors', async () => {
           const prexistingError = { required: 'This control is required' };
-          const preexistingErrorsStore = new Map([[a.id, prexistingError]]);
+          const preexistingErrorsStore = new Map([
+            [CONTROL_SELF_ID, prexistingError],
+          ]);
 
           setExistingErrors(a, prexistingError, preexistingErrorsStore);
+
+          expect(a).toImplementObject({
+            errors: prexistingError,
+            selfErrors: prexistingError,
+            errorsStore: preexistingErrorsStore,
+            valid: false,
+            selfValid: false,
+            invalid: true,
+            selfInvalid: true,
+            status: 'INVALID',
+          });
 
           const [promise1, end] = getControlEventsUntilEnd(a);
 
@@ -1740,39 +1517,35 @@ export default function runSharedTestSuite(
 
           expect(a).toImplementObject({
             errors,
-            errorsStore: preexistingErrorsStore.set(a.id, errors),
+            selfErrors: errors,
+            errorsStore: preexistingErrorsStore.set(CONTROL_SELF_ID, errors),
             valid: false,
+            selfValid: false,
             invalid: true,
+            selfInvalid: true,
             status: 'INVALID',
           });
 
           const [event1] = await promise1;
 
-          const changedProps = ['errors', 'errorsStore'];
-
-          if (IS_CONTROL_CONTAINER_TEST) {
-            changedProps.push('containerErrors');
-          }
-
-          expect(event1).toEqual<
-            IControlSelfStateChangeEvent<unknown, unknown>
-          >({
+          expect(event1).toEqual<IControlStateChangeEvent>({
             type: 'StateChange',
-            subtype: 'Self',
-            eventId: expect.any(Number),
-            idOfOriginatingEvent: expect.any(Number),
             source: a.id,
             meta: {},
-            change: {
-              errorsStore: expect.any(Function),
-            },
-            changedProps: expect.arrayContaining(changedProps),
+            trigger: { label: expect.any(String), source: expect.any(Symbol) },
+            changes: new Map<string, any>([
+              ['errorsStore', preexistingErrorsStore],
+              ['selfErrors', errors],
+              ['errors', errors],
+            ]),
           });
         });
 
         it('should delete existing error', async () => {
           const prexistingError = { required: 'This control is required' };
-          const preexistingErrorsStore = new Map([[a.id, prexistingError]]);
+          const preexistingErrorsStore = new Map([
+            [CONTROL_SELF_ID, prexistingError],
+          ]);
 
           setExistingErrors(a, prexistingError, preexistingErrorsStore);
 
@@ -1785,43 +1558,32 @@ export default function runSharedTestSuite(
 
           expect(a).toImplementObject({
             errors: null,
+            selfErrors: null,
             errorsStore: new Map(),
             valid: true,
+            selfValid: true,
             invalid: false,
+            selfInvalid: false,
             status: 'VALID',
           });
 
           const [event1] = await promise1;
 
-          const changedProps = [
-            'status',
-            'errors',
-            'errorsStore',
-            'valid',
-            'invalid',
-          ];
-
-          if (IS_CONTROL_CONTAINER_TEST) {
-            changedProps.push(
-              'containerErrors',
-              'containerValid',
-              'containerInvalid'
-            );
-          }
-
-          expect(event1).toEqual<
-            IControlSelfStateChangeEvent<unknown, unknown>
-          >({
+          expect(event1).toEqual<IControlStateChangeEvent>({
             type: 'StateChange',
-            subtype: 'Self',
-            eventId: expect.any(Number),
-            idOfOriginatingEvent: expect.any(Number),
             source: a.id,
             meta: {},
-            change: {
-              errorsStore: expect.any(Function),
-            },
-            changedProps: expect.arrayContaining(changedProps),
+            trigger: { label: expect.any(String), source: expect.any(Symbol) },
+            changes: new Map<string, any>([
+              ['errorsStore', new Map()],
+              ['selfErrors', null],
+              ['errors', null],
+              ['valid', true],
+              ['selfValid', true],
+              ['invalid', false],
+              ['selfInvalid', false],
+              ['status', 'VALID'],
+            ]),
           });
         });
 
@@ -1840,9 +1602,12 @@ export default function runSharedTestSuite(
 
           expect(a).toImplementObject({
             errors: prexistingError,
+            selfErrors: prexistingError,
             errorsStore: preexistingErrorsStore,
             valid: false,
+            selfValid: false,
             invalid: true,
+            selfInvalid: true,
             status: 'INVALID',
           });
 
@@ -1868,9 +1633,12 @@ export default function runSharedTestSuite(
 
           expect(a).toImplementObject({
             errors: prexistingError,
+            selfErrors: prexistingError,
             errorsStore: preexistingErrorsStore,
             valid: false,
+            selfValid: false,
             invalid: true,
+            selfInvalid: true,
             status: 'INVALID',
           });
 
@@ -1891,43 +1659,32 @@ export default function runSharedTestSuite(
 
           expect(a).toImplementObject({
             errors: errorsStore.get(a.id),
+            selfErrors: errorsStore.get(a.id),
             errorsStore,
             valid: false,
+            selfValid: false,
             invalid: true,
+            selfInvalid: true,
             status: 'INVALID',
           });
 
           const [event1] = await promise1;
 
-          const changedProps = [
-            'status',
-            'errors',
-            'errorsStore',
-            'valid',
-            'invalid',
-          ];
-
-          if (IS_CONTROL_CONTAINER_TEST) {
-            changedProps.push(
-              'containerErrors',
-              'containerValid',
-              'containerInvalid'
-            );
-          }
-
-          expect(event1).toEqual<
-            IControlSelfStateChangeEvent<unknown, unknown>
-          >({
+          expect(event1).toEqual<IControlStateChangeEvent>({
             type: 'StateChange',
-            subtype: 'Self',
-            eventId: expect.any(Number),
-            idOfOriginatingEvent: expect.any(Number),
             source: a.id,
             meta: {},
-            change: {
-              errorsStore: expect.any(Function),
-            },
-            changedProps: expect.arrayContaining(changedProps),
+            trigger: { label: expect.any(String), source: expect.any(Symbol) },
+            changes: new Map<string, any>([
+              ['errorsStore', errorsStore],
+              ['selfErrors', errorsStore.get(a.id)],
+              ['errors', errorsStore.get(a.id)],
+              ['valid', false],
+              ['selfValid', false],
+              ['invalid', true],
+              ['selfInvalid', true],
+              ['status', 'INVALID'],
+            ]),
           });
         });
 
@@ -1936,12 +1693,20 @@ export default function runSharedTestSuite(
             [a.id, { required: false }],
             ['one', { text: false }],
           ]);
+          const preexistingError = { required: false, text: false };
 
-          setExistingErrors(
-            a,
-            { required: false, text: false },
-            preexistingErrorsStore
-          );
+          setExistingErrors(a, preexistingError, preexistingErrorsStore);
+
+          expect(a).toImplementObject({
+            errors: preexistingError,
+            selfErrors: preexistingError,
+            errorsStore: preexistingErrorsStore,
+            valid: false,
+            selfValid: false,
+            invalid: true,
+            selfInvalid: true,
+            status: 'INVALID',
+          });
 
           const [promise1, end] = getControlEventsUntilEnd(a);
 
@@ -1955,38 +1720,35 @@ export default function runSharedTestSuite(
           end.next();
           end.complete();
 
+          const errors = { required: false, anotherError: true, three: true };
+          const errorsStore = new Map([
+            ...preexistingErrorsStore,
+            ...newErrorsStore,
+          ] as any);
+
           expect(a).toImplementObject({
-            errors: { required: false, anotherError: true, three: true },
-            errorsStore: new Map([
-              ...preexistingErrorsStore,
-              ...newErrorsStore,
-            ] as any),
+            errors,
+            selfErrors: errors,
+            errorsStore,
             valid: false,
+            selfValid: false,
             invalid: true,
+            selfInvalid: true,
             status: 'INVALID',
           });
 
           const [event1] = await promise1;
 
-          const changedProps = ['errors', 'errorsStore'];
-
-          if (IS_CONTROL_CONTAINER_TEST) {
-            changedProps.push('containerErrors');
-          }
-
-          expect(event1).toEqual<
-            IControlSelfStateChangeEvent<unknown, unknown>
-          >({
+          expect(event1).toEqual<IControlStateChangeEvent>({
             type: 'StateChange',
-            subtype: 'Self',
-            eventId: expect.any(Number),
-            idOfOriginatingEvent: expect.any(Number),
             source: a.id,
             meta: {},
-            change: {
-              errorsStore: expect.any(Function),
-            },
-            changedProps: expect.arrayContaining(changedProps),
+            trigger: { label: expect.any(String), source: expect.any(Symbol) },
+            changes: new Map<string, any>([
+              ['errorsStore', errorsStore],
+              ['selfErrors', errors],
+              ['errors', errors],
+            ]),
           });
         });
 
@@ -1995,6 +1757,17 @@ export default function runSharedTestSuite(
           const preexistingErrorsStore = new Map([['one', prexistingError]]);
 
           setExistingErrors(a, prexistingError, preexistingErrorsStore);
+
+          expect(a).toImplementObject({
+            errors: prexistingError,
+            selfErrors: prexistingError,
+            errorsStore: preexistingErrorsStore,
+            valid: false,
+            selfValid: false,
+            invalid: true,
+            selfInvalid: true,
+            status: 'INVALID',
+          });
 
           const [promise1, end] = getControlEventsUntilEnd(a);
 
@@ -2007,33 +1780,27 @@ export default function runSharedTestSuite(
 
           expect(a).toImplementObject({
             errors: { required: null },
+            selfErrors: { required: null },
             errorsStore,
             valid: false,
+            selfValid: false,
             invalid: true,
+            selfInvalid: true,
             status: 'INVALID',
           });
 
           const [event1] = await promise1;
 
-          const changedProps = ['errors', 'errorsStore'];
-
-          if (IS_CONTROL_CONTAINER_TEST) {
-            changedProps.push('containerErrors');
-          }
-
-          expect(event1).toEqual<
-            IControlSelfStateChangeEvent<unknown, unknown>
-          >({
+          expect(event1).toEqual<IControlStateChangeEvent>({
             type: 'StateChange',
-            subtype: 'Self',
-            eventId: expect.any(Number),
-            idOfOriginatingEvent: expect.any(Number),
             source: a.id,
             meta: {},
-            change: {
-              errorsStore: expect.any(Function),
-            },
-            changedProps: expect.arrayContaining(changedProps),
+            trigger: { label: expect.any(String), source: expect.any(Symbol) },
+            changes: new Map<string, any>([
+              ['errorsStore', errorsStore],
+              ['selfErrors', { required: null }],
+              ['errors', { required: null }],
+            ]),
           });
         });
 
@@ -2042,6 +1809,17 @@ export default function runSharedTestSuite(
           const preexistingErrorsStore = new Map([['one', preexistingError]]);
 
           setExistingErrors(a, preexistingError, preexistingErrorsStore);
+
+          expect(a).toImplementObject({
+            errors: preexistingError,
+            selfErrors: preexistingError,
+            errorsStore: preexistingErrorsStore,
+            valid: false,
+            selfValid: false,
+            invalid: true,
+            selfInvalid: true,
+            status: 'INVALID',
+          });
 
           const [promise1, end] = getControlEventsUntilEnd(a);
 
@@ -2052,38 +1830,37 @@ export default function runSharedTestSuite(
           end.next();
           end.complete();
 
+          const errors = { ...preexistingError, required: null };
+
           expect(a).toImplementObject({
-            errors: { ...preexistingError, required: null },
+            errors,
+            selfErrors: errors,
             errorsStore: new Map([
               ...preexistingErrorsStore,
               ...errorsStore,
             ] as any),
             valid: false,
+            selfValid: false,
             invalid: true,
+            selfInvalid: true,
             status: 'INVALID',
           });
 
           const [event1] = await promise1;
 
-          const changedProps = ['errors', 'errorsStore'];
-
-          if (IS_CONTROL_CONTAINER_TEST) {
-            changedProps.push('containerErrors');
-          }
-
-          expect(event1).toEqual<
-            IControlSelfStateChangeEvent<unknown, unknown>
-          >({
+          expect(event1).toEqual<IControlStateChangeEvent>({
             type: 'StateChange',
-            subtype: 'Self',
-            eventId: expect.any(Number),
-            idOfOriginatingEvent: expect.any(Number),
             source: a.id,
             meta: {},
-            change: {
-              errorsStore: expect.any(Function),
-            },
-            changedProps: expect.arrayContaining(changedProps),
+            trigger: { label: expect.any(String), source: expect.any(Symbol) },
+            changes: new Map<string, any>([
+              [
+                'errorsStore',
+                new Map([...preexistingErrorsStore, ...errorsStore] as any),
+              ],
+              ['selfErrors', errors],
+              ['errors', errors],
+            ]),
           });
         });
       });

@@ -43,21 +43,21 @@ export function setupStdControlEventHandlers<T extends ControlAccessor>(
 
   const sub1 = combineLatest([
     dir.control.observe('disabled'),
-    isAncestorControlPropTruthy$(dir.control, 'containerDisabled'),
+    isAncestorControlPropTruthy$(dir.control, 'selfDisabled'),
   ]).subscribe(([a, b]) => {
     dir.renderer.setProperty(dir.el.nativeElement, 'disabled', a || b);
   });
 
   const sub2 = combineLatest([
     dir.control.observe('readonly'),
-    isAncestorControlPropTruthy$(dir.control, 'containerReadonly'),
+    isAncestorControlPropTruthy$(dir.control, 'selfReadonly'),
   ]).subscribe(([a, b]) => {
     dir.renderer.setProperty(dir.el.nativeElement, 'readonly', a || b);
   });
 
   const sub3 = dir.control.events.subscribe((e) => {
     if (isStateChange(e)) {
-      if (e.changedProps.includes('value')) {
+      if (e.changes.has('value')) {
         dir._valueHasBeenSet = true;
         options.onValueChangeFn(dir.control.rawValue);
       }

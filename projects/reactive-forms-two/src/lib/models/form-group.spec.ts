@@ -1,9 +1,9 @@
-import { Subject } from 'rxjs';
+import { merge, Subject } from 'rxjs';
 import {
   AbstractControl,
   IControlEvent,
-  IControlSelfStateChangeEvent,
   IControlStateChangeEvent,
+  IControlValidationEvent,
   ValidationErrors,
 } from './abstract-control/abstract-control';
 import runAbstractControlBaseTestSuite from './abstract-control/abstract-control-base-tests';
@@ -18,11 +18,13 @@ import {
   testAllAbstractControlDefaultsExcept,
   subscribeToControlEventsUntilEnd,
   mapControlsToId,
+  TestSingletons,
 } from './test-util';
 import runSharedTestSuite from './shared-tests';
-import { map, tap, toArray } from 'rxjs/operators';
-import { isStateChange } from './util';
-import { IChildControlStateChangeEvent } from './abstract-control-container/abstract-control-container';
+import { map, takeUntil, tap, toArray } from 'rxjs/operators';
+import { isStateChange, transformRawValueStateChange } from './util';
+import { CONTROL_SELF_ID } from './abstract-control/abstract-control-base';
+import { inspect } from 'util';
 
 runAbstractControlContainerBaseTestSuite('FormGroup', (args = {}) => {
   const c = new FormGroup<{ [key: string]: AbstractControl }>({}, args.options);
@@ -38,12 +40,18 @@ runAbstractControlContainerBaseTestSuite('FormGroup', (args = {}) => {
 
 runAbstractControlBaseTestSuite(
   'FormGroup',
-  (args) => new FormGroup({}, args?.options)
+  // type problem is arising because `Array<keyof this & string>` for AbstractControlBase
+  // is not the same as `Array<keyof this & string>` for FormGroup
+  (args) => new FormGroup({}, args?.options) as any
 );
 
-runSharedTestSuite('FormGroup', (args) => new FormGroup({}, args?.options), {
-  controlContainer: true,
-});
+runSharedTestSuite(
+  'FormGroup',
+  (args) => new FormGroup({}, args?.options) as any,
+  {
+    controlContainer: true,
+  }
+);
 
 function testAllDefaultsExcept(
   c: FormGroup<any>,
@@ -91,16 +99,25 @@ describe('FormGroup', () => {
 
         await wait(0);
 
-        expect(a.rawValue).toEqual({
-          one: 'one',
-          two: 2,
+        expect(a).toImplementObject({
+          value: { one: 'one', two: 2 },
+          rawValue: { one: 'one', two: 2 },
         });
 
-        expect(b.rawValue).toEqual({
-          three: ['one'],
-          four: {
-            one: 'one',
-            two: 2,
+        expect(b).toImplementObject({
+          value: {
+            three: ['one'],
+            four: {
+              one: 'one',
+              two: 2,
+            },
+          },
+          rawValue: {
+            three: ['one'],
+            four: {
+              one: 'one',
+              two: 2,
+            },
           },
         });
 
@@ -145,17 +162,18 @@ describe('FormGroup', () => {
         await wait(0);
 
         expect(a.rawValue).toEqual({ one: '' });
+        expect(a.value).toEqual({ one: '' });
         expect(a.valid).toEqual(false);
         expect(a.childValid).toEqual(false);
         expect(a.childrenValid).toEqual(false);
-        expect(a.containerValid).toEqual(true);
+        expect(a.selfValid).toEqual(true);
         expect(a.invalid).toEqual(true);
         expect(a.childInvalid).toEqual(true);
         expect(a.childrenInvalid).toEqual(true);
-        expect(a.containerInvalid).toEqual(false);
+        expect(a.selfInvalid).toEqual(false);
         expect(a.status).toEqual('INVALID');
         expect(a.errors).toEqual({ required: true });
-        expect(a.containerErrors).toEqual(null);
+        expect(a.selfErrors).toEqual(null);
         expect(a.childrenErrors).toEqual({ required: true });
 
         expect(a.controls).toEqual(aControls);
@@ -174,13 +192,13 @@ describe('FormGroup', () => {
           'valid',
           'childValid',
           'childrenValid',
-          'containerValid',
+          'selfValid',
           'invalid',
           'childInvalid',
           'childrenInvalid',
-          'containerInvalid',
+          'selfInvalid',
           'errors',
-          'containerErrors',
+          'selfErrors',
           'childrenErrors'
         );
       });
@@ -226,7 +244,12 @@ describe('FormGroup', () => {
       a.setControls({ three: new FormControl('three') });
 
       expect(a.rawValue).toEqual({ three: 'three' });
+      expect(a.value).toEqual({ three: 'three' });
       expect(b.rawValue).toEqual({
+        three: ['one'],
+        four: { three: 'three' },
+      });
+      expect(b.value).toEqual({
         three: ['one'],
         four: { three: 'three' },
       });
@@ -243,7 +266,22 @@ describe('FormGroup', () => {
         three: 'three',
       });
 
+      expect(a.value).toEqual({
+        one: 'one',
+        two: 2,
+        three: 'three',
+      });
+
       expect(b.rawValue).toEqual({
+        three: ['one'],
+        four: {
+          one: 'one',
+          two: 2,
+          three: 'three',
+        },
+      });
+
+      expect(b.value).toEqual({
         three: ['one'],
         four: {
           one: 'one',
@@ -261,7 +299,20 @@ describe('FormGroup', () => {
         two: 'three',
       });
 
+      expect(a.value).toEqual({
+        one: 'one',
+        two: 'three',
+      });
+
       expect(b.rawValue).toEqual({
+        three: ['one'],
+        four: {
+          one: 'one',
+          two: 'three',
+        },
+      });
+
+      expect(b.value).toEqual({
         three: ['one'],
         four: {
           one: 'one',
@@ -274,8 +325,14 @@ describe('FormGroup', () => {
       a.setControl('two', null);
 
       expect(a.rawValue).toEqual({ one: 'one' });
+      expect(a.value).toEqual({ one: 'one' });
 
       expect(b.rawValue).toEqual({
+        three: ['one'],
+        four: { one: 'one' },
+      });
+
+      expect(b.value).toEqual({
         three: ['one'],
         four: { one: 'one' },
       });
@@ -292,7 +349,22 @@ describe('FormGroup', () => {
         three: 'three',
       });
 
+      expect(a.value).toEqual({
+        one: 'one',
+        two: 2,
+        three: 'three',
+      });
+
       expect(b.rawValue).toEqual({
+        three: ['one'],
+        four: {
+          one: 'one',
+          two: 2,
+          three: 'three',
+        },
+      });
+
+      expect(b.value).toEqual({
         three: ['one'],
         four: {
           one: 'one',
@@ -310,7 +382,20 @@ describe('FormGroup', () => {
         two: 2,
       });
 
+      expect(a.value).toEqual({
+        one: 'one',
+        two: 2,
+      });
+
       expect(b.rawValue).toEqual({
+        three: ['one'],
+        four: {
+          one: 'one',
+          two: 2,
+        },
+      });
+
+      expect(b.value).toEqual({
         three: ['one'],
         four: {
           one: 'one',
@@ -332,7 +417,20 @@ describe('FormGroup', () => {
           two: 2,
         });
 
+        expect(a.value).toEqual({
+          one: 'one',
+          two: 2,
+        });
+
         expect(b.rawValue).toEqual({
+          three: ['one'],
+          four: {
+            one: 'one',
+            two: 2,
+          },
+        });
+
+        expect(b.value).toEqual({
           three: ['one'],
           four: {
             one: 'one',
@@ -350,7 +448,18 @@ describe('FormGroup', () => {
           one: 'one',
         });
 
+        expect(a.value).toEqual({
+          one: 'one',
+        });
+
         expect(b.rawValue).toEqual({
+          three: ['one'],
+          four: {
+            one: 'one',
+          },
+        });
+
+        expect(b.value).toEqual({
           three: ['one'],
           four: {
             one: 'one',
@@ -368,7 +477,20 @@ describe('FormGroup', () => {
           two: 2,
         });
 
+        expect(a.value).toEqual({
+          one: 'one',
+          two: 2,
+        });
+
         expect(b.rawValue).toEqual({
+          three: ['one'],
+          four: {
+            one: 'one',
+            two: 2,
+          },
+        });
+
+        expect(b.value).toEqual({
           three: ['one'],
           four: {
             one: 'one',
@@ -384,7 +506,18 @@ describe('FormGroup', () => {
           one: 'one',
         });
 
+        expect(a.value).toEqual({
+          one: 'one',
+        });
+
         expect(b.rawValue).toEqual({
+          three: ['one'],
+          four: {
+            one: 'one',
+          },
+        });
+
+        expect(b.value).toEqual({
           three: ['one'],
           four: {
             one: 'one',
@@ -396,10 +529,7 @@ describe('FormGroup', () => {
 
   describe('setValue', () => {
     it('should fire a StateChange event', async () => {
-      const newValue = {
-        one: 'two',
-        two: 3,
-      };
+      const newValue = { one: 'two', two: 3 };
 
       const [promise1, end] = getControlEventsUntilEnd(a);
       const [promise2] = getControlEventsUntilEnd(b, end);
@@ -407,140 +537,145 @@ describe('FormGroup', () => {
       a.setValue(newValue);
 
       expect(a.controls.one.rawValue).toEqual(newValue.one);
+      expect(a.controls.one.value).toEqual(newValue.one);
       expect(a.controls.two.rawValue).toEqual(newValue.two);
+      expect(a.controls.two.value).toEqual(newValue.two);
       expect(a.rawValue).toEqual(newValue);
+      expect(a.value).toEqual(newValue);
 
       const bNewValue = { three: ['one'], four: newValue };
       expect(b.rawValue).toEqual(bNewValue);
+      expect(b.value).toEqual(bNewValue);
 
       end.next();
       end.complete();
 
-      const [event1, event2, event3] = await promise1;
-      const [event4, event5, event6] = await promise2;
+      const [event1, event2, event3, event4] = await promise1;
+      const [event5, event6, event7, event8] = await promise2;
 
-      expect(event1).toEqual<IChildControlStateChangeEvent>({
-        type: 'StateChange',
-        subtype: 'Child',
-        eventId: expect.any(Number),
-        idOfOriginatingEvent: expect.any(Number),
+      expect(event1).toEqual<IControlValidationEvent<unknown>>({
+        type: 'ValidationStart',
         source: a.id,
+        meta: {},
+        rawValue: newValue,
+        value: newValue,
+        trigger: { label: expect.any(String), source: expect.any(Symbol) },
+      });
+
+      expect(event2).toEqual<IControlValidationEvent<unknown>>({
+        type: 'AsyncValidationStart',
+        source: a.id,
+        meta: {},
+        rawValue: newValue,
+        value: newValue,
+        trigger: { label: expect.any(String), source: expect.any(Symbol) },
+      });
+
+      expect(event3).toEqual<IControlStateChangeEvent>({
+        type: 'StateChange',
+        source: a.id,
+        trigger: { label: expect.any(String), source: expect.any(Symbol) },
+        changes: new Map([
+          ['rawValue', newValue],
+          ['value', newValue],
+        ]),
         childEvents: {
           one: {
             type: 'StateChange',
-            subtype: 'Self',
-            source: expect.any(Symbol),
-            eventId: expect.any(Number),
-            idOfOriginatingEvent: expect.any(Number),
-            change: {
-              rawValue: expect.any(Function),
-            },
-            changedProps: ['value', 'rawValue'],
+            source: a.id,
+            trigger: { label: expect.any(String), source: expect.any(Symbol) },
+            changes: new Map([
+              ['rawValue', newValue.one],
+              ['value', newValue.one],
+            ]),
             meta: {},
-            onEventProcessedId: expect.any(Symbol),
-          } as IControlSelfStateChangeEvent<unknown, unknown>,
+          },
           two: {
             type: 'StateChange',
-            subtype: 'Self',
-            source: expect.any(Symbol),
-            eventId: expect.any(Number),
-            idOfOriginatingEvent: expect.any(Number),
-            change: {
-              rawValue: expect.any(Function),
-            },
-            changedProps: ['value', 'rawValue'],
+            source: a.id,
+            trigger: { label: expect.any(String), source: expect.any(Symbol) },
+            changes: new Map([
+              ['rawValue', newValue.two],
+              ['value', newValue.two],
+            ]),
             meta: {},
-            onEventProcessedId: expect.any(Symbol),
-          } as IControlSelfStateChangeEvent<unknown, unknown>,
+          },
         },
-        changedProps: ['rawValue', 'value'],
         meta: {},
       });
 
-      expect(event2).toEqual({
+      expect(event4).toEqual(undefined);
+
+      expect(event5).toEqual<IControlValidationEvent<unknown>>({
+        type: 'ValidationStart',
+        source: a.id,
+        meta: {},
+        rawValue: bNewValue,
+        value: bNewValue,
+        trigger: { label: expect.any(String), source: expect.any(Symbol) },
+      });
+
+      expect(event6).toEqual<IControlValidationEvent<unknown>>({
         type: 'AsyncValidationStart',
-        eventId: expect.any(Number),
-        idOfOriginatingEvent: expect.any(Number),
         source: a.id,
-        rawValue: newValue,
         meta: {},
+        rawValue: bNewValue,
+        value: bNewValue,
+        trigger: { label: expect.any(String), source: expect.any(Symbol) },
       });
 
-      expect(event3).toEqual({
-        type: 'ValidationComplete',
-        eventId: expect.any(Number),
-        idOfOriginatingEvent: expect.any(Number),
-        source: a.id,
-        rawValue: newValue,
-        meta: {},
-      });
-
-      expect(event4).toEqual<IChildControlStateChangeEvent>({
+      expect(event7).toEqual<IControlStateChangeEvent>({
         type: 'StateChange',
-        subtype: 'Child',
-        eventId: expect.any(Number),
-        idOfOriginatingEvent: expect.any(Number),
-        source: b.id,
+        source: a.id,
+        trigger: { label: expect.any(String), source: expect.any(Symbol) },
+        changes: new Map([
+          ['rawValue', bNewValue],
+          ['value', bNewValue],
+        ]),
         childEvents: {
           four: {
             type: 'StateChange',
-            subtype: 'Child',
-            eventId: expect.any(Number),
-            idOfOriginatingEvent: expect.any(Number),
             source: a.id,
+            trigger: { label: expect.any(String), source: expect.any(Symbol) },
+            changes: new Map([
+              ['rawValue', newValue],
+              ['value', newValue],
+            ]),
             childEvents: {
               one: {
                 type: 'StateChange',
-                subtype: 'Self',
-                source: expect.any(Symbol),
-                eventId: expect.any(Number),
-                idOfOriginatingEvent: expect.any(Number),
-                change: {
-                  rawValue: expect.any(Function),
+                source: a.id,
+                trigger: {
+                  label: expect.any(String),
+                  source: expect.any(Symbol),
                 },
-                changedProps: ['value', 'rawValue'],
+                changes: new Map([
+                  ['rawValue', newValue.one],
+                  ['value', newValue.one],
+                ]),
                 meta: {},
-                onEventProcessedId: expect.any(Symbol),
-              } as IControlSelfStateChangeEvent<unknown, unknown>,
+              },
               two: {
                 type: 'StateChange',
-                subtype: 'Self',
-                source: expect.any(Symbol),
-                eventId: expect.any(Number),
-                idOfOriginatingEvent: expect.any(Number),
-                change: {
-                  rawValue: expect.any(Function),
+                source: a.id,
+                trigger: {
+                  label: expect.any(String),
+                  source: expect.any(Symbol),
                 },
-                changedProps: ['value', 'rawValue'],
+                changes: new Map([
+                  ['rawValue', newValue.two],
+                  ['value', newValue.two],
+                ]),
                 meta: {},
-                onEventProcessedId: expect.any(Symbol),
-              } as IControlSelfStateChangeEvent<unknown, unknown>,
+              },
             },
-            changedProps: ['rawValue', 'value'],
             meta: {},
-          } as IChildControlStateChangeEvent,
+          },
         },
-        changedProps: ['rawValue', 'value'],
         meta: {},
       });
 
-      expect(event5).toEqual({
-        type: 'AsyncValidationStart',
-        eventId: expect.any(Number),
-        idOfOriginatingEvent: expect.any(Number),
-        source: b.id,
-        rawValue: bNewValue,
-        meta: {},
-      });
-
-      expect(event6).toEqual({
-        type: 'ValidationComplete',
-        eventId: expect.any(Number),
-        idOfOriginatingEvent: expect.any(Number),
-        source: b.id,
-        rawValue: bNewValue,
-        meta: {},
-      });
+      expect(event8).toEqual(undefined);
     });
   });
 
@@ -553,9 +688,16 @@ describe('FormGroup', () => {
       });
 
       expect(a.rawValue).toEqual({ one: 'two', two: 2 });
+      expect(a.value).toEqual({ one: 'two', two: 2 });
       expect(a.controls.one.rawValue).toEqual('two');
+      expect(a.controls.one.value).toEqual('two');
       expect(a.controls.two.rawValue).toEqual(2);
+      expect(a.controls.two.value).toEqual(2);
       expect(b.rawValue).toEqual({
+        three: ['one'],
+        four: { one: 'two', two: 2 },
+      });
+      expect(b.value).toEqual({
         three: ['one'],
         four: { one: 'two', two: 2 },
       });
@@ -588,22 +730,22 @@ describe('FormGroup', () => {
         testAllDefaultsExcept(
           c,
           'errors',
-          'containerErrors',
+          'selfErrors',
           'errorsStore',
           'valid',
-          'containerValid',
+          'selfValid',
           'invalid',
-          'containerInvalid',
+          'selfInvalid',
           'status'
         );
 
         expect(c.errors).toEqual(error);
-        expect(c.containerErrors).toEqual(error);
-        expect(c.errorsStore).toEqual(new Map([[c.id, error]]));
+        expect(c.selfErrors).toEqual(error);
+        expect(c.errorsStore).toEqual(new Map([[CONTROL_SELF_ID, error]]));
         expect(c.valid).toEqual(false);
-        expect(c.containerValid).toEqual(false);
+        expect(c.selfValid).toEqual(false);
         expect(c.invalid).toEqual(true);
-        expect(c.containerInvalid).toEqual(true);
+        expect(c.selfInvalid).toEqual(true);
         expect(c.status).toEqual('INVALID');
       });
     });
@@ -648,24 +790,24 @@ describe('FormGroup', () => {
           'controls',
           'controlsStore',
           'errors',
-          'containerErrors',
+          'selfErrors',
           'errorsStore',
           'valid',
-          'containerValid',
+          'selfValid',
           'invalid',
-          'containerInvalid',
+          'selfInvalid',
           'status'
         );
 
         testLocalDefaults();
 
         expect(b.errors).toEqual(error);
-        expect(b.containerErrors).toEqual(error);
-        expect(b.errorsStore).toEqual(new Map([[b.id, error]]));
+        expect(b.selfErrors).toEqual(error);
+        expect(b.errorsStore).toEqual(new Map([[CONTROL_SELF_ID, error]]));
         expect(b.valid).toEqual(false);
-        expect(b.containerValid).toEqual(false);
+        expect(b.selfValid).toEqual(false);
         expect(b.invalid).toEqual(true);
-        expect(b.containerInvalid).toEqual(true);
+        expect(b.selfInvalid).toEqual(true);
         expect(b.status).toEqual('INVALID');
       });
     });
@@ -682,7 +824,11 @@ describe('FormGroup', () => {
         four: { one: 'one', two: 2 },
       });
 
-      const entries = toControlMatcherEntries(bControls);
+      // skipping `parent` because `bControls` controls may have been cloned
+      // when added to `b`
+      const entries = toControlMatcherEntries(bControls, {
+        skip: ['parent'],
+      });
 
       expect(b.controls).toEqual(Object.fromEntries(entries));
       expect(b.controlsStore).toEqual(new Map(entries));
@@ -704,22 +850,22 @@ describe('FormGroup', () => {
           testAllDefaultsExcept(
             c,
             'errors',
-            'containerErrors',
+            'selfErrors',
             'errorsStore',
             'valid',
-            'containerValid',
+            'selfValid',
             'invalid',
-            'containerInvalid',
+            'selfInvalid',
             'status'
           );
 
           expect(c.errors).toEqual(error);
-          expect(c.containerErrors).toEqual(error);
-          expect(c.errorsStore).toEqual(new Map([[c.id, error]]));
+          expect(c.selfErrors).toEqual(error);
+          expect(c.errorsStore).toEqual(new Map([[CONTROL_SELF_ID, error]]));
           expect(c.valid).toEqual(false);
-          expect(c.containerValid).toEqual(false);
+          expect(c.selfValid).toEqual(false);
           expect(c.invalid).toEqual(true);
-          expect(c.containerInvalid).toEqual(true);
+          expect(c.selfInvalid).toEqual(true);
           expect(c.status).toEqual('INVALID');
         });
 
@@ -764,24 +910,24 @@ describe('FormGroup', () => {
             'controls',
             'controlsStore',
             'errors',
-            'containerErrors',
+            'selfErrors',
             'errorsStore',
             'valid',
-            'containerValid',
+            'selfValid',
             'invalid',
-            'containerInvalid',
+            'selfInvalid',
             'status'
           );
 
           testBLocalDefaults();
 
           expect(b.errors).toEqual(error);
-          expect(b.containerErrors).toEqual(error);
-          expect(b.errorsStore).toEqual(new Map([[b.id, error]]));
+          expect(b.selfErrors).toEqual(error);
+          expect(b.errorsStore).toEqual(new Map([[CONTROL_SELF_ID, error]]));
           expect(b.valid).toEqual(false);
-          expect(b.containerValid).toEqual(false);
+          expect(b.selfValid).toEqual(false);
           expect(b.invalid).toEqual(true);
-          expect(b.containerInvalid).toEqual(true);
+          expect(b.selfInvalid).toEqual(true);
           expect(b.status).toEqual('INVALID');
         });
 
@@ -796,20 +942,6 @@ describe('FormGroup', () => {
           });
 
           b.patchErrors({ error: null });
-
-          expect(b.rawValue).toEqual({
-            three: ['one'],
-            four: { one: 'one', two: 2 },
-          });
-          expect(b.value).toEqual({
-            three: ['one'],
-            four: { one: 'one', two: 2 },
-          });
-
-          const entries = toControlMatcherEntries(bControls);
-
-          expect(b.controls).toEqual(Object.fromEntries(entries));
-          expect(b.controlsStore).toEqual(new Map(entries));
 
           testAllDefaultsExcept(
             b,
@@ -856,15 +988,15 @@ describe('FormGroup', () => {
             'controls',
             'controlsStore',
             'errors',
-            'containerErrors',
+            'selfErrors',
             'childrenErrors',
             'errorsStore',
             'valid',
-            'containerValid',
+            'selfValid',
             'childValid',
             'childrenValid',
             'invalid',
-            'containerInvalid',
+            'selfInvalid',
             'childInvalid',
             'childrenInvalid',
             'status'
@@ -874,15 +1006,15 @@ describe('FormGroup', () => {
 
           expect(b).toImplementObject({
             errors: error,
-            containerErrors: null,
+            selfErrors: null,
             childrenErrors: error,
             errorsStore: new Map(),
             valid: false,
-            containerValid: true,
+            selfValid: true,
             childValid: true,
             childrenValid: false,
             invalid: true,
-            containerInvalid: false,
+            selfInvalid: false,
             childInvalid: true,
             childrenInvalid: false,
             status: 'INVALID',
@@ -894,15 +1026,13 @@ describe('FormGroup', () => {
             errors: { error: true },
           });
 
-          a = new FormGroup<{ [key: string]: AbstractControl }>({
-            ...aControls,
-            one: child,
-          });
+          aControls = { ...aControls, one: child };
 
-          b = new FormGroup({
-            ...bControls,
-            four: a,
-          });
+          a = new FormGroup<{ [key: string]: AbstractControl }>(aControls);
+
+          bControls = { ...bControls, four: a };
+
+          b = new FormGroup(bControls);
 
           child.patchErrors({ error: null });
 
@@ -938,11 +1068,96 @@ describe('FormGroup', () => {
     AbstractControl.eventId(0);
   });
 
+  describe('processEvent', () => {
+    let a: FormGroup;
+
+    beforeEach(() => {
+      a = new FormGroup();
+    });
+
+    describe('StateChange', () => {
+      let e: IControlStateChangeEvent | null = null;
+
+      beforeEach(() => {
+        e = null;
+      });
+
+      it('controlStore', () => {
+        const controlsObj = {
+          one: new FormControl('one'),
+          two: new FormControl(2),
+          subgroup: new FormGroup({
+            three: new FormControl(3),
+          }),
+        };
+
+        e = {
+          type: 'StateChange',
+          source: 'mySource',
+          meta: {},
+          trigger: { label: expect.any(String), source: expect.any(Symbol) },
+          changes: new Map([
+            [
+              'controlsStore',
+              new Map<string, any>(Object.entries(controlsObj)),
+            ],
+          ]),
+        };
+
+        const result = a.processEvent(e);
+
+        const value = { one: 'one', two: 2, subgroup: { three: 3 } };
+        const controls = Object.fromEntries(
+          Object.entries(controlsObj).map(([k, v]) => [
+            k,
+            expect.toEqualControl(v, { skip: ['parent'] }),
+          ])
+        );
+        const controlsStore = new Map(
+          Object.entries(controlsObj).map(([k, v]) => [
+            k,
+            expect.toEqualControl(v, { skip: ['parent'] }),
+          ])
+        );
+
+        expect(a).toImplementObject({
+          controls,
+          controlsStore,
+          rawValue: value,
+          value,
+        });
+
+        testAllDefaultsExcept(
+          a,
+          'controls',
+          'controlsStore',
+          'rawValue',
+          'value'
+        );
+
+        expect(result.status).toEqual('PROCESSED');
+        expect(result.result).toEqual({
+          type: 'StateChange',
+          source: 'mySource',
+          meta: {},
+          trigger: { label: expect.any(String), source: expect.any(Symbol) },
+          changes: new Map<string, any>([
+            ['controls', controls],
+            ['controlsStore', controlsStore],
+            ['rawValue', value],
+            ['value', value],
+          ]),
+        });
+      });
+    });
+  });
+
   describe('replayState()', () => {
     it('preserveControls = true', async () => {
       const aControls = {
         two: new FormControl('', {
-          validators: (c) => (c.value.length > 0 ? null : { required: true }),
+          validators: (c) =>
+            c.rawValue.length > 0 ? null : { required: true },
         }),
       };
 
@@ -960,30 +1175,29 @@ describe('FormGroup', () => {
       expect(b.value).toEqual({ one: { two: '' } });
       expect(b.errors).toEqual({ required: true });
 
+      // Because `preserveControls === true`, this call to `b.setValue()`
+      // changes the `replay` variable state.
       b.setValue({ one: { two: 'hi' } });
 
       expect(b.valid).toEqual(true);
       expect(b.value).toEqual({ one: { two: 'hi' } });
       expect(b.errors).toEqual(null);
 
-      replay.subscribe(b.source);
+      const event1 = await replay.toPromise();
 
-      expect(b.valid).toEqual(false);
-      expect(b.value).toEqual({ one: { two: '' } });
-      expect(b.errors).toEqual({ required: true });
+      b.processEvent(event1);
+
+      expect(b.valid).toEqual(true);
+      expect(b.value).toEqual({ one: { two: 'hi' } });
+      expect(b.errors).toEqual(null);
       expect(b.controls.one).toBe(bControls.one);
-
-      b.setValue({ one: { two: 'hi' } });
-
-      expect(b.valid).toEqual(true);
-      expect(b.value).toEqual({ one: { two: 'hi' } });
-      expect(b.errors).toEqual(null);
     });
 
     it('preserveControls = false', async () => {
       const aControls = {
         two: new FormControl('', {
-          validators: (c) => (c.value.length > 0 ? null : { required: true }),
+          validators: (c) =>
+            c.rawValue.length > 0 ? null : { required: true },
         }),
       };
 
@@ -1007,16 +1221,18 @@ describe('FormGroup', () => {
       expect(b.value).toEqual({ one: { two: 'hi' } });
       expect(b.errors).toEqual(null);
 
-      replay.subscribe(b.source);
+      const event1 = await replay.toPromise();
+
+      b.processEvent(event1);
 
       const clonedTwo = b.controls.one.controls.two;
       const originalTwo = aControls.two;
 
       expect(clonedTwo).not.toBe(originalTwo);
-      expect(clonedTwo.validatorStore.get(clonedTwo.id)).toEqual(
+      expect(clonedTwo.validatorStore.get(CONTROL_SELF_ID)).toEqual(
         expect.any(Function)
       );
-      expect(originalTwo.validatorStore.get(originalTwo.id)).toEqual(
+      expect(originalTwo.validatorStore.get(CONTROL_SELF_ID)).toEqual(
         expect.any(Function)
       );
 
@@ -1032,10 +1248,11 @@ describe('FormGroup', () => {
       expect(b.errors).toEqual(null);
     });
 
-    it.only('controls preserveControls = false', async () => {
+    it('controls preserveControls = false', async () => {
       const aControls = {
         two: new FormControl('', {
-          validators: (c) => (c.value.length > 0 ? null : { required: true }),
+          validators: (c) =>
+            c.rawValue.length > 0 ? null : { required: true },
         }),
       };
 
@@ -1049,11 +1266,12 @@ describe('FormGroup', () => {
 
       const replay = b.replayState({ preserveControls: false });
 
-      const [event1, event2, event3, event4, event5] = await replay
-        .pipe(toArray())
-        .toPromise();
+      const event1 = await replay.toPromise();
 
-      const controlsStore = event2.change.controlsStore!(null as any);
+      const controlsStore = event1.changes.get(
+        'controlsStore'
+      ) as typeof b['controlsStore'];
+
       const controlTwo = controlsStore.get('one')!.controlsStore.get('two')!;
 
       expect(controlTwo).not.toBe(aControls.two);
@@ -1098,11 +1316,11 @@ describe('FormGroup', () => {
           rawValue: { one: { two: null } },
           value: {},
           disabled: true,
-          containerDisabled: false,
+          selfDisabled: false,
           childDisabled: true,
           childrenDisabled: true,
           enabled: false,
-          containerEnabled: true,
+          selfEnabled: true,
           childEnabled: false,
           childrenEnabled: false,
           controls: bControls,
@@ -1120,11 +1338,11 @@ describe('FormGroup', () => {
           'size',
           'status',
           'disabled',
-          'containerDisabled',
+          'selfDisabled',
           'childDisabled',
           'childrenDisabled',
           'enabled',
-          'containerEnabled',
+          'selfEnabled',
           'childEnabled',
           'childrenEnabled'
         );
@@ -1150,17 +1368,17 @@ describe('FormGroup', () => {
         expect(a.value).toEqual({ aTwo: 'aTwo' });
 
         expect(a.disabled).toEqual(false);
-        expect(a.containerDisabled).toEqual(false);
+        expect(a.selfDisabled).toEqual(false);
         expect(a.childDisabled).toEqual(true);
         expect(a.childrenDisabled).toEqual(false);
 
         expect(a.enabled).toEqual(true);
-        expect(a.containerEnabled).toEqual(true);
+        expect(a.selfEnabled).toEqual(true);
         expect(a.childEnabled).toEqual(true);
         expect(a.childrenEnabled).toEqual(false);
 
         expect(a.dirty).toEqual(true);
-        expect(a.containerDirty).toEqual(false);
+        expect(a.selfDirty).toEqual(false);
         expect(a.childDirty).toEqual(true);
         expect(a.childrenDirty).toEqual(true);
 
@@ -1176,15 +1394,15 @@ describe('FormGroup', () => {
           'controlsStore',
           'size',
           'dirty',
-          'containerDirty',
+          'selfDirty',
           'childDirty',
           'childrenDirty',
           'disabled',
-          'containerDisabled',
+          'selfDisabled',
           'childDisabled',
           'childrenDisabled',
           'enabled',
-          'containerEnabled',
+          'selfEnabled',
           'childEnabled',
           'childrenEnabled'
         );
@@ -1211,22 +1429,22 @@ describe('FormGroup', () => {
         });
 
         expect(b.dirty).toEqual(true);
-        expect(b.containerDirty).toEqual(false);
+        expect(b.selfDirty).toEqual(false);
         expect(b.childDirty).toEqual(true);
         expect(b.childrenDirty).toEqual(false);
 
         expect(b.disabled).toEqual(false);
-        expect(b.containerDisabled).toEqual(false);
+        expect(b.selfDisabled).toEqual(false);
         expect(b.childDisabled).toEqual(false);
         expect(b.childrenDisabled).toEqual(false);
 
         expect(b.enabled).toEqual(true);
-        expect(b.containerEnabled).toEqual(true);
+        expect(b.selfEnabled).toEqual(true);
         expect(b.childEnabled).toEqual(true);
         expect(b.childrenEnabled).toEqual(true);
 
         expect(b.readonly).toEqual(false);
-        expect(b.containerReadonly).toEqual(false);
+        expect(b.selfReadonly).toEqual(false);
         expect(b.childReadonly).toEqual(true);
         expect(b.childrenReadonly).toEqual(false);
 
@@ -1242,19 +1460,19 @@ describe('FormGroup', () => {
           'controlsStore',
           'size',
           'dirty',
-          'containerDirty',
+          'selfDirty',
           'childDirty',
           'childrenDirty',
           'readonly',
-          'containerReadonly',
+          'selfReadonly',
           'childReadonly',
           'childrenReadonly',
           'disabled',
-          'containerDisabled',
+          'selfDisabled',
           'childDisabled',
           'childrenDisabled',
           'enabled',
-          'containerEnabled',
+          'selfEnabled',
           'childEnabled',
           'childrenEnabled'
         );
@@ -1265,12 +1483,12 @@ describe('FormGroup', () => {
         expect(a.value).toEqual({});
 
         expect(a.disabled).toEqual(true);
-        expect(a.containerDisabled).toEqual(false);
+        expect(a.selfDisabled).toEqual(false);
         expect(a.childDisabled).toEqual(true);
         expect(a.childrenDisabled).toEqual(true);
 
         expect(a.enabled).toEqual(false);
-        expect(a.containerEnabled).toEqual(true);
+        expect(a.selfEnabled).toEqual(true);
         expect(a.childEnabled).toEqual(false);
         expect(a.childrenEnabled).toEqual(false);
 
@@ -1288,11 +1506,11 @@ describe('FormGroup', () => {
           'size',
           'status',
           'disabled',
-          'containerDisabled',
+          'selfDisabled',
           'childDisabled',
           'childrenDisabled',
           'enabled',
-          'containerEnabled',
+          'selfEnabled',
           'childEnabled',
           'childrenEnabled',
           'parent'
@@ -1306,22 +1524,22 @@ describe('FormGroup', () => {
         expect(b.value).toEqual({ bTwo: 'bTwo' });
 
         expect(b.dirty).toEqual(false);
-        expect(b.containerDirty).toEqual(false);
+        expect(b.selfDirty).toEqual(false);
         expect(b.childDirty).toEqual(false);
         expect(b.childrenDirty).toEqual(false);
 
         expect(b.disabled).toEqual(false);
-        expect(b.containerDisabled).toEqual(false);
+        expect(b.selfDisabled).toEqual(false);
         expect(b.childDisabled).toEqual(true);
         expect(b.childrenDisabled).toEqual(false);
 
         expect(b.enabled).toEqual(true);
-        expect(b.containerEnabled).toEqual(true);
+        expect(b.selfEnabled).toEqual(true);
         expect(b.childEnabled).toEqual(true);
         expect(b.childrenEnabled).toEqual(false);
 
         expect(b.readonly).toEqual(true);
-        expect(b.containerReadonly).toEqual(false);
+        expect(b.selfReadonly).toEqual(false);
         expect(b.childReadonly).toEqual(true);
         expect(b.childrenReadonly).toEqual(true);
 
@@ -1337,19 +1555,19 @@ describe('FormGroup', () => {
           'controlsStore',
           'size',
           'dirty',
-          'containerDirty',
+          'selfDirty',
           'childDirty',
           'childrenDirty',
           'readonly',
-          'containerReadonly',
+          'selfReadonly',
           'childReadonly',
           'childrenReadonly',
           'disabled',
-          'containerDisabled',
+          'selfDisabled',
           'childDisabled',
           'childrenDisabled',
           'enabled',
-          'containerEnabled',
+          'selfEnabled',
           'childEnabled',
           'childrenEnabled'
         );
@@ -1375,11 +1593,11 @@ describe('FormGroup', () => {
       expect(a.valid).toEqual(false);
       expect(a.childValid).toEqual(false);
       expect(a.childrenValid).toEqual(false);
-      expect(a.containerValid).toEqual(true);
+      expect(a.selfValid).toEqual(true);
       expect(a.invalid).toEqual(true);
       expect(a.childInvalid).toEqual(true);
       expect(a.childrenInvalid).toEqual(true);
-      expect(a.containerInvalid).toEqual(false);
+      expect(a.selfInvalid).toEqual(false);
       expect(a.status).toEqual('INVALID');
       expect(a.errors).toEqual({ required: true });
       expect(a.childrenErrors).toEqual({ required: true });
@@ -1400,11 +1618,11 @@ describe('FormGroup', () => {
         'valid',
         'childValid',
         'childrenValid',
-        'containerValid',
+        'selfValid',
         'invalid',
         'childInvalid',
         'childrenInvalid',
-        'containerInvalid',
+        'selfInvalid',
         'errors',
         'childrenErrors'
       );
@@ -1462,15 +1680,19 @@ describe('FormGroup', () => {
     });
 
     it('setup', () => {
-      expect(a).toImplementObject({ value: { one: 'one', two: 2 } });
-      expect(b).toImplementObject({ value: {} });
+      expect(a).toImplementObject({
+        rawValue: { one: 'one', two: 2 },
+        value: { one: 'one', two: 2 },
+      });
+      expect(b).toImplementObject({ rawValue: {}, value: {} });
       expect(c).toImplementObject({
+        rawValue: { three: ['one'], four: { one: 'one', two: 2 } },
         value: { three: ['one'], four: { one: 'one', two: 2 } },
       });
     });
 
     it(`a to b`, () => {
-      a.replayState().subscribe(b.source);
+      a.replayState().subscribe((e) => b.processEvent(e));
 
       expect(b).toEqualControl(a, {
         skip: ['parent'],
@@ -1478,10 +1700,7 @@ describe('FormGroup', () => {
 
       const [end] = subscribeToControlEventsUntilEnd(a, b);
 
-      const newValue = {
-        one: 'two',
-        two: 3,
-      };
+      const newValue = { one: 'two', two: 3 };
 
       a.setValue(newValue);
 
@@ -1496,7 +1715,7 @@ describe('FormGroup', () => {
     });
 
     it(`a & b`, async () => {
-      a.replayState().subscribe(b.source);
+      a.replayState().subscribe((e) => b.processEvent(e));
 
       const [end] = subscribeToControlEventsUntilEnd(a, b);
       subscribeToControlEventsUntilEnd(b, a, end);
@@ -1532,7 +1751,7 @@ describe('FormGroup', () => {
     });
 
     it('c to b', () => {
-      c.replayState().subscribe(b.source);
+      c.replayState().subscribe((e) => b.processEvent(e));
 
       expect(b).toEqualControl(c, {
         skip: ['parent'],
@@ -1561,50 +1780,316 @@ describe('FormGroup', () => {
     });
 
     describe('c & b', () => {
-      it(`setValue on parent`, async () => {
-        c.replayState().subscribe(b.source);
+      // a = new FormGroup({
+      //   one: new FormControl('one'),
+      //   two: new FormControl(2),
+      // });
 
-        const [end] = subscribeToControlEventsUntilEnd(c, b);
-        subscribeToControlEventsUntilEnd(b, c, end);
+      // b = new FormGroup();
+
+      // c = new FormGroup({
+      //   three: new FormControl(['one']),
+      //   four: a,
+      // });
+      // it.only(`setValue on parent`, async () => {
+      //   // const d = new FormGroup({
+      //   //   three: new FormControl(['one']),
+      //   //   four: new FormGroup({
+      //   //     one: new FormControl('one'),
+      //   //     two: new FormControl(2),
+      //   //   })
+      //   // });
+
+      //   const d = new FormGroup({
+      //     one: new FormGroup({
+      //       'one.a': new FormControl('original'),
+      //       'one.b': new FormControl('original'),
+      //     }),
+      //     two: new FormControl('original'),
+      //   });
+
+      //   // const d = new FormGroup({
+      //   //   one: new FormControl('original'),
+      //   //   // two: new FormControl(['two']),
+      //   // });
+
+      //   d.replayState().subscribe((e) => b.processEvent(e));
+
+      //   console.log('0 d.value', d.value);
+      //   console.log('0 b.value', b.value);
+
+      //   // const [end] = subscribeToControlEventsUntilEnd(c, b);
+      //   // subscribeToControlEventsUntilEnd(b, c, end);
+
+      //   const [end] = subscribeToControlEventsUntilEnd(b, d);
+      //   subscribeToControlEventsUntilEnd(d, b, end);
+
+      //   // AbstractControl.debugCallback = function (event) {
+      //   //   console.log(
+      //   //     inspect(
+      //   //       {
+      //   //         label: `${this.id.toString()} event`,
+      //   //         event,
+      //   //       },
+      //   //       false,
+      //   //       null
+      //   //     )
+      //   //   );
+      //   // };
+
+      //   const value1 = {
+      //     one: {
+      //       'one.a': 'changed',
+      //       'one.b': 'changed',
+      //     },
+      //     two: 'changed',
+      //   };
+
+      //   // const value1 = {
+      //   //   three: ['two'],
+      //   //   four: {
+      //   //     one: 'three',
+      //   //     two: 4,
+      //   //   },
+      //   // };
+
+      //   const promise0 = merge(b.events, d.events)
+      //     .pipe(takeUntil(end), toArray())
+      //     .toPromise();
+
+      //   const [promise1] = getControlEventsUntilEnd(b, end);
+      //   const [promise2] = getControlEventsUntilEnd(d, end);
+
+      //   b.setValue(value1);
+
+      //   end.next();
+      //   end.complete();
+
+      //   console.log('1 d.value', d.value);
+      //   console.log('1 b.value', b.value);
+
+      //   // const [
+      //   //   event1,
+      //   //   event2,
+      //   //   event3,
+      //   //   event4,
+      //   //   event5,
+      //   //   event6,
+      //   //   event7,
+      //   //   event8,
+      //   // ] = await promise1;
+      //   // const [
+      //   //   event11,
+      //   //   event12,
+      //   //   event13,
+      //   //   event14,
+      //   //   event15,
+      //   //   event16,
+      //   //   event17,
+      //   //   event18,
+      //   // ] = await promise2;
+
+      //   // console.log('event1', inspect(event1, false, null));
+      //   // console.log('event2', inspect(event2, false, null));
+      //   // console.log('event3', inspect(event3, false, null));
+      //   // console.log('event4', inspect(event4, false, null));
+      //   // console.log('event5', inspect(event5, false, null));
+      //   // console.log('event6', inspect(event6, false, null));
+      //   // console.log('event7', inspect(event7, false, null));
+      //   // console.log('event8', inspect(event8, false, null));
+
+      //   // console.log('');
+      //   // console.log('');
+      //   // console.log('');
+
+      //   // console.log('event11', inspect(event11, false, null));
+      //   // console.log('event12', inspect(event12, false, null));
+      //   // console.log('event13', inspect(event13, false, null));
+      //   // console.log('event14', inspect(event14, false, null));
+      //   // console.log('event15', inspect(event15, false, null));
+      //   // console.log('event16', inspect(event16, false, null));
+      //   // console.log('event17', inspect(event17, false, null));
+      //   // console.log('event18', inspect(event18, false, null));
+
+      //   console.log('');
+      //   console.log('');
+      //   console.log('');
+
+      //   const [
+      //     event21,
+      //     event22,
+      //     event23,
+      //     event24,
+      //     event25,
+      //     event26,
+      //     event27,
+      //     event28,
+      //     event29,
+      //     event30,
+      //     event31,
+      //     event32,
+      //     event33,
+      //     event34,
+      //     event35,
+      //     event36,
+      //     event37,
+      //     event38,
+      //     event39,
+      //   ] = await promise0;
+
+      //   console.log('event21', inspect(event21, false, null));
+      //   console.log('event22', inspect(event22, false, null));
+      //   console.log('event23', inspect(event23, false, null));
+      //   console.log('event24', inspect(event24, false, null));
+      //   console.log('event25', inspect(event25, false, null));
+      //   console.log('event26', inspect(event26, false, null));
+      //   console.log('event27', inspect(event27, false, null));
+      //   console.log('event28', inspect(event28, false, null));
+      //   console.log('event29', inspect(event29, false, null));
+      //   console.log('event30', inspect(event30, false, null));
+      //   console.log('event31', inspect(event31, false, null));
+      //   console.log('event32', inspect(event32, false, null));
+      //   console.log('event33', inspect(event33, false, null));
+      //   console.log('event34', inspect(event34, false, null));
+      //   console.log('event35', inspect(event35, false, null));
+      //   console.log('event36', inspect(event36, false, null));
+      //   console.log('event37', inspect(event37, false, null));
+      //   console.log('event38', inspect(event38, false, null));
+      //   console.log('event39', inspect(event39, false, null));
+
+      //   // console.log('1 a.value', a.value);
+      //   // console.log('1 b.value', b.value);
+      //   // console.log('1 c.value', c.value);
+
+      //   expect(b).toEqualControl(d);
+
+      //   // expect(a.rawValue).toEqual(value1.four);
+
+      //   // const value2 = {
+      //   //   three: ['three'],
+      //   //   four: {
+      //   //     one: 'one',
+      //   //     two: 5,
+      //   //   },
+      //   // };
+
+      //   await wait(0);
+
+      //   // console.warn('now!');
+      //   // // console.log('a', a.id);
+      //   // // console.log('b', b.id);
+      //   // // console.log('c', c.id);
+      //   // AbstractControl.debugCallback = function (event) {
+      //   //   console.log(
+      //   //     inspect(
+      //   //       {
+      //   //         label: `${this.id.toString()} event`,
+      //   //         event,
+      //   //       },
+      //   //       false,
+      //   //       null
+      //   //     )
+      //   //   );
+      //   // };
+
+      //   // b.setValue(value2);
+
+      //   // console.log('2 a.value', a.value);
+      //   // console.log('2 b.value', b.value);
+      //   // console.log('2 c.value', c.value);
+
+      //   // expect(c).toEqualControl(b);
+
+      //   // expect(a.rawValue).toEqual(value2.four);
+
+      //   // end.next();
+      //   // end.complete();
+      // });
+
+      function syncControls(
+        original: AbstractControl,
+        alternate: AbstractControl
+      ): Subject<any> {
+        // original.replayState().subscribe((e) => alternate.processEvent(e));
+
+        const [end] = subscribeToControlEventsUntilEnd(original, alternate);
+
+        subscribeToControlEventsUntilEnd(alternate, original, end);
+
+        return end;
+      }
+
+      it(`setValue on parent 2`, async () => {
+        const originalControl = new FormGroup(
+          {
+            one: new FormGroup(
+              {
+                'one.a': new FormControl('original', { id: 'oOne.a' }),
+                'one.b': new FormControl('original', { id: 'oOne.b' }),
+              },
+              {
+                id: 'oOne',
+              }
+            ),
+            two: new FormControl('original', { id: 'oTwo' }),
+          },
+          {
+            id: 'oRoot',
+          }
+        );
+
+        const alternateControl = new FormGroup(
+          {
+            one: new FormGroup(
+              {
+                'one.a': new FormControl('original', { id: 'aOne.a' }),
+                'one.b': new FormControl('original', { id: 'aOne.b' }),
+              },
+              {
+                id: 'aOne',
+              }
+            ),
+            two: new FormControl('original', { id: 'aTwo' }),
+          },
+          {
+            id: 'aRoot',
+          }
+        );
+
+        const end = syncControls(originalControl, alternateControl);
 
         const value1 = {
-          three: ['two'],
-          four: {
-            one: 'three',
-            two: 4,
+          one: {
+            'one.a': 'value1',
+            'one.b': 'value1',
           },
+          two: 'value1',
         };
 
-        c.setValue(value1);
+        alternateControl.setValue(value1);
 
-        expect(b).toEqualControl(c, {
-          skip: ['parent'],
-        });
-
-        expect(a.rawValue).toEqual(value1.four);
+        expect(alternateControl).toEqualControl(originalControl);
 
         const value2 = {
-          three: ['three'],
-          four: {
-            one: 'one',
-            two: 5,
+          one: {
+            'one.a': 'value2',
+            'one.b': 'value2',
           },
+          two: 'value2',
         };
 
-        b.setValue(value2);
+        originalControl.setValue(value2);
 
-        expect(c).toEqualControl(b, {
-          skip: ['parent'],
-        });
+        expect(originalControl).toEqualControl(alternateControl);
 
-        expect(a.rawValue).toEqual(value2.four);
+        await wait(0);
 
         end.next();
         end.complete();
       });
 
       it(`setValue on child`, async () => {
-        c.replayState().subscribe(b.source);
+        c.replayState().subscribe((e) => b.processEvent(e));
 
         const [end] = subscribeToControlEventsUntilEnd(c, b);
         subscribeToControlEventsUntilEnd(b, c, end);
@@ -1647,133 +2132,137 @@ describe('FormGroup', () => {
         end.complete();
       });
 
-      // it('with value transform', () => {
-      //   c.replayState().subscribe(b.source);
+      it('with value transform', () => {
+        c.replayState().subscribe((e) => b.processEvent(e));
 
-      //   c.events
-      //     .pipe(
-      //       map((e) => {
-      //         if (!isStateChange(e)) return e;
-      //         if (!e.change.value) return e;
+        c.events
+          .pipe(
+            map((e) => {
+              if (!isStateChange(e)) return e;
 
-      //         const newValue = {
-      //           ...c.value,
-      //           four: {
-      //             ...c.value.four,
-      //             one: c.value.four.one.toUpperCase(),
-      //           },
-      //         };
+              return transformRawValueStateChange(
+                e,
+                (rawValue: typeof c['rawValue']) => {
+                  return {
+                    ...rawValue,
+                    four: {
+                      ...rawValue.four,
+                      one: rawValue.four.one.toUpperCase(),
+                    },
+                  };
+                }
+              );
+            })
+          )
+          .subscribe((e) => b.processEvent(e));
 
-      //         return { ...e, change: { value: () => newValue } };
-      //       })
-      //     )
-      //     .subscribe(b.source);
+        b.events
+          .pipe(
+            map((e) => {
+              if (!isStateChange(e)) return e;
 
-      //   b.events
-      //     .pipe(
-      //       map((e) => {
-      //         if (!isStateChange(e)) return e;
-      //         if (!e.change.value) return e;
+              return transformRawValueStateChange(
+                e,
+                (rawValue: typeof b['rawValue']) => {
+                  return {
+                    ...rawValue,
+                    four: {
+                      ...rawValue.four,
+                      one: rawValue.four.one.toLowerCase(),
+                    },
+                  };
+                }
+              );
+            })
+          )
+          .subscribe((e) => c.processEvent(e));
 
-      //         const newValue = {
-      //           ...b.value,
-      //           four: {
-      //             ...b.value.four,
-      //             one: b.value.four.one.toLowerCase(),
-      //           },
-      //         };
+        const child = c.get('four', 'one')!;
+        const child2 = b.get('four', 'one')!;
 
-      //         return { ...e, change: { value: () => newValue } };
-      //       })
-      //     )
-      //     .subscribe(c.source);
+        child.setValue('threVINTY');
 
-      //   const child = c.get('four', 'one')!;
-      //   const child2 = b.get('four', 'one')!;
+        expect(child2.value).toEqual('THREVINTY');
+        expect(child.value).toEqual('threvinty');
 
-      //   child.setValue('threVINTY');
+        expect(b.value).toEqual({
+          three: ['one'],
+          four: {
+            one: 'THREVINTY',
+            two: 2,
+          },
+        });
 
-      //   expect(child.value).toEqual('threvinty');
-      //   expect(child2.value).toEqual('THREVINTY');
+        expect(b.rawValue).toEqual({
+          three: ['one'],
+          four: {
+            one: 'THREVINTY',
+            two: 2,
+          },
+        });
 
-      //   expect(b.value).toEqual({
-      //     three: ['one'],
-      //     four: {
-      //       one: 'THREVINTY',
-      //       two: 2,
-      //     },
-      //   });
+        expect(c.value).toEqual({
+          three: ['one'],
+          four: {
+            one: 'threvinty',
+            two: 2,
+          },
+        });
 
-      //   expect(b.enabledValue).toEqual({
-      //     three: ['one'],
-      //     four: {
-      //       one: 'THREVINTY',
-      //       two: 2,
-      //     },
-      //   });
+        expect(c.rawValue).toEqual({
+          three: ['one'],
+          four: {
+            one: 'threvinty',
+            two: 2,
+          },
+        });
 
-      //   expect(c.value).toEqual({
-      //     three: ['one'],
-      //     four: {
-      //       one: 'threvinty',
-      //       two: 2,
-      //     },
-      //   });
+        expect(c).toEqualControl(b, {
+          skip: ['parent', '_rawValue', 'rawValue', '_value', 'value'],
+        });
 
-      //   expect(c.enabledValue).toEqual({
-      //     three: ['one'],
-      //     four: {
-      //       one: 'threvinty',
-      //       two: 2,
-      //     },
-      //   });
+        const child3 = b.get('four', 'two')!;
 
-      //   expect(c).toEqualControl(b, {
-      //     skip: ['parent', '_value', 'value', '_enabledValue', 'enabledValue'],
-      //   });
+        child3.setValue(3);
 
-      //   const child3 = b.get('four', 'two')!;
+        expect(child3.value).toEqual(3);
 
-      //   child3.setValue(3);
+        expect(b.value).toEqual({
+          three: ['one'],
+          four: {
+            one: 'THREVINTY',
+            two: 3,
+          },
+        });
 
-      //   expect(child3.value).toEqual(3);
+        expect(b.rawValue).toEqual({
+          three: ['one'],
+          four: {
+            one: 'THREVINTY',
+            two: 3,
+          },
+        });
 
-      //   expect(b.value).toEqual({
-      //     three: ['one'],
-      //     four: {
-      //       one: 'THREVINTY',
-      //       two: 3,
-      //     },
-      //   });
+        expect(c.value).toEqual({
+          three: ['one'],
+          four: {
+            one: 'threvinty',
+            two: 3,
+          },
+        });
 
-      //   expect(b.enabledValue).toEqual({
-      //     three: ['one'],
-      //     four: {
-      //       one: 'THREVINTY',
-      //       two: 3,
-      //     },
-      //   });
+        expect(c.rawValue).toEqual({
+          three: ['one'],
+          four: {
+            one: 'threvinty',
+            two: 3,
+          },
+        });
 
-      //   expect(c.value).toEqual({
-      //     three: ['one'],
-      //     four: {
-      //       one: 'threvinty',
-      //       two: 3,
-      //     },
-      //   });
-
-      //   expect(c.enabledValue).toEqual({
-      //     three: ['one'],
-      //     four: {
-      //       one: 'threvinty',
-      //       two: 3,
-      //     },
-      //   });
-
-      //   expect(b).toEqualControl(c, {
-      //     skip: ['parent', '_value', 'value', '_enabledValue', 'enabledValue'],
-      //   });
-      // });
+        expect(b).toEqualControl(c, {
+          skip: ['parent', '_rawValue', 'rawValue', '_value', 'value'],
+        });
+      });
     });
   });
 });

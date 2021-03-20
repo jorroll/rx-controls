@@ -34,6 +34,7 @@ import {
   AbstractControlContainer,
   FormControl,
   FormGroup,
+  FormArray,
 } from './projects/reactive-forms-two/src/lib/models';
 
 expect.extend({
@@ -92,38 +93,88 @@ expect.extend({
           v = (control as any)[k];
         }
 
-        expect(control).toHaveProperty(k);
-        expect(received).toHaveProperty(k, v);
+        try {
+          expect(control).toHaveProperty(k);
+          expect(received).toHaveProperty(k, v);
+        } catch (e) {
+          return e.matcherResult;
+        }
       }
     }
 
     if (control instanceof FormControl) {
-      expect(received).toBeInstanceOf(FormControl);
+      try {
+        expect(received).toBeInstanceOf(FormControl);
+      } catch (e) {
+        return e.matcherResult;
+      }
 
-      testControlEquality({
-        testablePrivateProps: testablePublicFormControlProps,
-        testablePublicProps: testablePrivateFormControlProps,
+      const result = testControlEquality({
+        testablePublicProps: testablePublicFormControlProps,
+        testablePrivateProps: testablePrivateFormControlProps,
       });
+
+      if (result) return result;
     } else if (control instanceof FormGroup) {
-      expect(
-        AbstractControlContainer.isControlContainer(received)
-      ).toBeTruthy();
-      expect(received).toBeInstanceOf(FormGroup);
+      try {
+        expect(
+          AbstractControlContainer.isControlContainer(received)
+        ).toBeTruthy();
+        expect(received).toBeInstanceOf(FormGroup);
+      } catch (e) {
+        return e.matcherResult;
+      }
 
-      testControlEquality({
-        testablePrivateProps: testablePublicFormGroupProps,
-        testablePublicProps: testablePrivateFormGroupProps,
+      const result = testControlEquality({
+        testablePublicProps: testablePublicFormGroupProps,
+        testablePrivateProps: testablePrivateFormGroupProps,
       });
+
+      if (result) return result;
 
       const entries = Object.entries(control.controls).map(
         ([k, v]) => [k, expect.toEqualControl(v as any, options)] as const
       );
 
-      expect((received as FormGroup).controls).toEqual(
-        Object.fromEntries(entries)
+      try {
+        expect((received as FormGroup).controls).toEqual(
+          Object.fromEntries(entries)
+        );
+
+        expect((received as FormGroup).controlsStore).toEqual(new Map(entries));
+      } catch (e) {
+        return e.matcherResult;
+      }
+    } else if (control instanceof FormArray) {
+      try {
+        expect(
+          AbstractControlContainer.isControlContainer(received)
+        ).toBeTruthy();
+        expect(received).toBeInstanceOf(FormArray);
+      } catch (e) {
+        return e.matcherResult;
+      }
+
+      const result = testControlEquality({
+        testablePublicProps: testablePublicFormArrayProps,
+        testablePrivateProps: testablePrivateFormArrayProps,
+      });
+
+      if (result) return result;
+
+      const controls = control.controls.map((c: any) =>
+        expect.toEqualControl(c as any, options)
       );
 
-      expect((received as FormGroup).controlsStore).toEqual(new Map(entries));
+      try {
+        expect((received as FormArray).controls).toEqual(controls);
+
+        expect((received as FormArray).controlsStore).toEqual(
+          new Map(controls.map((c: any, i: any) => [i, c]))
+        );
+      } catch (e) {
+        return e.matcherResult;
+      }
     } else {
       throw new Error(`Unexpected control type: ${control.constructor}`);
     }
@@ -153,7 +204,11 @@ expect.extend({
     }
 
     for (const [k, v] of Object.entries(object)) {
-      expect(received).toHaveProperty(k, v);
+      try {
+        expect(received).toHaveProperty(k, v);
+      } catch (e) {
+        return e.matcherResult;
+      }
     }
 
     return { pass: true, message: () => 'this error message never used' };
@@ -211,7 +266,7 @@ declare global {
 //   'replayState',
 //   'setData',
 //   'setErrors',
-//   'setParent',
+//   '_setParent',
 //   'setValue',
 //   'source',
 //   'status',
@@ -374,44 +429,50 @@ declare global {
 const testablePublicAbstractControlProps: Array<
   (keyof AbstractControl & string) | { key: string; value: any }
 > = [
-  'asyncValidationService',
   'clone',
   'data',
   'dirty',
+  'selfDirty',
   'disabled',
-  'emitEvent',
+  'selfDisabled',
   'enabled',
+  'selfEnabled',
   'errors',
+  'selfErrors',
   'errorsStore',
   // 'events',
   // 'id',
   'invalid',
-  'markAsyncValidationComplete',
+  'selfInvalid',
   'markDirty',
   'markDisabled',
   'markPending',
   'markReadonly',
   'markSubmitted',
   'markTouched',
-  'markValidationComplete',
   'observe',
   'observeChanges',
   // 'parent',
   'patchErrors',
   'pending',
+  'selfPending',
   'pendingStore',
+  'processEvent',
   'readonly',
+  'selfReadonly',
   'replayState',
   'setData',
   'setErrors',
-  'setParent',
+  '_setParent',
   'setValue',
   // 'source',
   'status',
   'submitted',
+  'selfSubmitted',
   'touched',
+  'selfTouched',
   'valid',
-  'validationService',
+  'selfValid',
   { key: 'validator', value: expect.any(Function) },
   'validatorStore',
   'value',
@@ -422,44 +483,25 @@ const testablePublicAbstractControlProps: Array<
 const testablePrivateAbstractControlProps: Array<
   string | { key: string; value: any }
 > = [
-  '_dirty',
-  '_disabled',
-  '_errors',
+  '_selfDirty',
+  '_selfDisabled',
+  '_selfErrors',
   '_errorsStore',
   // '_parent',
-  '_pending',
+  '_selfPending',
   '_pendingStore',
-  '_readonly',
-  '_registeredAsyncValidators',
-  '_registeredValidators',
-  '_runningAsyncValidation',
-  '_runningValidation',
+  '_selfReadonly',
   '_status',
-  '_submitted',
-  '_touched',
+  '_selfSubmitted',
+  '_selfTouched',
   { key: '_validator', value: expect.any(Function) },
   '_validatorStore',
   '_rawValue',
-  'getControlStatus',
-  'processEvent_StateChange',
-  'processEvent',
-  'processStateChange_Data',
-  'processStateChange_Dirty',
-  'processStateChange_Disabled',
-  'processStateChange_ErrorsStore',
-  'processStateChange_Parent',
-  'processStateChange_PendingStore',
-  'processStateChange_Readonly',
-  'processStateChange_RegisteredAsyncValidators',
-  'processStateChange_RegisteredValidators',
-  'processStateChange_RunningAsyncValidation',
-  'processStateChange_RunningValidation',
-  'processStateChange_Submitted',
-  'processStateChange_Touched',
-  'processStateChange_ValidatorStore',
-  'processStateChange_RawValue',
-  'processStateChange',
-  'updateErrorsProp',
+  '_emitEvent',
+  '_getControlStatus',
+  '_processEvent_StateChange',
+  '_validate',
+  '_calculateErrors',
 ];
 
 const testablePublicControlContainerProps: Array<
@@ -467,7 +509,6 @@ const testablePublicControlContainerProps: Array<
 > = [
   ...testablePublicAbstractControlProps,
   'addControl',
-  'asyncValidationService',
   'childEnabled',
   'childDirty',
   'childDisabled',
@@ -487,26 +528,17 @@ const testablePublicControlContainerProps: Array<
   'childSubmitted',
   'childTouched',
   'childValid',
-  'containerEnabled',
-  'containerDirty',
-  'containerDisabled',
-  'containerErrors',
-  'containerInvalid',
-  'containerPending',
-  'containerReadonly',
-  'containerSubmitted',
-  'containerTouched',
-  'containerValid',
   // 'controls',
   // 'controlsStore',
   'get',
-  'markChildrenDirty',
-  'markChildrenDisabled',
-  'markChildrenPending',
-  'markChildrenReadonly',
-  'markChildrenSubmitted',
-  'markChildrenTouched',
+  // 'markChildrenDirty',
+  // 'markChildrenDisabled',
+  // 'markChildrenPending',
+  // 'markChildrenReadonly',
+  // 'markChildrenSubmitted',
+  // 'markChildrenTouched',
   'patchValue',
+  'processEvent',
   'removeControl',
   'setControl',
   'setControls',
@@ -535,34 +567,19 @@ const testablePrivateControlContainerProps: Array<
   '_childrenDirty',
   '_childPending',
   '_childrenPending',
-  '_combinedErrors',
+  '_errors',
   '_childrenErrors',
   // '_controlsSubscriptions',
-  'registerControl',
-  'unregisterControl',
-  'processEvent',
-  'processStateChange',
-  'processStateChange_ControlsStore',
-  'processChildEvent_StateChange',
-  'processExternalChildStateChange',
-  'processInternalChildStateChange',
-  'processOnEventProcessedResults',
-  'processChildStateChangeChanges',
-  'normalizeChildStateChangeChanges',
-  'processChildStateChange_RawValue',
-  'processChildStateChange_Value',
-  // 'processChildStateChange_Disabled',
-  // 'processChildStateChange_Touched',
-  // 'processChildStateChange_Dirty',
-  // 'processChildStateChange_Readonly',
-  // 'processChildStateChange_Submitted',
-  // 'processChildStateChange_ErrorsStore',
-  // 'processChildStateChange_ValidatorStore',
-  // 'processChildStateChange_PendingStore',
-  // 'processChildStateChange_ControlsStore',
-  'updateChildrenErrors',
-  'shallowCloneValue',
-  'updateErrorsProp',
+  '_registerControl',
+  '_unregisterControl',
+  // 'processChildEffectingStateChangeResults',
+  '_processEvent_ExternalChildStateChange',
+  '_processInternalChildrenStateChanges',
+  '_normalizeChildrenStateChanges',
+  '_coerceControlStringKey',
+  '_calculateChildProps',
+  '_calculateChildrenErrors',
+  '_shallowCloneValue',
 ];
 
 const testablePublicFormControlProps: Array<
@@ -576,5 +593,12 @@ const testablePublicFormGroupProps: Array<
   (keyof FormGroup & string) | { key: string; value: any }
 > = [...testablePublicControlContainerProps];
 const testablePrivateFormGroupProps: Array<
+  string | { key: string; value: any }
+> = [...testablePrivateControlContainerProps];
+
+const testablePublicFormArrayProps: Array<
+  (keyof FormArray & string) | { key: string; value: any }
+> = [...testablePublicControlContainerProps, 'push', 'unshift'];
+const testablePrivateFormArrayProps: Array<
   string | { key: string; value: any }
 > = [...testablePrivateControlContainerProps];

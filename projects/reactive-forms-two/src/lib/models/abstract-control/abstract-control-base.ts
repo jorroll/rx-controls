@@ -1,37 +1,20 @@
 import {
   AbstractControl,
-  ControlSource,
   ValidatorFn,
   ValidationErrors,
   ControlId,
   IControlEvent,
   IControlEventOptions,
-  IControlStateChange,
   IControlValidationEvent,
-  IControlEventArgs,
   IControlFocusEvent,
-  IControlSelfStateChangeEvent,
   IControlStateChangeEvent,
+  IProcessedEvent,
 } from './abstract-control';
-import {
-  defer,
-  from,
-  Observable,
-  queueScheduler,
-  Subscriber,
-  Subscription,
-} from 'rxjs';
-import {
-  pluckOptions,
-  isTruthy,
-  getSimpleStateChangeEventArgs,
-  buildReplayStateEvent,
-} from '../util';
+import { Observable, of, queueScheduler, Subject } from 'rxjs';
+import { pluckOptions, getSimpleStateChangeEventArgs } from '../util';
 import {
   map,
   filter,
-  share,
-  finalize,
   startWith,
   distinctUntilChanged,
   skip,
@@ -40,7 +23,17 @@ import {
 } from 'rxjs/operators';
 import { isEqual } from '../../util';
 
-export interface IAbstractControlBaseArgs<Data = any> {
+export const CONTROL_SELF_ID = '__CONTROL_SELF_ID';
+
+export type INormControlEventOptions = IControlEventOptions & {
+  trigger: Exclude<IControlEventOptions['trigger'], undefined>;
+};
+
+export interface IAbstractControlBaseArgs<
+  Data = any,
+  RawValue = unknown,
+  Value = unknown
+> {
   data?: Data;
   id?: ControlId;
   disabled?: boolean;
@@ -51,47 +44,36 @@ export interface IAbstractControlBaseArgs<Data = any> {
   errors?: null | ValidationErrors | ReadonlyMap<ControlId, ValidationErrors>;
   validators?:
     | null
-    | ValidatorFn
-    | ValidatorFn[]
-    | ReadonlyMap<ControlId, ValidatorFn>;
+    | ValidatorFn<RawValue, Value>
+    | ValidatorFn<RawValue, Value>[]
+    | ReadonlyMap<ControlId, ValidatorFn<RawValue, Value>>;
   pending?: boolean | ReadonlySet<ControlId>;
 }
 
-export function composeValidators(
-  validators: undefined | null | ValidatorFn | ValidatorFn[]
-): null | ValidatorFn {
+export function composeValidators<RawValue, Value>(
+  validators:
+    | undefined
+    | null
+    | ValidatorFn<RawValue, Value>
+    | ValidatorFn<RawValue, Value>[]
+): null | ValidatorFn<RawValue, Value> {
   if (!validators || (Array.isArray(validators) && validators.length === 0)) {
     return null;
   }
 
   if (Array.isArray(validators)) {
     return (control) =>
-      validators.reduce((prev: ValidationErrors | null, curr: ValidatorFn) => {
-        const errors = curr(control);
-        return errors ? { ...prev, ...errors } : prev;
-      }, null);
+      validators.reduce(
+        (prev: ValidationErrors | null, curr: ValidatorFn<RawValue, Value>) => {
+          const errors = curr(control);
+          return errors ? { ...prev, ...errors } : prev;
+        },
+        null
+      );
   }
 
   return validators;
 }
-
-// function replacer(key: string, value: unknown) {
-//   if (
-//     value instanceof Subscriber ||
-//     value instanceof Subscription ||
-//     value instanceof Observable
-//   ) {
-//     return value.constructor.name;
-//   } else if (key === '_parent' && AbstractControl.isControl(value)) {
-//     return value.constructor.name;
-//   } else if (typeof value === 'symbol') {
-//     return value.toString();
-//   } else if (typeof value === 'function') {
-//     return value.toString();
-//   }
-
-//   return value;
-// }
 
 export abstract class AbstractControlBase<RawValue, Data, Value>
   implements AbstractControl<RawValue, Data, Value> {
@@ -99,68 +81,11 @@ export abstract class AbstractControlBase<RawValue, Data, Value>
 
   data!: Data;
 
-  source = new ControlSource();
-
-  events: Observable<
+  protected _source = new Subject<
     IControlEvent | (IControlEvent & { [key: string]: unknown })
-  > = this.source.pipe(
-    map((event) => {
-      if (AbstractControl.debugCallback) {
-        AbstractControl.debugCallback.call(this, {
-          type: 'INPUT',
-          event,
-        });
-      }
+  >();
 
-      // Here we provide the user with an error message in case of an
-      // infinite loop
-      if (
-        event.eventId - event.idOfOriginatingEvent >
-        AbstractControl.throwInfiniteLoopErrorAfterEventCount
-      ) {
-        throw new Error(
-          `AbstractControl "${this.id.toString()}" appears to be caught ` +
-            `in an infinite event loop originating from event ` +
-            `${event.idOfOriginatingEvent}. You can register a debugCallback ` +
-            `with AbstractControl.debugCallback to help diagnose the issue.`
-        );
-      }
-
-      const newEvent = this.processEvent(event);
-
-      if (newEvent && event.source !== this.id && newEvent.source !== this.id) {
-        // because events can come either from something like `AbstractControl#emitEvent()`
-        // or from another control's `events` property, we need to always assign a new eventId
-        // to this newEvent. Otherwise, synced controls will emit new events that share the
-        // same eventId as the source event (i.e. multiple controls will emit different events
-        // with the same eventId)
-        newEvent.eventId = AbstractControl.eventId();
-      }
-
-      if (typeof (event as any)?.onEventProcessedFn === 'function') {
-        queueScheduler.schedule((event as any).onEventProcessedFn, 0, newEvent);
-        delete (newEvent as any)?.onEventProcessedFn;
-      }
-
-      if (AbstractControl.debugCallback) {
-        if (newEvent) {
-          (newEvent as any).debug = {
-            selfId: this.id,
-            source: event,
-          };
-        }
-
-        AbstractControl.debugCallback.call(this, {
-          type: 'OUTPUT',
-          event: newEvent,
-        });
-      }
-
-      return newEvent;
-    }),
-    filter(isTruthy),
-    share()
-  );
+  events = this._source.asObservable();
 
   abstract readonly value: Value;
 
@@ -169,37 +94,64 @@ export abstract class AbstractControlBase<RawValue, Data, Value>
     return this._rawValue as RawValue;
   }
 
-  protected _disabled = false;
   get enabled() {
-    return !this._disabled;
+    return this.selfEnabled;
   }
   get disabled() {
-    return this._disabled;
+    return this.selfDisabled;
   }
 
-  protected _touched = false;
+  protected _selfDisabled = false;
+  get selfEnabled() {
+    return !this._selfDisabled;
+  }
+  get selfDisabled() {
+    return this._selfDisabled;
+  }
+
   get touched() {
-    return this._touched;
+    return this.selfTouched;
   }
 
-  protected _dirty = false;
+  protected _selfTouched = false;
+  get selfTouched() {
+    return this._selfTouched;
+  }
+
   get dirty() {
-    return this._dirty;
+    return this.selfDirty;
   }
 
-  protected _readonly = false;
+  protected _selfDirty = false;
+  get selfDirty() {
+    return this._selfDirty;
+  }
+
   get readonly() {
-    return this._readonly;
+    return this.selfReadonly;
   }
 
-  protected _submitted = false;
+  protected _selfReadonly = false;
+  get selfReadonly() {
+    return this._selfReadonly;
+  }
+
   get submitted() {
-    return this._submitted;
+    return this.selfSubmitted;
   }
 
-  protected _errors: ValidationErrors | null = null;
+  protected _selfSubmitted = false;
+  get selfSubmitted() {
+    return this._selfSubmitted;
+  }
+
   get errors() {
-    return this._errors;
+    return this.selfErrors;
+  }
+
+  protected _selfErrors: ValidationErrors | null = null;
+  get selfErrors() {
+    return this._selfErrors;
   }
 
   protected _errorsStore: ReadonlyMap<ControlId, ValidationErrors> = new Map<
@@ -210,27 +162,26 @@ export abstract class AbstractControlBase<RawValue, Data, Value>
     return this._errorsStore;
   }
 
-  protected _validator: ValidatorFn | null = null;
+  protected _validator: ValidatorFn<RawValue, Value> | null = null;
   get validator() {
     return this._validator;
   }
 
-  protected _validatorStore: ReadonlyMap<ControlId, ValidatorFn> = new Map<
+  protected _validatorStore: ReadonlyMap<
     ControlId,
-    ValidatorFn
-  >();
+    ValidatorFn<RawValue, Value>
+  > = new Map<ControlId, ValidatorFn<RawValue, Value>>();
   get validatorStore() {
     return this._validatorStore;
   }
 
-  protected _registeredValidators: ReadonlySet<ControlId> = new Set<ControlId>();
-  protected _runningValidation: ReadonlySet<ControlId> = new Set<ControlId>();
-  protected _registeredAsyncValidators: ReadonlySet<ControlId> = new Set<ControlId>();
-  protected _runningAsyncValidation: ReadonlySet<ControlId> = new Set<ControlId>();
-
-  protected _pending = false;
   get pending() {
-    return this._pending;
+    return this.selfPending;
+  }
+
+  protected _selfPending = false;
+  get selfPending() {
+    return this._selfPending;
   }
 
   protected _pendingStore: ReadonlySet<ControlId> = new Set<ControlId>();
@@ -239,10 +190,17 @@ export abstract class AbstractControlBase<RawValue, Data, Value>
   }
 
   get valid() {
-    return !this.errors;
+    return this.selfValid;
   }
   get invalid() {
-    return !!this.errors;
+    return this.selfInvalid;
+  }
+
+  get selfValid() {
+    return !this.selfErrors;
+  }
+  get selfInvalid() {
+    return !!this.selfErrors;
   }
 
   protected _status: 'DISABLED' | 'PENDING' | 'VALID' | 'INVALID' = 'VALID';
@@ -255,57 +213,19 @@ export abstract class AbstractControlBase<RawValue, Data, Value>
     return this._parent;
   }
 
-  // get parentContainerDisabled() {
-  //   if (!this.parent) return false;
-
-  //   return (
-  //     (this.parent as any).containerDisabled ||
-  //     this.parent.parentContainerDisabled
-  //   );
-  // }
-
-  // get parentContainerTouched() {
-  //   if (!this.parent) return false;
-
-  //   return (
-  //     (this.parent as any).containerTouched ||
-  //     this.parent.parentContainerTouched
-  //   );
-  // }
-
-  // get parentContainerDirty() {
-  //   if (!this.parent) return false;
-
-  //   return (
-  //     (this.parent as any).containerDirty || this.parent.parentContainerDirty
-  //   );
-  // }
-
-  // get parentContainerReadonly() {
-  //   if (!this.parent) return false;
-
-  //   return (
-  //     (this.parent as any).containerReadonly ||
-  //     this.parent.parentContainerReadonly
-  //   );
-  // }
-
-  // get parentContainerSubmitted() {
-  //   if (!this.parent) return false;
-
-  //   return (
-  //     (this.parent as any).containerSubmitted ||
-  //     this.parent.parentContainerSubmitted
-  //   );
-  // }
-
   constructor(controlId: ControlId) {
-    // need to maintain one subscription for the events to process
-    this.events.subscribe();
-
     // need to provide ControlId in constructor otherwise
     // initial errors will have incorrect source ID
     this.id = controlId;
+
+    if (AbstractControl.debugCallback) {
+      AbstractControl.debugCallback.call(this, {
+        type: `DEBUG: constructor`,
+        trigger: { label: 'constructor', source: controlId },
+        source: controlId,
+        meta: {},
+      });
+    }
   }
 
   observe<
@@ -332,7 +252,7 @@ export abstract class AbstractControlBase<RawValue, Data, Value>
     i: I,
     j: J,
     k: K,
-    options?: { ignoreNoEmit?: boolean }
+    options?: { ignoreNoObserve?: boolean }
   ): Observable<this[A][B][C][D][E][F][G][H][I][J][K] | undefined>;
   observe<
     A extends keyof this,
@@ -356,7 +276,7 @@ export abstract class AbstractControlBase<RawValue, Data, Value>
     h: H,
     i: I,
     j: J,
-    options?: { ignoreNoEmit?: boolean }
+    options?: { ignoreNoObserve?: boolean }
   ): Observable<this[A][B][C][D][E][F][G][H][I][J] | undefined>;
   observe<
     A extends keyof this,
@@ -378,7 +298,7 @@ export abstract class AbstractControlBase<RawValue, Data, Value>
     g: G,
     h: H,
     i: I,
-    options?: { ignoreNoEmit?: boolean }
+    options?: { ignoreNoObserve?: boolean }
   ): Observable<this[A][B][C][D][E][F][G][H][I] | undefined>;
   observe<
     A extends keyof this,
@@ -398,7 +318,7 @@ export abstract class AbstractControlBase<RawValue, Data, Value>
     f: F,
     g: G,
     h: H,
-    options?: { ignoreNoEmit?: boolean }
+    options?: { ignoreNoObserve?: boolean }
   ): Observable<this[A][B][C][D][E][F][G][H] | undefined>;
   observe<
     A extends keyof this,
@@ -416,7 +336,7 @@ export abstract class AbstractControlBase<RawValue, Data, Value>
     e: E,
     f: F,
     g: G,
-    options?: { ignoreNoEmit?: boolean }
+    options?: { ignoreNoObserve?: boolean }
   ): Observable<this[A][B][C][D][E][F][G] | undefined>;
   observe<
     A extends keyof this,
@@ -432,7 +352,7 @@ export abstract class AbstractControlBase<RawValue, Data, Value>
     d: D,
     e: E,
     f: F,
-    options?: { ignoreNoEmit?: boolean }
+    options?: { ignoreNoObserve?: boolean }
   ): Observable<this[A][B][C][D][E][F] | undefined>;
   observe<
     A extends keyof this,
@@ -446,7 +366,7 @@ export abstract class AbstractControlBase<RawValue, Data, Value>
     c: C,
     d: D,
     e: E,
-    options?: { ignoreNoEmit?: boolean }
+    options?: { ignoreNoObserve?: boolean }
   ): Observable<this[A][B][C][D][E] | undefined>;
   observe<
     A extends keyof this,
@@ -458,7 +378,7 @@ export abstract class AbstractControlBase<RawValue, Data, Value>
     b: B,
     c: C,
     d: D,
-    options?: { ignoreNoEmit?: boolean }
+    options?: { ignoreNoObserve?: boolean }
   ): Observable<this[A][B][C][D] | undefined>;
   observe<
     A extends keyof this,
@@ -468,34 +388,34 @@ export abstract class AbstractControlBase<RawValue, Data, Value>
     a: A,
     b: B,
     c: C,
-    options?: { ignoreNoEmit?: boolean }
+    options?: { ignoreNoObserve?: boolean }
   ): Observable<this[A][B][C] | undefined>;
   observe<A extends keyof this, B extends keyof this[A]>(
     a: A,
     b: B,
-    options?: { ignoreNoEmit?: boolean }
+    options?: { ignoreNoObserve?: boolean }
   ): Observable<this[A][B] | undefined>;
   observe<A extends keyof this>(
     a: A,
-    options?: { ignoreNoEmit?: boolean }
+    options?: { ignoreNoObserve?: boolean }
   ): Observable<this[A]>;
   observe<T = any>(
     props: string[],
-    options?: { ignoreNoEmit?: boolean }
+    options?: { ignoreNoObserve?: boolean }
   ): Observable<T>;
   observe(
     a: string | string[],
-    b?: string | { ignoreNoEmit?: boolean },
-    c?: string | { ignoreNoEmit?: boolean },
-    d?: string | { ignoreNoEmit?: boolean },
-    e?: string | { ignoreNoEmit?: boolean },
-    f?: string | { ignoreNoEmit?: boolean },
-    g?: string | { ignoreNoEmit?: boolean },
-    h?: string | { ignoreNoEmit?: boolean },
-    i?: string | { ignoreNoEmit?: boolean },
-    j?: string | { ignoreNoEmit?: boolean },
-    k?: string | { ignoreNoEmit?: boolean },
-    o?: { ignoreNoEmit?: boolean }
+    b?: string | { ignoreNoObserve?: boolean },
+    c?: string | { ignoreNoObserve?: boolean },
+    d?: string | { ignoreNoObserve?: boolean },
+    e?: string | { ignoreNoObserve?: boolean },
+    f?: string | { ignoreNoObserve?: boolean },
+    g?: string | { ignoreNoObserve?: boolean },
+    h?: string | { ignoreNoObserve?: boolean },
+    i?: string | { ignoreNoObserve?: boolean },
+    j?: string | { ignoreNoObserve?: boolean },
+    k?: string | { ignoreNoObserve?: boolean },
+    o?: { ignoreNoObserve?: boolean }
   ) {
     const props: string[] = [];
 
@@ -509,26 +429,18 @@ export abstract class AbstractControlBase<RawValue, Data, Value>
 
     const options =
       typeof args[args.length - 1] === 'object'
-        ? (args.pop() as { ignoreNoEmit?: boolean })
+        ? (args.pop() as { ignoreNoObserve?: boolean })
         : {};
 
     props.push(...(args as string[]));
 
-    // if we're subscribing to the "value" prop, we want to
-    // wait until after synchronous validation has completed
-    const eventFilterFn =
-      props[props.length - 1] === 'value' ||
-      props[props.length - 1] === 'rawValue'
-        ? (event: IControlEvent) =>
-            event.type === 'AsyncValidationStart' &&
-            (options.ignoreNoEmit || !event.noEmit)
-        : (event: IControlEvent) =>
-            event.type === 'StateChange' &&
-            (options.ignoreNoEmit || !event.noEmit);
-
     return this.events.pipe(
       observeOn(queueScheduler),
-      filter(eventFilterFn),
+      filter(
+        (event) =>
+          event.type === 'StateChange' &&
+          (options.ignoreNoObserve || !event.noObserve)
+      ),
       startWith({}),
       map(() =>
         props.reduce((prev, curr) => {
@@ -568,7 +480,7 @@ export abstract class AbstractControlBase<RawValue, Data, Value>
     i: I,
     j: J,
     k: K,
-    options?: { ignoreNoEmit?: boolean }
+    options?: { ignoreNoObserve?: boolean }
   ): Observable<this[A][B][C][D][E][F][G][H][I][J][K] | undefined>;
   observeChanges<
     A extends keyof this,
@@ -592,7 +504,7 @@ export abstract class AbstractControlBase<RawValue, Data, Value>
     h: H,
     i: I,
     j: J,
-    options?: { ignoreNoEmit?: boolean }
+    options?: { ignoreNoObserve?: boolean }
   ): Observable<this[A][B][C][D][E][F][G][H][I][J] | undefined>;
   observeChanges<
     A extends keyof this,
@@ -614,7 +526,7 @@ export abstract class AbstractControlBase<RawValue, Data, Value>
     g: G,
     h: H,
     i: I,
-    options?: { ignoreNoEmit?: boolean }
+    options?: { ignoreNoObserve?: boolean }
   ): Observable<this[A][B][C][D][E][F][G][H][I] | undefined>;
   observeChanges<
     A extends keyof this,
@@ -634,7 +546,7 @@ export abstract class AbstractControlBase<RawValue, Data, Value>
     f: F,
     g: G,
     h: H,
-    options?: { ignoreNoEmit?: boolean }
+    options?: { ignoreNoObserve?: boolean }
   ): Observable<this[A][B][C][D][E][F][G][H] | undefined>;
   observeChanges<
     A extends keyof this,
@@ -652,7 +564,7 @@ export abstract class AbstractControlBase<RawValue, Data, Value>
     e: E,
     f: F,
     g: G,
-    options?: { ignoreNoEmit?: boolean }
+    options?: { ignoreNoObserve?: boolean }
   ): Observable<this[A][B][C][D][E][F][G] | undefined>;
   observeChanges<
     A extends keyof this,
@@ -668,7 +580,7 @@ export abstract class AbstractControlBase<RawValue, Data, Value>
     d: D,
     e: E,
     f: F,
-    options?: { ignoreNoEmit?: boolean }
+    options?: { ignoreNoObserve?: boolean }
   ): Observable<this[A][B][C][D][E][F] | undefined>;
   observeChanges<
     A extends keyof this,
@@ -682,7 +594,7 @@ export abstract class AbstractControlBase<RawValue, Data, Value>
     c: C,
     d: D,
     e: E,
-    options?: { ignoreNoEmit?: boolean }
+    options?: { ignoreNoObserve?: boolean }
   ): Observable<this[A][B][C][D][E] | undefined>;
   observeChanges<
     A extends keyof this,
@@ -694,7 +606,7 @@ export abstract class AbstractControlBase<RawValue, Data, Value>
     b: B,
     c: C,
     d: D,
-    options?: { ignoreNoEmit?: boolean }
+    options?: { ignoreNoObserve?: boolean }
   ): Observable<this[A][B][C][D] | undefined>;
   observeChanges<
     A extends keyof this,
@@ -704,845 +616,403 @@ export abstract class AbstractControlBase<RawValue, Data, Value>
     a: A,
     b: B,
     c: C,
-    options?: { ignoreNoEmit?: boolean }
+    options?: { ignoreNoObserve?: boolean }
   ): Observable<this[A][B][C] | undefined>;
   observeChanges<A extends keyof this, B extends keyof this[A]>(
     a: A,
     b: B,
-    options?: { ignoreNoEmit?: boolean }
+    options?: { ignoreNoObserve?: boolean }
   ): Observable<this[A][B] | undefined>;
   observeChanges<A extends keyof this>(
     a: A,
-    options?: { ignoreNoEmit?: boolean }
+    options?: { ignoreNoObserve?: boolean }
   ): Observable<this[A]>;
   observeChanges<T = any>(
     props: string[],
-    options?: { ignoreNoEmit?: boolean }
+    options?: { ignoreNoObserve?: boolean }
   ): Observable<T>;
   observeChanges(...args: [any, ...any[]]) {
     return this.observe(...args).pipe(skip(1));
   }
 
-  setParent(value: AbstractControl | null, options?: IControlEventOptions) {
-    this.emitEvent<IControlSelfStateChangeEvent<RawValue, Data>>(
-      getSimpleStateChangeEventArgs({ parent: () => value }),
-      options
-    );
-  }
-
-  setValue(rawValue: RawValue, options?: IControlEventOptions) {
-    this.emitEvent<IControlSelfStateChangeEvent<RawValue, Data>>(
-      getSimpleStateChangeEventArgs({ rawValue: () => rawValue }),
-      options
-    );
-  }
-
-  setErrors(
-    value: ValidationErrors | null | ReadonlyMap<ControlId, ValidationErrors>,
+  _setParent(
+    value: AbstractControl | null,
     options?: IControlEventOptions
-  ) {
-    const source = options?.source || this.id;
+  ): Array<keyof this & string> {
+    if (this._parent === value) return [];
 
-    let changeFn: IControlStateChange<RawValue, Data>['errorsStore'];
+    this._parent = value;
+    const changedProps: Array<keyof this & string> = ['parent'];
 
-    if (value instanceof Map) {
-      changeFn = () => value;
-    } else if (value === null || Object.keys(value).length === 0) {
-      changeFn = (old) => {
-        const errorsStore = new Map(old);
-        errorsStore.delete(source);
-        return errorsStore;
-      };
-    } else {
-      changeFn = (old) => new Map(old).set(source, value);
-    }
-
-    this.emitEvent<IControlSelfStateChangeEvent<RawValue, Data>>(
-      getSimpleStateChangeEventArgs({ errorsStore: changeFn }),
-      options
-    );
-  }
-
-  patchErrors(
-    value: ValidationErrors | ReadonlyMap<ControlId, ValidationErrors>,
-    options?: IControlEventOptions
-  ) {
-    const source = options?.source || this.id;
-
-    let changeFn: IControlStateChange<RawValue, Data>['errorsStore'];
-
-    if (value instanceof Map) {
-      if (value.size === 0) return;
-
-      changeFn = (old) =>
-        new Map<ControlId, ValidationErrors>([...old, ...value]);
-    } else {
-      if (Object.keys(value).length === 0) return;
-
-      changeFn = (old) => {
-        let newValue: ValidationErrors = value;
-
-        let existingValue = old.get(source);
-
-        if (existingValue) {
-          existingValue = { ...existingValue };
-
-          for (const [key, err] of Object.entries(newValue)) {
-            if (err === null) {
-              delete existingValue![key];
-            } else {
-              existingValue![key] = err;
-            }
-          }
-
-          newValue = existingValue;
-        } else {
-          const entries = Object.entries(newValue).filter(
-            ([, v]) => v !== null
-          );
-
-          if (entries.length === 0) return old;
-
-          newValue = Object.fromEntries(entries);
-        }
-
-        const errorsStore = new Map(old);
-
-        if (Object.keys(newValue).length === 0) {
-          errorsStore.delete(source);
-        } else {
-          errorsStore.set(source, newValue);
-        }
-
-        return errorsStore;
-      };
-    }
-
-    this.emitEvent<IControlSelfStateChangeEvent<RawValue, Data>>(
-      getSimpleStateChangeEventArgs({ errorsStore: changeFn }),
-      options
-    );
-  }
-
-  markTouched(value: boolean, options?: IControlEventOptions) {
-    this.emitEvent<IControlSelfStateChangeEvent<RawValue, Data>>(
-      getSimpleStateChangeEventArgs({ touched: () => value }),
-      options
-    );
-  }
-
-  markDirty(value: boolean, options?: IControlEventOptions) {
-    this.emitEvent<IControlSelfStateChangeEvent<RawValue, Data>>(
-      getSimpleStateChangeEventArgs({ dirty: () => value }),
-      options
-    );
-  }
-
-  markReadonly(value: boolean, options?: IControlEventOptions) {
-    this.emitEvent<IControlSelfStateChangeEvent<RawValue, Data>>(
-      getSimpleStateChangeEventArgs({ readonly: () => value }),
-      options
-    );
-  }
-
-  markDisabled(value: boolean, options?: IControlEventOptions) {
-    this.emitEvent<IControlSelfStateChangeEvent<RawValue, Data>>(
-      getSimpleStateChangeEventArgs({ disabled: () => value }),
-      options
-    );
-  }
-
-  markSubmitted(value: boolean, options?: IControlEventOptions) {
-    this.emitEvent<IControlSelfStateChangeEvent<RawValue, Data>>(
-      getSimpleStateChangeEventArgs({ submitted: () => value }),
-      options
-    );
-  }
-
-  markPending(
-    value: boolean | ReadonlySet<ControlId>,
-    options?: IControlEventOptions
-  ) {
-    const source = options?.source || this.id;
-
-    let changeFn: IControlStateChange<RawValue, Data>['pendingStore'];
-
-    if (value instanceof Set) {
-      changeFn = () => value;
-    } else if (value) {
-      changeFn = (old) => new Set(old).add(source);
-    } else {
-      changeFn = (old) => {
-        const pendingStore = new Set(old);
-        pendingStore.delete(source);
-        return pendingStore;
-      };
-    }
-
-    this.emitEvent<IControlSelfStateChangeEvent<RawValue, Data>>(
-      getSimpleStateChangeEventArgs({ pendingStore: changeFn }),
-      options
-    );
-  }
-
-  setValidators(
-    value:
-      | ValidatorFn
-      | ValidatorFn[]
-      | ReadonlyMap<ControlId, ValidatorFn>
-      | null,
-    options?: IControlEventOptions
-  ) {
-    const source = options?.source || this.id;
-
-    let changeFn: IControlStateChange<RawValue, Data>['validatorStore'];
-
-    if (value instanceof Map) {
-      changeFn = () => value as ReadonlyMap<ControlId, ValidatorFn>;
-    } else {
-      const newValue = composeValidators(
-        value as Exclude<typeof value, ReadonlyMap<any, any>>
-      );
-
-      if (newValue) {
-        changeFn = (old) => new Map(old).set(source, newValue);
-      } else {
-        changeFn = (old) => {
-          const validatorStore = new Map(old);
-          validatorStore.delete(source);
-          return validatorStore;
-        };
-      }
-    }
-
-    this.emitEvent<IControlSelfStateChangeEvent<RawValue, Data>>(
-      getSimpleStateChangeEventArgs({ validatorStore: changeFn }),
-      options
-    );
-  }
-
-  validationService(
-    source: ControlId,
-    options?: IControlEventOptions
-  ): Observable<
-    IControlValidationEvent<RawValue> & {
-      type: 'ValidationStart';
-    }
-  > {
-    return defer(() => {
-      this.emitEvent<IControlSelfStateChangeEvent<RawValue, Data>>(
-        getSimpleStateChangeEventArgs({
-          registeredValidators: (old) => {
-            return new Set(old).add(source);
-          },
-        }),
-        options
-      );
-
-      return this.events;
-    }).pipe(
-      filter(
-        ((e) => e.type === 'ValidationStart') as (
-          e: IControlEvent
-        ) => e is IControlValidationEvent<RawValue> & {
-          type: 'ValidationStart';
-        }
-      ),
-      finalize(() => {
-        this.emitEvent<IControlSelfStateChangeEvent<RawValue, Data>>(
-          getSimpleStateChangeEventArgs({
-            registeredValidators: (old) => {
-              const newValue = new Set(old);
-              newValue.delete(source);
-              return newValue;
-            },
-          }),
-          options
-        );
-      }),
-      share()
-    );
-  }
-
-  markValidationComplete(
-    source: ControlId,
-    options?: IControlEventOptions
-  ): void {
-    this.emitEvent<IControlSelfStateChangeEvent<RawValue, Data>>(
-      getSimpleStateChangeEventArgs({
-        runningValidation: (old) => {
-          const newValue = new Set(old);
-          newValue.delete(source);
-          return newValue;
-        },
-      }),
-      options
-    );
-  }
-
-  asyncValidationService(
-    source: ControlId,
-    options?: IControlEventOptions
-  ): Observable<
-    IControlValidationEvent<RawValue> & {
-      type: 'AsyncValidationStart';
-    }
-  > {
-    return defer(() => {
-      this.emitEvent<IControlSelfStateChangeEvent<RawValue, Data>>(
-        getSimpleStateChangeEventArgs({
-          registeredAsyncValidators: (old) => {
-            return new Set(old).add(source);
-          },
-        }),
-        options
-      );
-
-      return this.events;
-    }).pipe(
-      filter(
-        ((e) => e.type === 'AsyncValidationStart') as (
-          e: IControlEvent
-        ) => e is IControlValidationEvent<RawValue> & {
-          type: 'AsyncValidationStart';
-        }
-      ),
-      finalize(() => {
-        this.emitEvent<IControlSelfStateChangeEvent<RawValue, Data>>(
-          getSimpleStateChangeEventArgs({
-            registeredAsyncValidators: (old: ReadonlySet<ControlId>) => {
-              const newValue = new Set(old);
-              newValue.delete(source);
-              return newValue;
-            },
-          }),
-          options
-        );
-      }),
-      share()
-    );
-  }
-
-  markAsyncValidationComplete(
-    source: ControlId,
-    options?: IControlEventOptions
-  ): void {
-    this.emitEvent<IControlSelfStateChangeEvent<RawValue, Data>>(
-      getSimpleStateChangeEventArgs({
-        runningAsyncValidation: (old: ReadonlySet<ControlId>) => {
-          const newValue = new Set(old);
-          newValue.delete(source);
-          return newValue;
-        },
-      }),
-      options
-    );
-  }
-
-  setData(data: Data | ((data: Data) => Data), options?: IControlEventOptions) {
-    this.emitEvent<IControlSelfStateChangeEvent<RawValue, Data>>(
-      getSimpleStateChangeEventArgs({
-        data:
-          typeof data === 'function'
-            ? (data as (data: Data) => Data)
-            : () => data as Data,
-      }),
-      options
-    );
-  }
-
-  [AbstractControl.INTERFACE]() {
-    return this;
-  }
-
-  focus(focus = true, options?: Omit<IControlEventOptions, 'noEmit'>) {
-    this.emitEvent<IControlFocusEvent>({ type: 'Focus', focus }, options);
-  }
-
-  replayState(
-    options: Omit<IControlEventOptions, 'idOfOriginatingEvent'> = {}
-  ): Observable<IControlSelfStateChangeEvent<RawValue, Data>> {
-    const {
-      _disabled,
-      _touched,
-      _dirty,
-      _readonly,
-      _submitted,
-      _validatorStore,
-      _errorsStore,
-      _pendingStore,
-      data,
-    } = this;
-
-    const changes: Array<{
-      change: IControlStateChange<RawValue, Data>;
-      changedProps: string[];
-    }> = [
-      {
-        change: { disabled: () => _disabled },
-        changedProps: ['disabled', 'enabled'],
-      },
-      { change: { touched: () => _touched }, changedProps: ['touched'] },
-      { change: { dirty: () => _dirty }, changedProps: ['dirty'] },
-      { change: { readonly: () => _readonly }, changedProps: ['readonly'] },
-      { change: { submitted: () => _submitted }, changedProps: ['submitted'] },
-      { change: { data: () => data }, changedProps: ['data'] },
-      {
-        change: { validatorStore: () => _validatorStore },
-        changedProps: ['validatorStore'],
-      },
-      {
-        change: { pendingStore: () => _pendingStore },
-        changedProps: ['pendingStore'],
-      },
-      // important for errorsStore to come at the end because otherwise
-      // the value/validatorStore state change would overwrite the errors
-      {
-        change: { errorsStore: () => _errorsStore },
-        changedProps: ['errorsStore'],
-      },
-    ];
-
-    return from(
-      changes.map<IControlSelfStateChangeEvent<RawValue, Data>>((change) =>
-        buildReplayStateEvent({
-          change,
-          id: this.id,
-          options,
-        })
-      )
-    );
-  }
-
-  clone(): this {
-    const control = new (this.constructor as any)();
-    this.replayState()
-      .pipe(
-        map((e) => {
-          const changeProp = getControlSelfStateChangeProp(e.change);
-
-          if (!changeProp.endsWith('Store')) return e;
-
-          // "Store" properies (e.g. "controlsStore", "pendingStore", etc)
-          // have ControlId keys that may be associated with the original
-          // (pre-cloning) control's ID. These keys need to be migrated
-          // to the new (cloned) control's ID.
-          const changeFn = e.change[changeProp]!;
-          // replayState changeFns don't have arguments
-          const change = changeFn(null);
-          let newChange: Map<ControlId, unknown> | Set<ControlId>;
-
-          if (change instanceof Map) {
-            newChange = new Map(
-              Array.from(change).map(([k, v]) =>
-                k === this.id ? [control.id, v] : [k, v]
-              )
-            );
-          } else if (change instanceof Set) {
-            newChange = new Set(
-              Array.from(change).map((k) => (k === this.id ? control.id : k))
-            );
-          } else {
-            throw new Error(
-              `Unexpected IControlSelfStateChangeEvent for property ending in "Store". ` +
-                `Expected all properties ending in "Store" to be either a Map or a Set ` +
-                ` and expected the key of the Map/Set to be a ControlId. ` +
-                `Examples: "controlsStore", "pendingStore", "errorsStore", etc.`
-            );
-          }
-
-          return {
-            ...e,
-            change: {
-              [changeProp]: () => newChange,
-            },
-          };
-        })
-      )
-      .subscribe(control.source);
-
-    return control;
-  }
-
-  /**
-   * A convenience method for emitting an arbitrary control event.
-   */
-  emitEvent<
-    T extends IControlEventArgs = IControlEventArgs & { [key: string]: unknown }
-  >(
-    event: Partial<
-      Pick<T, 'source' | 'idOfOriginatingEvent' | 'noEmit' | 'meta'>
-    > &
-      Omit<
-        T,
-        'eventId' | 'source' | 'idOfOriginatingEvent' | 'noEmit' | 'meta'
-      > & {
-        type: string;
-      },
-    options?: IControlEventOptions
-  ): number {
-    const normEvent = {
-      ...pluckOptions(options),
-      ...event,
-      eventId: AbstractControl.eventId(),
-    };
-
-    if (!normEvent.source) normEvent.source = this.id;
-    if (!normEvent.meta) normEvent.meta = {};
-    if (!normEvent.idOfOriginatingEvent) {
-      normEvent.idOfOriginatingEvent = normEvent.eventId;
-    }
-
-    this.source.next(normEvent as IControlEvent);
-
-    return normEvent.eventId;
-  }
-
-  protected runValidation(_options?: IControlEventOptions): string[] {
-    const changedProps: string[] = [];
-    const options = { ..._options, source: this.id };
-
-    if (this._validator) {
-      const oldErrorsStore = this._errorsStore;
-      const errors = this._validator(this);
-
-      if (errors) {
-        this._errorsStore = new Map([...this._errorsStore, [this.id, errors]]);
-      } else if (this._errorsStore.has(this.id)) {
-        const errorsStore = new Map(this._errorsStore);
-        errorsStore.delete(this.id);
-        this._errorsStore = errorsStore;
-      }
-
-      if (!isEqual(oldErrorsStore, this._errorsStore)) {
-        changedProps.push('errorsStore');
-
-        this.updateErrorsProp(changedProps);
-      }
-    }
-
-    if (this._registeredValidators.size > 0) {
-      this._runningValidation = new Set([
-        ...this._runningValidation,
-        ...this._registeredValidators,
-      ]);
-
-      this.emitEvent<IControlValidationEvent<RawValue>>(
-        {
-          type: 'ValidationStart',
-          rawValue: this.rawValue,
-        },
-        options
-      );
-    } else if (this._registeredAsyncValidators.size > 0) {
-      this._runningAsyncValidation = new Set([
-        ...this._runningAsyncValidation,
-        ...this._registeredAsyncValidators,
-      ]);
-
-      this.emitEvent<IControlValidationEvent<RawValue>>(
-        {
-          type: 'AsyncValidationStart',
-          rawValue: this.rawValue,
-        },
-        options
-      );
-    } else {
-      // This is needed so that subscribers can consistently detect when
-      // synchronous validation is complete
-      this.emitEvent<IControlValidationEvent<RawValue>>(
-        {
-          type: 'AsyncValidationStart',
-          rawValue: this.rawValue,
-        },
-        options
-      );
-
-      this.emitEvent<IControlValidationEvent<RawValue>>(
-        {
-          type: 'ValidationComplete',
-          rawValue: this.rawValue,
-        },
-        options
+    if (!options?.[AbstractControl.NO_EVENT]) {
+      this._emitEvent<IControlStateChangeEvent>(
+        getSimpleStateChangeEventArgs(this, changedProps),
+        this._normalizeOptions('setParent', options)
       );
     }
 
     return changedProps;
   }
 
-  protected processEvent(
-    event: IControlEvent
-  ): IControlEvent | null | undefined {
-    switch (event.type) {
-      case 'StateChange': {
-        return this.processEvent_StateChange(
-          event as IControlSelfStateChangeEvent<RawValue, Data>
-        );
-      }
-      case 'ValidationStart':
-      case 'AsyncValidationStart':
-      case 'ValidationComplete':
-      case 'Focus': {
-        if (event.source !== this.id) return null;
-        return event;
-      }
-      default: {
-        return;
-      }
-    }
-  }
+  setValue(
+    rawValue: RawValue,
+    options?: IControlEventOptions
+  ): Array<keyof this & string> {
+    if (isEqual(this._rawValue, rawValue)) return [];
 
-  protected processEvent_StateChange(
-    event: IControlSelfStateChangeEvent<RawValue, Data>
-  ): IControlEvent | null {
-    const keys = Object.keys(event.change);
+    const normOptions = this._normalizeOptions('setValue', options);
 
-    if (keys.length !== 1) {
-      throw new Error(
-        `You can only provide a single change per state change event`
+    this._rawValue = rawValue;
+    const changedProps: Array<keyof this & string> = [
+      'rawValue',
+      'value',
+      ...this._validate(normOptions),
+    ];
+
+    if (!options?.[AbstractControl.NO_EVENT]) {
+      this._emitEvent<IControlStateChangeEvent>(
+        getSimpleStateChangeEventArgs(this, changedProps),
+        normOptions
       );
     }
 
-    return this.processStateChange(keys[0], event);
+    return changedProps;
   }
 
-  protected processStateChange(
-    changeType: string,
-    event: IControlSelfStateChangeEvent<RawValue, Data>
-  ): IControlEvent | null {
-    switch (changeType) {
-      case 'rawValue': {
-        return this.processStateChange_RawValue(event);
+  setErrors(
+    value: ValidationErrors | null | ReadonlyMap<ControlId, ValidationErrors>,
+    options?: IControlEventOptions
+  ): Array<keyof this & string> {
+    const source = options?.source || CONTROL_SELF_ID;
+
+    let newValue: Map<ControlId, ValidationErrors>;
+
+    if (value instanceof Map) {
+      newValue = value;
+    } else if (value === null || Object.keys(value).length === 0) {
+      newValue = new Map(this._errorsStore);
+      newValue.delete(source);
+    } else {
+      newValue = new Map(this._errorsStore).set(source, value);
+    }
+
+    if (isEqual(this._errorsStore, newValue)) return [];
+
+    this._errorsStore = newValue;
+
+    const changedProps: Array<keyof this & string> = [
+      'errorsStore',
+      ...this._calculateErrors(),
+    ];
+
+    if (!options?.[AbstractControl.NO_EVENT]) {
+      this._emitEvent<IControlStateChangeEvent>(
+        getSimpleStateChangeEventArgs(this, changedProps),
+        this._normalizeOptions('setErrors', options)
+      );
+    }
+
+    return changedProps;
+  }
+
+  patchErrors(
+    value: ValidationErrors | ReadonlyMap<ControlId, ValidationErrors>,
+    options?: IControlEventOptions
+  ): Array<keyof this & string> {
+    const source = options?.source || CONTROL_SELF_ID;
+
+    let newValue: Map<ControlId, ValidationErrors>;
+
+    if (value instanceof Map) {
+      if (value.size === 0) return [];
+
+      newValue = new Map<ControlId, ValidationErrors>([
+        ...this._errorsStore,
+        ...value,
+      ]);
+    } else {
+      if (Object.keys(value).length === 0) return [];
+
+      let newErrors: ValidationErrors = value;
+
+      let existingValue = this._errorsStore.get(source);
+
+      if (existingValue) {
+        existingValue = { ...existingValue };
+
+        for (const [key, err] of Object.entries(newErrors)) {
+          if (err === null) {
+            delete existingValue![key];
+          } else {
+            existingValue![key] = err;
+          }
+        }
+
+        newErrors = existingValue;
+      } else {
+        const entries = Object.entries(newErrors).filter(([, v]) => v !== null);
+
+        if (entries.length === 0) return [];
+
+        newErrors = Object.fromEntries(entries);
       }
-      case 'disabled': {
-        return this.processStateChange_Disabled(event);
-      }
-      case 'touched': {
-        return this.processStateChange_Touched(event);
-      }
-      case 'dirty': {
-        return this.processStateChange_Dirty(event);
-      }
-      case 'readonly': {
-        return this.processStateChange_Readonly(event);
-      }
-      case 'submitted': {
-        return this.processStateChange_Submitted(event);
-      }
-      case 'errorsStore': {
-        return this.processStateChange_ErrorsStore(event);
-      }
-      case 'validatorStore': {
-        return this.processStateChange_ValidatorStore(event);
-      }
-      case 'registeredValidators': {
-        return this.processStateChange_RegisteredValidators(event);
-      }
-      case 'registeredAsyncValidators': {
-        return this.processStateChange_RegisteredAsyncValidators(event);
-      }
-      case 'runningValidation': {
-        return this.processStateChange_RunningValidation(event);
-      }
-      case 'runningAsyncValidation': {
-        return this.processStateChange_RunningAsyncValidation(event);
-      }
-      case 'pendingStore': {
-        return this.processStateChange_PendingStore(event);
-      }
-      case 'parent': {
-        return this.processStateChange_Parent(event);
-      }
-      case 'data': {
-        return this.processStateChange_Data(event);
-      }
-      default: {
-        return null;
+
+      newValue = new Map(this._errorsStore);
+
+      if (Object.keys(newErrors).length === 0) {
+        newValue.delete(source);
+      } else {
+        newValue.set(source, newErrors);
       }
     }
+
+    if (isEqual(this._errorsStore, newValue)) return [];
+
+    this._errorsStore = newValue;
+
+    const changedProps: Array<keyof this & string> = [
+      'errorsStore',
+      ...this._calculateErrors(),
+    ];
+
+    if (!options?.[AbstractControl.NO_EVENT]) {
+      this._emitEvent<IControlStateChangeEvent>(
+        getSimpleStateChangeEventArgs(this, changedProps),
+        this._normalizeOptions('patchErrors', options)
+      );
+    }
+
+    return changedProps;
   }
 
-  protected processStateChange_RawValue(
-    event: IControlSelfStateChangeEvent<RawValue, Data>
-  ): IControlStateChangeEvent | null {
-    const change = event.change.rawValue as NonNullable<
-      IControlStateChange<RawValue, Data>['rawValue']
-    >;
+  markTouched(
+    value: boolean,
+    options?: IControlEventOptions
+  ): Array<keyof this & string> {
+    if (isEqual(this._selfTouched, value)) return [];
 
-    const newValue = change(this._rawValue);
+    const oldTouched = this.touched;
+    const changedProps: Array<keyof this & string> = ['selfTouched'];
 
-    if (isEqual(this._rawValue, newValue)) return null;
+    this._selfTouched = value;
 
-    this._rawValue = newValue;
+    if (!isEqual(oldTouched, this.touched)) {
+      changedProps.push('touched');
+    }
 
-    const newEvent: IControlSelfStateChangeEvent<RawValue, Data> = {
-      ...event,
-      change: { rawValue: change },
-      changedProps: ['value', 'rawValue', ...this.runValidation(event)],
-    };
+    if (!options?.[AbstractControl.NO_EVENT]) {
+      this._emitEvent<IControlStateChangeEvent>(
+        getSimpleStateChangeEventArgs(this, changedProps),
+        this._normalizeOptions('markTouched', options)
+      );
+    }
 
-    return newEvent;
+    return changedProps;
   }
 
-  protected processStateChange_Disabled(
-    event: IControlSelfStateChangeEvent<RawValue, Data>
-  ): IControlStateChangeEvent | null {
-    const change = event.change.disabled as NonNullable<
-      IControlStateChange<RawValue, Data>['disabled']
-    >;
+  markDirty(
+    value: boolean,
+    options?: IControlEventOptions
+  ): Array<keyof this & string> {
+    if (isEqual(this._selfDirty, value)) return [];
 
-    const newDisabled = change(this._disabled);
+    const oldDirty = this.dirty;
+    const changedProps: Array<keyof this & string> = ['selfDirty'];
 
-    if (isEqual(this._disabled, newDisabled)) return null;
+    this._selfDirty = value;
 
-    this._disabled = newDisabled;
-    this._status = this.getControlStatus();
+    if (!isEqual(oldDirty, this.dirty)) {
+      changedProps.push('dirty');
+    }
 
-    const newEvent: IControlSelfStateChangeEvent<RawValue, Data> = {
-      ...event,
-      change: { disabled: change },
-      changedProps: ['disabled', 'enabled', 'status'],
-    };
+    if (!options?.[AbstractControl.NO_EVENT]) {
+      this._emitEvent<IControlStateChangeEvent>(
+        getSimpleStateChangeEventArgs(this, changedProps),
+        this._normalizeOptions('markDirty', options)
+      );
+    }
 
-    return newEvent;
+    return changedProps;
   }
 
-  protected processStateChange_Touched(
-    event: IControlSelfStateChangeEvent<RawValue, Data>
-  ): IControlStateChangeEvent | null {
-    const change = event.change.touched as NonNullable<
-      IControlStateChange<RawValue, Data>['touched']
-    >;
+  markReadonly(
+    value: boolean,
+    options?: IControlEventOptions
+  ): Array<keyof this & string> {
+    if (isEqual(this._selfReadonly, value)) return [];
 
-    const newTouched = change(this._touched);
+    const oldReadonly = this.readonly;
+    const changedProps: Array<keyof this & string> = ['selfReadonly'];
 
-    if (isEqual(this._touched, newTouched)) return null;
+    this._selfReadonly = value;
 
-    this._touched = newTouched;
+    if (!isEqual(oldReadonly, this.readonly)) {
+      changedProps.push('readonly');
+    }
 
-    const newEvent: IControlSelfStateChangeEvent<RawValue, Data> = {
-      ...event,
-      change: { touched: change },
-      changedProps: ['touched'],
-    };
+    if (!options?.[AbstractControl.NO_EVENT]) {
+      this._emitEvent<IControlStateChangeEvent>(
+        getSimpleStateChangeEventArgs(this, changedProps),
+        this._normalizeOptions('markReadonly', options)
+      );
+    }
 
-    return newEvent;
+    return changedProps;
   }
 
-  protected processStateChange_Dirty(
-    event: IControlSelfStateChangeEvent<RawValue, Data>
-  ): IControlStateChangeEvent | null {
-    const change = event.change.dirty as NonNullable<
-      IControlStateChange<RawValue, Data>['dirty']
-    >;
+  markDisabled(
+    value: boolean,
+    options?: IControlEventOptions
+  ): Array<keyof this & string> {
+    if (isEqual(this._selfDisabled, value)) return [];
 
-    const newDirty = change(this._dirty);
+    const oldDisabled = this.disabled;
+    const oldStatus = this.status;
+    const changedProps: Array<keyof this & string> = [
+      'selfDisabled',
+      'selfEnabled',
+    ];
 
-    if (isEqual(this._dirty, newDirty)) return null;
+    this._selfDisabled = value;
 
-    this._dirty = newDirty;
+    if (!isEqual(oldDisabled, this.disabled)) {
+      changedProps.push('disabled', 'enabled');
+    }
 
-    const newEvent: IControlSelfStateChangeEvent<RawValue, Data> = {
-      ...event,
-      change: { dirty: change },
-      changedProps: ['dirty'],
-    };
+    this._status = this._getControlStatus();
 
-    return newEvent;
+    if (!isEqual(oldStatus, this.status)) {
+      changedProps.push('status');
+    }
+
+    if (!options?.[AbstractControl.NO_EVENT]) {
+      this._emitEvent<IControlStateChangeEvent>(
+        getSimpleStateChangeEventArgs(this, changedProps),
+        this._normalizeOptions('markDisabled', options)
+      );
+    }
+
+    return changedProps;
   }
 
-  protected processStateChange_Readonly(
-    event: IControlSelfStateChangeEvent<RawValue, Data>
-  ): IControlStateChangeEvent | null {
-    const change = event.change.readonly as NonNullable<
-      IControlStateChange<RawValue, Data>['readonly']
-    >;
+  markSubmitted(
+    value: boolean,
+    options?: IControlEventOptions
+  ): Array<keyof this & string> {
+    if (isEqual(this._selfSubmitted, value)) return [];
 
-    const newReadonly = change(this._readonly);
+    const oldSubmitted = this.submitted;
+    const changedProps: Array<keyof this & string> = ['selfSubmitted'];
 
-    if (isEqual(this._readonly, newReadonly)) return null;
+    this._selfSubmitted = value;
 
-    this._readonly = newReadonly;
+    if (!isEqual(oldSubmitted, this.submitted)) {
+      changedProps.push('submitted');
+    }
 
-    const newEvent: IControlSelfStateChangeEvent<RawValue, Data> = {
-      ...event,
-      change: { readonly: change },
-      changedProps: ['readonly'],
-    };
+    if (!options?.[AbstractControl.NO_EVENT]) {
+      this._emitEvent<IControlStateChangeEvent>(
+        getSimpleStateChangeEventArgs(this, changedProps),
+        this._normalizeOptions('markSubmitted', options)
+      );
+    }
 
-    return newEvent;
+    return changedProps;
   }
 
-  protected processStateChange_Submitted(
-    event: IControlSelfStateChangeEvent<RawValue, Data>
-  ): IControlStateChangeEvent | null {
-    const change = event.change.submitted as NonNullable<
-      IControlStateChange<RawValue, Data>['submitted']
-    >;
+  markPending(
+    value: boolean | ReadonlySet<ControlId>,
+    options?: IControlEventOptions
+  ): Array<keyof this & string> {
+    const source = options?.source || CONTROL_SELF_ID;
 
-    const newSubmitted = change(this._submitted);
+    let newValue: Set<ControlId>;
 
-    if (isEqual(this._submitted, newSubmitted)) return null;
+    if (value instanceof Set) {
+      newValue = value;
+    } else if (value) {
+      newValue = new Set(this._pendingStore).add(source);
+    } else {
+      newValue = new Set(this._pendingStore);
+      newValue.delete(source);
+    }
 
-    this._submitted = newSubmitted;
+    if (isEqual(this._pendingStore, newValue)) return [];
 
-    const newEvent: IControlSelfStateChangeEvent<RawValue, Data> = {
-      ...event,
-      change: { submitted: change },
-      changedProps: ['submitted'],
-    };
+    const oldPending = this.pending;
+    const oldSelfPending = this._selfPending;
+    const oldStatus = this._status;
+    const changedProps: Array<keyof this & string> = ['pendingStore'];
 
-    return newEvent;
+    this._pendingStore = newValue;
+    this._selfPending = newValue.size > 0;
+    this._status = this._getControlStatus();
+
+    if (!isEqual(oldSelfPending, this._selfPending)) {
+      changedProps.push('selfPending');
+    }
+
+    if (!isEqual(oldPending, this.pending)) {
+      changedProps.push('pending');
+    }
+
+    if (!isEqual(oldStatus, this._status)) {
+      changedProps.push('status');
+    }
+
+    if (!options?.[AbstractControl.NO_EVENT]) {
+      this._emitEvent<IControlStateChangeEvent>(
+        getSimpleStateChangeEventArgs(this, changedProps),
+        this._normalizeOptions('markPending', options)
+      );
+    }
+
+    return changedProps;
   }
 
-  protected processStateChange_ErrorsStore(
-    event: IControlSelfStateChangeEvent<RawValue, Data>
-  ): IControlStateChangeEvent | null {
-    const change = event.change.errorsStore as NonNullable<
-      IControlStateChange<RawValue, Data>['errorsStore']
-    >;
+  setValidators(
+    value:
+      | ValidatorFn<RawValue, Value>
+      | ValidatorFn<RawValue, Value>[]
+      | ReadonlyMap<ControlId, ValidatorFn<RawValue, Value>>
+      | null,
+    options?: IControlEventOptions
+  ): Array<keyof this & string> {
+    const source = options?.source || CONTROL_SELF_ID;
 
-    const newErrorsStore = change(this._errorsStore);
+    let newValue: Map<ControlId, ValidatorFn<RawValue, Value>>;
 
-    if (isEqual(this._errorsStore, newErrorsStore)) return null;
+    if (value instanceof Map) {
+      newValue = value;
+    } else {
+      newValue = new Map(this._validatorStore);
 
-    this._errorsStore = newErrorsStore;
+      const newValidator = composeValidators(
+        value as Exclude<typeof value, ReadonlyMap<any, any>>
+      );
 
-    const changedProps = ['errorsStore'];
+      if (newValidator) {
+        newValue.set(source, newValidator);
+      } else {
+        newValue.delete(source);
+      }
+    }
 
-    this.updateErrorsProp(changedProps);
+    if (isEqual(this._validatorStore, newValue)) return [];
 
-    const newEvent: IControlSelfStateChangeEvent<RawValue, Data> = {
-      ...event,
-      change: { errorsStore: change },
-      changedProps,
-    };
-
-    return newEvent;
-  }
-
-  protected processStateChange_ValidatorStore(
-    event: IControlSelfStateChangeEvent<RawValue, Data>
-  ): IControlStateChangeEvent | null {
-    const change = event.change.validatorStore as NonNullable<
-      IControlStateChange<RawValue, Data>['validatorStore']
-    >;
-
-    const newValidatorStore = change(this._validatorStore);
-
-    if (isEqual(this._validatorStore, newValidatorStore)) return null;
-
-    this._validatorStore = newValidatorStore;
-
+    this._validatorStore = newValue;
     const oldErrorsStore = this._errorsStore;
-    const changedProps = ['validatorStore', 'validator', 'errorsStore'];
+    const changedProps: Array<keyof this & string> = [
+      'validatorStore',
+      'validator',
+    ];
 
     if (this._validatorStore.size === 0) {
       this._validator = null;
 
-      if (this._errorsStore.has(this.id)) {
+      if (this._errorsStore.has(CONTROL_SELF_ID)) {
         const errorsStore = new Map(this._errorsStore);
-        errorsStore.delete(this.id);
+        errorsStore.delete(CONTROL_SELF_ID);
         this._errorsStore = errorsStore;
       }
     } else {
@@ -1560,238 +1030,325 @@ export abstract class AbstractControlBase<RawValue, Data, Value>
       const errorsStore = new Map(this._errorsStore);
 
       if (errors) {
-        errorsStore.set(this.id, errors);
+        errorsStore.set(CONTROL_SELF_ID, errors);
       } else {
-        errorsStore.delete(this.id);
+        errorsStore.delete(CONTROL_SELF_ID);
       }
 
       this._errorsStore = errorsStore;
     }
 
-    if (this._errorsStore !== oldErrorsStore) {
-      this.updateErrorsProp(changedProps);
+    if (!isEqual(this._errorsStore, oldErrorsStore)) {
+      changedProps.push('errorsStore');
+      changedProps.push(...this._calculateErrors());
     }
 
-    const newEvent: IControlSelfStateChangeEvent<RawValue, Data> = {
-      ...event,
-      change: { validatorStore: change },
-      changedProps,
+    if (!options?.[AbstractControl.NO_EVENT]) {
+      this._emitEvent<IControlStateChangeEvent>(
+        getSimpleStateChangeEventArgs(this, changedProps),
+        this._normalizeOptions('setValidators', options)
+      );
+    }
+
+    return changedProps;
+  }
+
+  setData(
+    data: Data,
+    options?: IControlEventOptions
+  ): Array<keyof this & string> {
+    if (Object.is(this.data, data)) return [];
+
+    this.data = data;
+
+    const changedProps: Array<keyof this & string> = ['data'];
+
+    if (!options?.[AbstractControl.NO_EVENT]) {
+      this._emitEvent<IControlStateChangeEvent>(
+        getSimpleStateChangeEventArgs(this, changedProps),
+        this._normalizeOptions('setData', options)
+      );
+    }
+
+    return changedProps;
+  }
+
+  [AbstractControl.INTERFACE]() {
+    return this;
+  }
+
+  focus(focus = true, options?: Omit<IControlEventOptions, 'noObserve'>) {
+    this._emitEvent<IControlFocusEvent>(
+      { type: 'Focus', focus },
+      this._normalizeOptions('focus', options)
+    );
+  }
+
+  replayState(
+    options?: IControlEventOptions
+  ): Observable<IControlStateChangeEvent> {
+    const event: IControlStateChangeEvent = {
+      type: 'StateChange',
+      source: this.id,
+      meta: {},
+      ...this._normalizeOptions('replayState', options),
+      // the order of these changes matters
+      changes: new Map<string, unknown>(
+        AbstractControl.PUBLIC_PROPERTIES.map((p) => [p, this[p]])
+      ),
     };
 
-    return newEvent;
+    return of(event);
   }
 
-  protected processStateChange_RegisteredValidators(
-    event: IControlSelfStateChangeEvent<RawValue, Data>
-  ): IControlStateChangeEvent | null {
-    const change = event.change.registeredValidators as NonNullable<
-      IControlStateChange<RawValue, Data>['registeredValidators']
-    >;
+  clone(): this {
+    const control: this = new (this.constructor as any)();
 
-    const newRegisteredValidators = change(this._registeredValidators);
+    this.replayState().subscribe((e) => control.processEvent(e));
 
-    if (isEqual(this._registeredValidators, newRegisteredValidators)) {
-      return null;
-    }
-
-    this._registeredValidators = newRegisteredValidators;
-    return null;
+    return control;
   }
 
-  protected processStateChange_RegisteredAsyncValidators(
-    event: IControlSelfStateChangeEvent<RawValue, Data>
-  ): IControlStateChangeEvent | null {
-    const change = event.change.registeredAsyncValidators as NonNullable<
-      IControlStateChange<RawValue, Data>['registeredAsyncValidators']
-    >;
+  processEvent<T extends IControlEvent>(
+    event: T,
+    options?: IControlEventOptions
+  ): IProcessedEvent<T> {
+    // const source = options?.source || event.source;
+    const _options = this._normalizeOptions(event.trigger.label, {
+      ...event,
+      ...options,
+    });
 
-    const newRegisteredAsyncValidators = change(
-      this._registeredAsyncValidators
-    );
+    let processedEvent: IProcessedEvent;
 
-    if (
-      isEqual(this._registeredAsyncValidators, newRegisteredAsyncValidators)
-    ) {
-      return null;
-    }
+    switch (event.type) {
+      case 'StateChange': {
+        processedEvent = this._processEvent_StateChange(
+          (event as unknown) as IControlStateChangeEvent,
+          _options
+        );
+        break;
+      }
+      // case 'ValidationStart':
+      // case 'AsyncValidationStart':
+      // case 'Focus': {
+      //   processedEvent =
+      //     source !== this.id
+      //       ? { status: 'PROCESSED' }
+      //       : {
+      //           status: 'PROCESSED',
+      //           result: { ...event, ...pluckOptions(options) },
+      //         };
 
-    this._registeredAsyncValidators = newRegisteredAsyncValidators;
-    return null;
-  }
-
-  protected processStateChange_RunningValidation(
-    event: IControlSelfStateChangeEvent<RawValue, Data>
-  ): IControlStateChangeEvent | null {
-    const change = event.change.runningValidation as NonNullable<
-      IControlStateChange<RawValue, Data>['runningValidation']
-    >;
-
-    const newRunningValidation = change(this._runningValidation);
-
-    if (isEqual(this._runningValidation, newRunningValidation)) return null;
-
-    const prevSize = this._runningValidation.size;
-
-    this._runningValidation = newRunningValidation;
-
-    const size = this._runningValidation.size;
-
-    if (prevSize === 0 && size === 0) return null;
-    else if (prevSize > 0 && size === 0) {
-      if (this._registeredAsyncValidators.size > 0) {
-        this._runningAsyncValidation = new Set(this._registeredAsyncValidators);
-        this.emitEvent({
-          type: 'AsyncValidationStart',
-          value: this.rawValue,
-          idOfOriginatingEvent: event.idOfOriginatingEvent,
-        });
-      } else {
-        // This is needed so that subscribers can always tell
-        // when synchronous validation is complete
-        this.emitEvent({
-          type: 'AsyncValidationStart',
-          value: this.rawValue,
-          idOfOriginatingEvent: event.idOfOriginatingEvent,
-        });
-
-        this.emitEvent({
-          type: 'ValidationComplete',
-          value: this.rawValue,
-          idOfOriginatingEvent: event.idOfOriginatingEvent,
-        });
+      //   break;
+      // }
+      default: {
+        processedEvent = { status: 'UNKNOWN' };
+        break;
       }
     }
 
-    return null;
+    if (processedEvent.result && !_options[AbstractControl.NO_EVENT]) {
+      this._emitEvent(processedEvent.result, _options);
+    }
+
+    return processedEvent as IProcessedEvent<T>;
   }
 
-  protected processStateChange_RunningAsyncValidation(
-    event: IControlSelfStateChangeEvent<RawValue, Data>
-  ): IControlStateChangeEvent | null {
-    const change = event.change.runningAsyncValidation as NonNullable<
-      IControlStateChange<RawValue, Data>['runningAsyncValidation']
-    >;
+  /** **INTERNAL USE ONLY** */
+  _validate(options: INormControlEventOptions): Array<keyof this & string> {
+    const changedProps: Array<keyof this & string> = [];
 
-    const newRunningAsyncValidation = change(this._runningAsyncValidation);
+    if (this._validator) {
+      const oldErrorsStore = this._errorsStore;
+      const errors = this._validator(this);
 
-    if (isEqual(this._runningAsyncValidation, newRunningAsyncValidation)) {
-      return null;
+      if (errors) {
+        this._errorsStore = new Map([
+          ...this._errorsStore,
+          [CONTROL_SELF_ID, errors],
+        ]);
+      } else if (this._errorsStore.has(CONTROL_SELF_ID)) {
+        const errorsStore = new Map(this._errorsStore);
+        errorsStore.delete(CONTROL_SELF_ID);
+        this._errorsStore = errorsStore;
+      }
+
+      if (!isEqual(oldErrorsStore, this._errorsStore)) {
+        changedProps.push('errorsStore');
+        changedProps.push(...this._calculateErrors());
+      }
     }
 
-    const prevSize = this._runningAsyncValidation.size;
+    if (!options[AbstractControl?.NO_EVENT]) {
+      this._emitEvent<IControlValidationEvent<RawValue, Value>>(
+        {
+          type: 'ValidationStart',
+          rawValue: this.rawValue,
+          value: this.value,
+        },
+        options
+      );
 
-    this._runningAsyncValidation = newRunningAsyncValidation;
-
-    const size = this._runningAsyncValidation.size;
-
-    if (prevSize === 0 && size === 0) return null;
-    else if (prevSize > 0 && size === 0) {
-      this.emitEvent({
-        type: 'ValidationComplete',
-        value: this.rawValue,
-        idOfOriginatingEvent: event.idOfOriginatingEvent,
-      });
+      this._emitEvent<IControlValidationEvent<RawValue, Value>>(
+        {
+          type: 'AsyncValidationStart',
+          rawValue: this.rawValue,
+          value: this.value,
+        },
+        options
+      );
     }
 
-    return null;
+    return changedProps;
   }
 
-  protected processStateChange_PendingStore(
-    event: IControlSelfStateChangeEvent<RawValue, Data>
-  ): IControlStateChangeEvent | null {
-    const change = event.change.pendingStore as NonNullable<
-      IControlStateChange<RawValue, Data>['pendingStore']
-    >;
-
-    const newPendingStore = change(this._pendingStore);
-
-    if (isEqual(this._pendingStore, newPendingStore)) return null;
-
-    const newPending = newPendingStore.size > 0;
-
-    const changedProps = ['pendingStore'];
-
-    if (newPending !== this._pending) {
-      changedProps.push('pending');
+  /**
+   * A convenience method for emitting an arbitrary control event.
+   */
+  protected _emitEvent<T extends IControlEvent>(
+    event: Partial<Pick<T, 'source' | 'noObserve' | 'meta' | 'trigger'>> &
+      Omit<T, 'source' | 'noObserve' | 'meta' | 'trigger'> & {
+        type: string;
+      },
+    options: INormControlEventOptions
+  ) {
+    if (options[AbstractControl.NO_EVENT]) {
+      throw new Error('tried to emit NO_EVENT');
     }
 
-    this._pendingStore = newPendingStore;
-    this._pending = newPending;
-
-    const newStatus = this.getControlStatus();
-
-    if (newStatus !== this._status) {
-      changedProps.push('status');
-      this._status = newStatus;
-    }
-
-    const newEvent: IControlSelfStateChangeEvent<RawValue, Data> = {
+    const normEvent: IControlEvent = {
+      source: this.id,
+      meta: {},
       ...event,
-      change: { pendingStore: change },
-      changedProps,
+      ...options,
+      // controlId: this.id,
     };
 
-    return newEvent;
-  }
-
-  protected processStateChange_Parent(
-    event: IControlSelfStateChangeEvent<RawValue, Data>
-  ): IControlStateChangeEvent | null {
-    // ignore the parent state changes of linked controls
-    if (event.source !== this.id) return null;
-
-    const change = event.change.parent as NonNullable<
-      IControlStateChange<RawValue, Data>['parent']
-    >;
-
-    const newParent = change(this._parent);
-
-    if (isEqual(this._parent, newParent)) return null;
-
-    this._parent = newParent;
-
-    const newEvent: IControlSelfStateChangeEvent<RawValue, Data> = {
-      ...event,
-      change: { parent: change },
-      changedProps: ['parent'],
-    };
-
-    return newEvent;
-  }
-
-  protected processStateChange_Data(
-    event: IControlSelfStateChangeEvent<RawValue, Data>
-  ): IControlStateChangeEvent | null {
-    const change = event.change.data as NonNullable<
-      IControlStateChange<RawValue, Data>['data']
-    >;
-
-    const newData = change(this.data);
-
-    if (Number.isNaN(newData)) {
-      throw new Error('Cannot use "setData" with a NaN value');
+    if (AbstractControl.debugCallback) {
+      AbstractControl.debugCallback.call(this, normEvent);
     }
 
-    if (this.data === newData) return null;
-
-    this.data = newData;
-
-    const newEvent: IControlSelfStateChangeEvent<RawValue, Data> = {
-      ...event,
-      change: { data: change },
-      changedProps: ['data'],
-    };
-
-    return newEvent;
+    this._source.next(normEvent);
   }
 
-  protected updateErrorsProp(changedProps: string[]) {
+  protected _normalizeOptions(
+    triggerLabel: string,
+    o?: IControlEventOptions
+    // other?: { include?: string[] }
+  ): INormControlEventOptions {
+    const options: INormControlEventOptions = {
+      trigger: o?.trigger ?? {
+        label: triggerLabel,
+        // controlId: this.id,
+        source: o?.source ?? this.id,
+      },
+    };
+
+    if (!o) return options;
+    if (o.source) options.source = o.source;
+    if (o.meta) options.meta = o.meta;
+    if (o.noObserve) options.noObserve = o.noObserve;
+    if (o[AbstractControl.NO_EVENT]) {
+      options[AbstractControl.NO_EVENT] = o[AbstractControl.NO_EVENT];
+    }
+
+    // if (other?.include) {
+    //   other.include.forEach((prop) => {
+    //     if (!(prop in o)) return;
+
+    //     (options as any)[prop] = (o as any)[prop];
+    //   });
+    // }
+
+    return options;
+  }
+
+  protected _processEvent_StateChange(
+    event: IControlStateChangeEvent,
+    options?: IControlEventOptions
+  ): IProcessedEvent {
+    const _options: IControlEventOptions = {
+      ...event,
+      ...options,
+      [AbstractControl.NO_EVENT]: true,
+    };
+
+    const changes: Array<keyof this & string> = Array.from(
+      event.changes
+    ).flatMap(
+      ([prop, value]: [string, any]): Array<keyof this & string> => {
+        return this._processIndividualStateChange(_options, prop, value);
+      }
+    );
+
+    if (changes.length === 0) return { status: 'PROCESSED' };
+
+    const processedEvent: IProcessedEvent<IControlStateChangeEvent> = {
+      status: 'PROCESSED',
+      result: {
+        ...event,
+        type: 'StateChange',
+        // TODO: this won't preserve the order of the changes which might pose a problem
+        changes: new Map(Array.from(new Set(changes)).map((p) => [p, this[p]])),
+      },
+    };
+
+    return processedEvent;
+  }
+
+  protected _processIndividualStateChange(
+    options: IControlEventOptions,
+    prop: string,
+    value: any
+  ): Array<keyof this & string> {
+    switch (prop) {
+      case 'rawValue': {
+        return this.setValue(value, options);
+      }
+      case 'selfDisabled': {
+        return this.markDisabled(value, options);
+      }
+      case 'selfTouched': {
+        return this.markTouched(value, options);
+      }
+      case 'selfDirty': {
+        return this.markDirty(value, options);
+      }
+      case 'selfReadonly': {
+        return this.markReadonly(value, options);
+      }
+      case 'selfSubmitted': {
+        return this.markSubmitted(value, options);
+      }
+      case 'errorsStore': {
+        return this.setErrors(value, options);
+      }
+      case 'validatorStore': {
+        return this.setValidators(value, options);
+      }
+      case 'pendingStore': {
+        return this.markPending(value, options);
+      }
+      case 'parent': {
+        return this._setParent(value, options);
+      }
+      case 'data': {
+        return this.setData(value, options);
+      }
+    }
+
+    return [];
+  }
+
+  protected _calculateErrors(): Array<keyof this & string> {
+    const changedProps: Array<keyof this & string> = [];
     const oldInvalid = this.invalid;
 
     if (this._errorsStore.size === 0) {
-      this._errors = null;
+      this._selfErrors = null;
     } else {
-      this._errors = Array.from(this._errorsStore).reduce<ValidationErrors>(
+      this._selfErrors = Array.from(this._errorsStore).reduce<ValidationErrors>(
         (p, [, v]) => ({
           ...p,
           ...v,
@@ -1800,65 +1357,26 @@ export abstract class AbstractControlBase<RawValue, Data, Value>
       );
     }
 
-    changedProps.push('errors');
+    changedProps.push('selfErrors', 'errors');
 
     if (oldInvalid !== this.invalid) {
-      changedProps.push('valid', 'invalid');
+      changedProps.push('valid', 'selfValid', 'invalid', 'selfInvalid');
     }
 
-    const newStatus = this.getControlStatus();
+    const newStatus = this._getControlStatus();
 
     if (newStatus !== this._status) {
       changedProps.push('status');
       this._status = newStatus;
     }
+
+    return changedProps;
   }
 
-  protected getControlStatus() {
+  protected _getControlStatus() {
     if (this.disabled) return 'DISABLED';
     if (this.pending) return 'PENDING';
     if (this.invalid) return 'INVALID';
     return 'VALID';
   }
-}
-
-// function isControlEvent(
-//   type: 'StateChange',
-//   event: IControlEvent
-// ): event is IControlStateChangeEvent<Value, Data>;
-// function isControlEvent(type: 'ValidationStart', event: IControlEvent): boolean;
-// function isControlEvent<T extends IControlEvent['type']>(
-//   type: T,
-//   event: IControlEvent
-// ) {
-//   return type === event.type;
-// }
-
-// function isStateChange<T extends 'SET' | 'MERGE', V>(
-//   type: 'value',
-//   prop: string,
-//   change: IStateChange<T, V>
-// ): change is IStateChange<T, V>;
-// function isStateChange<
-//   C extends IControlStateChanges<unknown>,
-//   T extends keyof C
-// >(type: T, prop: string, change: IStateChange): change is Required<C>[T];
-// function isStateChange<T extends keyof IControlStateChanges>(
-//   type: T,
-//   prop: string,
-//   change: IStateChange
-// ): change is Required<IControlStateChanges>[T] {
-//   return prop === type;
-// }
-
-function getControlSelfStateChangeProp(change: IControlStateChange<any, any>) {
-  const keys = Object.keys(change);
-
-  if (keys.length !== 1) {
-    throw new Error(
-      `IControlSelfStateChangeEvent must have a "change" property with exactly one key`
-    );
-  }
-
-  return keys[0] as keyof IControlStateChange<any, any> & string;
 }

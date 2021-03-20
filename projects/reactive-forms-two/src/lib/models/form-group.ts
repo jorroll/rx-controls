@@ -1,4 +1,9 @@
-import { AbstractControl } from './abstract-control/abstract-control';
+import {
+  AbstractControl,
+  ControlId,
+  IControlEventOptions,
+  IControlStateChangeEvent,
+} from './abstract-control/abstract-control';
 import {
   AbstractControlContainerBase,
   IAbstractControlContainerBaseArgs,
@@ -8,14 +13,16 @@ import {
   ContainerControls,
   ControlsValue,
   ControlsRawValue,
-  IControlContainerStateChange,
-  IControlContainerSelfStateChangeEvent,
   ControlsKey,
 } from './abstract-control-container/abstract-control-container';
-import { Mutable } from './util';
+import { getSimpleStateChangeEventArgs, Mutable } from './util';
 import { isEqual } from '../util';
 
-export type IFormGroupArgs<D> = IAbstractControlContainerBaseArgs<D>;
+export type IFormGroupArgs<
+  Data = any,
+  RawValue = unknown,
+  Value = unknown
+> = IAbstractControlContainerBaseArgs<Data, RawValue, Value>;
 
 export class FormGroup<
   Controls extends { [key: string]: AbstractControl | undefined } = {
@@ -27,7 +34,11 @@ export class FormGroup<
 
   constructor(
     controls: Controls = {} as Controls,
-    options: IFormGroupArgs<Data> = {}
+    options: IFormGroupArgs<
+      Data,
+      ControlsRawValue<Controls>,
+      ControlsValue<Controls>
+    > = {}
   ) {
     super(
       options.id || Symbol(`FormGroup-${FormGroup.id++}`),
@@ -45,25 +56,39 @@ export class FormGroup<
     }
   }
 
-  protected processStateChange_ControlsStore(
-    event: IControlContainerSelfStateChangeEvent<Controls, Data>
-  ): IControlContainerSelfStateChangeEvent<Controls, Data> | null {
-    const change = event.change.controlsStore as NonNullable<
-      IControlContainerStateChange<Controls, Data>['controlsStore']
-    >;
+  setControls(
+    value:
+      | Controls
+      | ReadonlyMap<ControlsKey<Controls>, Controls[ControlsKey<Controls>]>,
+    options?: IControlEventOptions
+  ): Array<keyof this & string> {
+    const controlsStore =
+      value instanceof Map
+        ? new Map<ControlsKey<Controls>, Controls[ControlsKey<Controls>]>(value)
+        : new Map(
+            Object.entries(value) as Array<
+              [ControlsKey<Controls>, Controls[ControlsKey<Controls>]]
+            >
+          );
 
-    const controlsStore = change(this._controlsStore) as this['controlsStore'];
+    if (isEqual(this._controlsStore, controlsStore)) return [];
 
-    if (isEqual(this._controlsStore, controlsStore)) return null;
-
+    const normOptions = this._normalizeOptions('setControls', options);
     const controls = (Object.fromEntries(controlsStore) as unknown) as Controls;
     const newRawValue = { ...this._rawValue } as Mutable<this['rawValue']>;
     const newValue = { ...this._value } as Mutable<this['value']>;
 
     // controls that need to be removed
     for (const [key, control] of this._controlsStore) {
-      if (controlsStore.get(key) === control) continue;
-      this.unregisterControl(control);
+      if (
+        controlsStore.get(key) === control ||
+        (normOptions[AbstractControl.NO_EVENT] &&
+          isEqual(controlsStore.get(key), control))
+      ) {
+        continue;
+      }
+
+      this._unregisterControl(control, normOptions);
       delete newRawValue[key];
       delete newValue[key as keyof this['value']];
     }
@@ -72,10 +97,17 @@ export class FormGroup<
     for (const [key, _control] of controlsStore) {
       const control = _control as AbstractControl;
 
-      if (this._controlsStore.get(key) === control) continue;
+      if (
+        this._controlsStore.get(key) === control ||
+        (normOptions[AbstractControl.NO_EVENT] &&
+          isEqual(this._controlsStore.get(key), control))
+      ) {
+        continue;
+      }
+
       // This is needed because the call to "registerControl" can clone
       // the provided control (returning a new one);
-      controls[key] = this.registerControl(key, _control);
+      controls[key] = this._registerControl(key, _control, normOptions);
       newRawValue[key] = control.rawValue;
 
       if (control.enabled) {
@@ -87,33 +119,45 @@ export class FormGroup<
     // This is needed because the call to "registerControl" can clone
     // the provided control (returning a new one);
     this._controlsStore = new Map(Object.entries(controls)) as any;
-    this._rawValue = newRawValue as this['rawValue'];
-    this._value = newValue as this['value'];
 
-    const changedProps = [
+    const changedProps: Array<keyof this & string> = [
+      'controls',
       'controlsStore',
-      'value',
-      'rawValue',
-      ...this.runValidation(event),
-      ...this.processMetaProps(),
     ];
 
-    this.updateChildrenErrors(changedProps);
+    if (!isEqual(newRawValue, this._rawValue)) {
+      this._rawValue = newRawValue as this['rawValue'];
+      changedProps.push('rawValue');
+    }
 
-    return {
-      ...event,
-      change: { controlsStore: change },
-      changedProps,
-    };
+    if (!isEqual(newValue, this._value)) {
+      this._value = newValue as this['value'];
+      changedProps.push('value');
+    }
+
+    changedProps.push(
+      ...this._validate(normOptions),
+      ...this._calculateChildProps(),
+      ...this._calculateChildrenErrors()
+    );
+
+    if (!normOptions[AbstractControl.NO_EVENT]) {
+      this._emitEvent<IControlStateChangeEvent>(
+        getSimpleStateChangeEventArgs(this, changedProps),
+        normOptions
+      );
+    }
+
+    return changedProps;
   }
 
-  protected shallowCloneValue<T extends this['rawValue'] | this['value']>(
+  protected _shallowCloneValue<T extends this['rawValue'] | this['value']>(
     value: T
   ) {
     return { ...value };
   }
 
-  protected coerceControlStringKey(key: string) {
+  protected _coerceControlStringKey(key: string) {
     return key as ControlsKey<Controls>;
   }
 }

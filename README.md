@@ -7,3 +7,17 @@
 ## Potential "Gotchas" in general
 
 1. ControlAccessor#control will be set to have the same parent as the linked control except the `ControlAccessor#control` will _not_ be a child of the it's parent. This is intentional and, because of this, an accessor creator cannot manually set `ControlAccessor#control#parent`.
+
+## FAQ
+
+1. Why do the type params for `ValidatorFn` default to `any` instead of `unknown`?
+   - Because typescript breaks when the default is `unknown`. For example, the `ControlsRawValue<Controls>`
+     helper type is found to not equal itself if `ValidatorFn's` type params default to `unknown`. In
+     general, this library makes use of some pretty advanced and "hacky" types that seem to breakdown
+     if the defaults aren't set up in specific ways.
+   - The `unknown` type also might cause some unexpected problems for devs that aren't familiar with it.
+     For example, you cannot assign a `ValidatorFn<unknown>` to a `FormControl<string>`.
+     This is because, from typescript's perspective, the `FormControl<string>` requires a `ValidatorFn`
+     that accept a `string`, but we don't know if `ValidatorFn<unknown>` accepts a string or not.
+     Oftentimes, developers use `unknown` thinking it is a more type safe version of `any`, but the
+     two have different semantic meanings.

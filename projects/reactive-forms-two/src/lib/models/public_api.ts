@@ -2,15 +2,11 @@ export {
   ControlId,
   ValidatorFn,
   ValidationErrors,
-  IControlEventArgs,
   IControlEvent,
   IControlEventOptions,
   IControlValidationEvent,
-  IStateChange,
-  IControlStateChange,
   IControlStateChangeEvent,
   IControlFocusEvent,
-  ControlSource,
   AbstractControl,
 } from './abstract-control/abstract-control';
 
@@ -20,10 +16,7 @@ export {
   ControlsRawValue,
   ControlsValue,
   ContainerControls,
-  IControlContainerStateChange,
-  IControlContainerSelfStateChangeEvent,
   IChildControlEvent,
-  IChildControlStateChangeEvent,
   AbstractControlContainer,
 } from './abstract-control-container/abstract-control-container';
 
@@ -33,6 +26,6 @@ export { IFormGroupArgs, FormGroup } from './form-group';
 
 export { IFormArrayArgs, FormArray } from './form-array';
 
-export { isStateChange } from './util';
+export { isStateChange, transformRawValueStateChange } from './util';
 
 export { composeValidators } from './abstract-control/abstract-control-base';

@@ -109,7 +109,7 @@ export class CompatFormControlNameDirective
     this.subscriptions.push(
       combineLatest([
         this.control.observe('disabled'),
-        isAncestorControlPropTruthy$(this.control, 'containerDisabled'),
+        isAncestorControlPropTruthy$(this.control, 'selfDisabled'),
       ]).subscribe(([a, b]) => {
         if (a || b) {
           this.ngControl.disable({ [FROM_SWCONTROL]: true });

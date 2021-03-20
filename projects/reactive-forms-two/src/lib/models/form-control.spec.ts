@@ -1,13 +1,14 @@
 import { Subject } from 'rxjs';
-import { skip, take, takeUntil, toArray } from 'rxjs/operators';
+import { filter, skip, take, takeUntil, toArray } from 'rxjs/operators';
+import { isEqual } from '../util';
 import {
   AbstractControl,
   ControlId,
-  IControlSelfStateChangeEvent,
   IControlStateChangeEvent,
   IControlValidationEvent,
   ValidatorFn,
 } from './abstract-control/abstract-control';
+import { CONTROL_SELF_ID } from './abstract-control/abstract-control-base';
 import runAbstractControlBaseTestSuite from './abstract-control/abstract-control-base-tests';
 import { FormControl } from './form-control';
 import { FormGroup } from './form-group';
@@ -83,261 +84,6 @@ describe('FormControl', () => {
         testAllDefaultsExcept(c, 'data');
       });
 
-      it('disabled', () => {
-        c = new FormControl(null, {
-          disabled: true,
-        });
-
-        expect(c.enabled).toEqual(false);
-        expect(c.disabled).toEqual(true);
-        expect(c.status).toEqual('DISABLED');
-        testAllDefaultsExcept(c, 'enabled', 'disabled', 'status');
-
-        c = new FormControl(null, {
-          disabled: false,
-        });
-
-        expect(c.enabled).toEqual(true);
-        expect(c.disabled).toEqual(false);
-        expect(c.status).toEqual('VALID');
-        testAllDefaultsExcept(c, 'enabled', 'disabled', 'status');
-      });
-
-      it('dirty', () => {
-        c = new FormControl(null, {
-          dirty: true,
-        });
-
-        expect(c.dirty).toEqual(true);
-        testAllDefaultsExcept(c, 'dirty');
-
-        c = new FormControl(null, {
-          dirty: false,
-        });
-
-        expect(c.dirty).toEqual(false);
-        testAllDefaultsExcept(c, 'dirty');
-      });
-
-      it('readonly', () => {
-        c = new FormControl(null, {
-          readonly: true,
-        });
-
-        expect(c.readonly).toEqual(true);
-        testAllDefaultsExcept(c, 'readonly');
-
-        c = new FormControl(null, {
-          readonly: false,
-        });
-
-        expect(c.readonly).toEqual(false);
-        testAllDefaultsExcept(c, 'readonly');
-      });
-
-      it('submitted', () => {
-        c = new FormControl(null, {
-          submitted: true,
-        });
-
-        expect(c.submitted).toEqual(true);
-        testAllDefaultsExcept(c, 'submitted');
-
-        c = new FormControl(null, {
-          submitted: false,
-        });
-
-        expect(c.submitted).toEqual(false);
-        testAllDefaultsExcept(c, 'submitted');
-      });
-
-      it('errors', () => {
-        c = new FormControl(null, {
-          errors: { anError: true },
-        });
-
-        expect(c.errors).toEqual({ anError: true });
-        expect(c.errorsStore).toEqual(new Map([[c.id, { anError: true }]]));
-        expect(c.valid).toEqual(false);
-        expect(c.invalid).toEqual(true);
-        expect(c.status).toEqual('INVALID');
-        testAllDefaultsExcept(
-          c,
-          'errors',
-          'errorsStore',
-          'valid',
-          'invalid',
-          'status'
-        );
-
-        const errors = new Map([['one', { secondError: true }]]);
-
-        c = new FormControl(null, { errors });
-
-        expect(c.errors).toEqual(errors.get('one'));
-        expect(c.errorsStore).toEqual(errors);
-        expect(c.valid).toEqual(false);
-        expect(c.invalid).toEqual(true);
-        expect(c.status).toEqual('INVALID');
-        testAllDefaultsExcept(
-          c,
-          'errors',
-          'errorsStore',
-          'valid',
-          'invalid',
-          'status'
-        );
-
-        c = new FormControl(null, { errors: null });
-
-        expect(c.errors).toEqual(null);
-        expect(c.errorsStore).toEqual(new Map());
-        expect(c.valid).toEqual(true);
-        expect(c.invalid).toEqual(false);
-        expect(c.status).toEqual('VALID');
-        testAllDefaultsExcept(
-          c,
-          'errors',
-          'errorsStore',
-          'valid',
-          'invalid',
-          'status'
-        );
-      });
-
-      it('validator', () => {
-        let validators:
-          | ValidatorFn
-          | ValidatorFn[]
-          | Map<ControlId, ValidatorFn> = (c) => null;
-
-        c = new FormControl(null, { validators });
-
-        expect(c.validator).toEqual(expect.any(Function));
-        expect(c.validatorStore).toEqual(new Map([[c.id, validators]]));
-        expect(c.valid).toEqual(true);
-        expect(c.invalid).toEqual(false);
-        expect(c.errors).toEqual(null);
-        expect(c.errorsStore).toEqual(new Map());
-        expect(c.status).toEqual('VALID');
-        testAllDefaultsExcept(
-          c,
-          'validator',
-          'validatorStore',
-          'valid',
-          'invalid',
-          'errors',
-          'errorsStore',
-          'status'
-        );
-
-        validators = [() => null, () => ({ error: true })];
-
-        c = new FormControl(null, { validators });
-
-        expect(c.validator).toEqual(expect.any(Function));
-        expect(c.validatorStore).toEqual(
-          new Map([[c.id, expect.any(Function)]])
-        );
-        expect(c.valid).toEqual(false);
-        expect(c.invalid).toEqual(true);
-        expect(c.errors).toEqual({ error: true });
-        expect(c.errorsStore).toEqual(new Map([[c.id, { error: true }]]));
-        expect(c.status).toEqual('INVALID');
-        testAllDefaultsExcept(
-          c,
-          'validator',
-          'validatorStore',
-          'valid',
-          'invalid',
-          'errors',
-          'errorsStore',
-          'status'
-        );
-
-        const fn1 = (() => null) as ValidatorFn;
-        const fn2 = (() => ({ error: true })) as ValidatorFn;
-
-        validators = new Map([
-          ['one', fn1],
-          ['two', fn2],
-        ]);
-
-        c = new FormControl(null, { validators });
-
-        expect(c.validator).toEqual(expect.any(Function));
-        expect(c.validatorStore).toEqual(
-          new Map([
-            ['one', fn1],
-            ['two', fn2],
-          ])
-        );
-        expect(c.valid).toEqual(false);
-        expect(c.invalid).toEqual(true);
-        expect(c.errors).toEqual({ error: true });
-        expect(c.errorsStore).toEqual(new Map([[c.id, { error: true }]]));
-        expect(c.status).toEqual('INVALID');
-        testAllDefaultsExcept(
-          c,
-          'validator',
-          'validatorStore',
-          'valid',
-          'invalid',
-          'errors',
-          'errorsStore',
-          'status'
-        );
-
-        c = new FormControl(null, { validators: null });
-
-        expect(c.validator).toEqual(null);
-        expect(c.validatorStore).toEqual(new Map());
-        expect(c.valid).toEqual(true);
-        expect(c.invalid).toEqual(false);
-        expect(c.errors).toEqual(null);
-        expect(c.errorsStore).toEqual(new Map());
-        expect(c.status).toEqual('VALID');
-        testAllDefaultsExcept(
-          c,
-          'validator',
-          'validatorStore',
-          'valid',
-          'invalid',
-          'errors',
-          'errorsStore',
-          'status'
-        );
-      });
-
-      it('pending', () => {
-        c = new FormControl(null, {
-          pending: true,
-        });
-
-        expect(c.pending).toEqual(true);
-        expect(c.pendingStore).toEqual(new Set([c.id]));
-        expect(c.status).toEqual('PENDING');
-        testAllDefaultsExcept(c, 'pending', 'pendingStore', 'status');
-
-        c = new FormControl(null, {
-          pending: new Set(['one']),
-        });
-
-        expect(c.pending).toEqual(true);
-        expect(c.pendingStore).toEqual(new Set(['one']));
-        expect(c.status).toEqual('PENDING');
-        testAllDefaultsExcept(c, 'pending', 'pendingStore', 'status');
-
-        c = new FormControl(null, {
-          pending: false,
-        });
-
-        expect(c.pending).toEqual(false);
-        expect(c.pendingStore).toEqual(new Set());
-        expect(c.status).toEqual('VALID');
-        testAllDefaultsExcept(c, 'pending', 'pendingStore', 'status');
-      });
-
       it('all options', () => {
         const c = new FormControl('one', {
           data: 'one',
@@ -364,15 +110,15 @@ describe('FormControl', () => {
           disabled: true,
           enabled: false,
           errors: { error: true },
-          errorsStore: new Map([[c.id, { error: true }]]),
+          errorsStore: new Map([[CONTROL_SELF_ID, { error: true }]]),
           id: 'controlId',
           pending: true,
-          pendingStore: new Set([c.id]),
+          pendingStore: new Set([CONTROL_SELF_ID]),
           readonly: true,
           submitted: true,
           touched: true,
           validator: expect.any(Function),
-          validatorStore: new Map([[c.id, expect.any(Function)]]),
+          validatorStore: new Map([[CONTROL_SELF_ID, expect.any(Function)]]),
         });
       });
     });
@@ -395,36 +141,13 @@ describe('FormControl', () => {
         validators: (c) => null,
       });
 
-      original.setParent(parent);
-      expect(original.pendingStore).toEqual(new Set([original.id]));
-      expect(original.errors).toEqual({ error: true });
-      expect(original.errorsStore).toEqual(
-        new Map([[original.id, { error: true }]])
-      );
-      expect(original.validatorStore).toEqual(
-        new Map([[original.id, expect.any(Function)]])
-      );
+      original._setParent(parent);
 
       const clone = original.clone();
 
       expect(clone).not.toBe(original);
-      expect(clone.pendingStore).toEqual(new Set([clone.id]));
-      expect(clone.errors).toEqual({ error: true });
-      expect(clone.errorsStore).toEqual(new Map([[clone.id, { error: true }]]));
-      expect(clone.validatorStore).toEqual(
-        new Map([[clone.id, expect.any(Function)]])
-      );
-
       expect(clone).toEqualControl(original, {
-        skip: [
-          'parent',
-          '_pendingStore',
-          'pendingStore',
-          '_errorsStore',
-          'errorsStore',
-          '_validatorStore',
-          'validatorStore',
-        ],
+        skip: ['parent'],
       });
     });
   });
@@ -449,51 +172,51 @@ describe('FormControl', () => {
       expect(c.rawValue).toEqual('newValue');
     });
 
-    it('should fire a StateChange event', () => {
-      expect.assertions(4);
-
-      const promise1 = c.events.pipe(take(1)).forEach((event) => {
-        expect(event).toEqual<IControlSelfStateChangeEvent<unknown, unknown>>({
-          type: 'StateChange',
-          subtype: 'Self',
-          eventId: expect.any(Number),
-          idOfOriginatingEvent: expect.any(Number),
-          source: c.id,
-          meta: {},
-          change: {
-            rawValue: expect.any(Function),
-          },
-          changedProps: ['value', 'rawValue'],
-        });
-      });
-
-      const promise2 = c.events.pipe(skip(1), take(1)).forEach((event) => {
-        expect(event).toEqual({
-          type: 'AsyncValidationStart',
-          eventId: expect.any(Number),
-          idOfOriginatingEvent: expect.any(Number),
-          source: c.id,
-          rawValue: 'newValue',
-          meta: {},
-        });
-      });
-
-      const promise3 = c.events.pipe(skip(2), take(1)).forEach((event) => {
-        expect(event).toEqual({
-          type: 'ValidationComplete',
-          eventId: expect.any(Number),
-          idOfOriginatingEvent: expect.any(Number),
-          source: c.id,
-          rawValue: 'newValue',
-          meta: {},
-        });
-      });
+    it('should fire a StateChange event', async () => {
+      const [promise, end] = getControlEventsUntilEnd(c);
 
       c.setValue('newValue');
 
-      expect(c.rawValue).toEqual('newValue');
+      expect(c).toImplementObject({
+        value: 'newValue',
+        rawValue: 'newValue',
+      });
 
-      return Promise.all([promise1, promise2, promise3]);
+      end.next();
+      end.complete();
+
+      const [event1, event2, event3, event4] = await promise;
+
+      expect(event1).toEqual<IControlValidationEvent<unknown, unknown>>({
+        type: 'ValidationStart',
+        source: c.id,
+        rawValue: 'newValue',
+        value: 'newValue',
+        meta: {},
+        trigger: { label: expect.any(String), source: expect.any(Symbol) },
+      });
+
+      expect(event2).toEqual<IControlValidationEvent<unknown, unknown>>({
+        type: 'AsyncValidationStart',
+        source: c.id,
+        rawValue: 'newValue',
+        value: 'newValue',
+        meta: {},
+        trigger: { label: expect.any(String), source: expect.any(Symbol) },
+      });
+
+      expect(event3).toEqual<IControlStateChangeEvent>({
+        type: 'StateChange',
+        source: c.id,
+        meta: {},
+        trigger: { label: expect.any(String), source: expect.any(Symbol) },
+        changes: new Map([
+          ['rawValue', 'newValue'],
+          ['value', 'newValue'],
+        ]),
+      });
+
+      expect(event4).toBe(undefined);
     });
 
     it('with validator', async () => {
@@ -501,15 +224,20 @@ describe('FormControl', () => {
         c.rawValue !== 'oldValue' ? null : { required: true }
       );
 
-      expect(c.value).toEqual('oldValue');
-      expect(c.rawValue).toEqual('oldValue');
-      expect(c.valid).toEqual(false);
-      expect(c.invalid).toEqual(true);
-      expect(c.status).toEqual('INVALID');
-      expect(c.errors).toEqual({ required: true });
-      expect(c.errorsStore).toEqual(new Map([[c.id, { required: true }]]));
-      expect(c.validator).toEqual(expect.any(Function));
-      expect(c.validatorStore).toEqual(new Map([[c.id, expect.any(Function)]]));
+      expect(c).toImplementObject({
+        value: 'oldValue',
+        rawValue: 'oldValue',
+        valid: false,
+        selfValid: false,
+        invalid: true,
+        selfInvalid: true,
+        status: 'INVALID',
+        errors: { required: true },
+        selfErrors: { required: true },
+        errorsStore: new Map([[CONTROL_SELF_ID, { required: true }]]),
+        validator: expect.any(Function),
+        validatorStore: new Map([[CONTROL_SELF_ID, expect.any(Function)]]),
+      });
 
       testAllDefaultsExcept(
         c,
@@ -517,8 +245,11 @@ describe('FormControl', () => {
         'rawValue',
         'status',
         'valid',
+        'selfValid',
         'invalid',
+        'selfInvalid',
         'errors',
+        'selfErrors',
         'errorsStore',
         'validator',
         'validatorStore'
@@ -531,9 +262,12 @@ describe('FormControl', () => {
       end.next();
       end.complete();
 
-      expect(c.rawValue).toEqual('hi');
-      expect(c.validator).toEqual(expect.any(Function));
-      expect(c.validatorStore).toEqual(new Map([[c.id, expect.any(Function)]]));
+      expect(c).toImplementObject({
+        value: 'hi',
+        rawValue: 'hi',
+        validator: expect.any(Function),
+        validatorStore: new Map([[CONTROL_SELF_ID, expect.any(Function)]]),
+      });
 
       testAllDefaultsExcept(
         c,
@@ -545,43 +279,41 @@ describe('FormControl', () => {
 
       const [event1, event2, event3, event4] = await promise1;
 
-      expect(event1).toEqual<IControlSelfStateChangeEvent<unknown, unknown>>({
-        type: 'StateChange',
-        subtype: 'Self',
+      expect(event1).toEqual<IControlValidationEvent<string, string>>({
+        type: 'ValidationStart',
         source: c.id,
-        change: {
-          rawValue: expect.any(Function),
-        },
-        changedProps: expect.arrayContaining([
-          'value',
-          'rawValue',
-          'valid',
-          'invalid',
-          'status',
-          'errors',
-          'errorsStore',
-        ]),
-        eventId: expect.any(Number),
-        idOfOriginatingEvent: expect.any(Number),
         meta: {},
+        trigger: { label: expect.any(String), source: expect.any(Symbol) },
+        rawValue: 'hi',
+        value: 'hi',
       });
 
-      expect(event2).toEqual<IControlValidationEvent<unknown>>({
+      expect(event2).toEqual<IControlValidationEvent<string, string>>({
         type: 'AsyncValidationStart',
         source: c.id,
-        eventId: expect.any(Number),
-        idOfOriginatingEvent: expect.any(Number),
         meta: {},
+        trigger: { label: expect.any(String), source: expect.any(Symbol) },
         rawValue: 'hi',
+        value: 'hi',
       });
 
-      expect(event3).toEqual<IControlValidationEvent<unknown>>({
-        type: 'ValidationComplete',
+      expect(event3).toEqual<IControlStateChangeEvent>({
+        type: 'StateChange',
         source: c.id,
-        eventId: expect.any(Number),
-        idOfOriginatingEvent: expect.any(Number),
+        trigger: { label: expect.any(String), source: expect.any(Symbol) },
+        changes: new Map<string, unknown>([
+          ['rawValue', 'hi'],
+          ['value', 'hi'],
+          ['errorsStore', new Map()],
+          ['selfErrors', null],
+          ['errors', null],
+          ['valid', true],
+          ['selfValid', true],
+          ['invalid', false],
+          ['selfInvalid', false],
+          ['status', 'VALID'],
+        ]),
         meta: {},
-        rawValue: 'hi',
       });
 
       expect(event4).toBe(undefined);
@@ -595,122 +327,379 @@ describe('FormControl', () => {
     });
 
     it('with one service', async () => {
-      expect.assertions(6);
+      const [promise1, end] = getControlEventsUntilEnd(c);
 
-      const promise = c.events.pipe(take(5), toArray()).toPromise();
+      c.events
+        .pipe(
+          filter((event) => event.type === 'ValidationStart'),
+          takeUntil(end)
+        )
+        .subscribe((_e) => {
+          const e = _e as IControlValidationEvent<string, string>;
 
-      const validatorPromise = c
-        .validationService('myValidationService')
-        .pipe(take(1))
-        .forEach((e) => {
-          if (e.rawValue === 'validValue') {
-            c.setErrors(null, { source: 'myValidationService' });
-            c.markValidationComplete('myValidationService');
-            return;
-          }
+          const errors =
+            e.rawValue === 'validValue' ? null : { invalidValue: true };
 
-          c.setErrors(
-            { invalidValue: true },
-            { source: 'myValidationService' }
-          );
-          c.markValidationComplete('myValidationService');
+          c.setErrors(errors, { source: 'myValidationService' });
         });
 
       c.setValue('invalidValue');
-
-      const [one, two, three, four, five] = await promise;
-
       expect(c.rawValue).toEqual('invalidValue');
 
-      // expect(one).toEqual({
-      //   type: 'StateChange',
-      //   eventId: expect.any(Number),
-      //   source: c.id,
-      //   meta: {},
-      //   changes: {
-      //     registeredValidators: expect.any(Function),
-      //   },
-      // });
+      c.setValue('validValue');
+      expect(c.rawValue).toEqual('validValue');
 
-      expect(one).toEqual<IControlSelfStateChangeEvent<unknown, unknown>>({
-        type: 'StateChange',
-        subtype: 'Self',
-        // the "registeredValidators" StateChange is still firing behind the scenes
-        eventId: expect.any(Number),
-        idOfOriginatingEvent: expect.any(Number),
-        source: c.id,
-        meta: {},
-        change: {
-          rawValue: expect.any(Function),
-        },
-        changedProps: ['value', 'rawValue'],
-      });
+      end.next();
+      end.complete();
 
-      expect(two).toEqual({
+      const [
+        event1,
+        event2,
+        event3,
+        event4,
+        event5,
+        event6,
+        event7,
+        event8,
+        event9,
+      ] = await promise1;
+
+      expect(event1).toEqual<IControlValidationEvent<unknown, unknown>>({
         type: 'ValidationStart',
-        eventId: expect.any(Number),
-        idOfOriginatingEvent: expect.any(Number),
         source: c.id,
         rawValue: 'invalidValue',
+        value: 'invalidValue',
         meta: {},
+        trigger: { label: expect.any(String), source: expect.any(Symbol) },
       });
 
-      expect(three).toEqual<IControlSelfStateChangeEvent<unknown, unknown>>({
+      expect(event2).toEqual<IControlStateChangeEvent>({
         type: 'StateChange',
-        subtype: 'Self',
-        eventId: expect.any(Number),
-        idOfOriginatingEvent: expect.any(Number),
         source: 'myValidationService',
         meta: {},
-        change: {
-          errorsStore: expect.any(Function),
-        },
-        changedProps: expect.arrayContaining([
-          'errorsStore',
-          'errors',
-          'status',
+        trigger: { label: expect.any(String), source: 'myValidationService' },
+        changes: new Map<string, any>([
+          [
+            'errorsStore',
+            new Map([['myValidationService', { invalidValue: true }]]),
+          ],
+          ['selfErrors', { invalidValue: true }],
+          ['errors', { invalidValue: true }],
+          ['valid', false],
+          ['selfValid', false],
+          ['invalid', true],
+          ['selfInvalid', true],
+          ['status', 'INVALID'],
         ]),
       });
 
-      // expect(five).toEqual({
-      //   type: 'StateChange',
-      //   eventId: expect.any(Number),
-      //   source: c.id,
-      //   meta: {},
-      //   changes: {
-      //     runningValidation: expect.any(Function),
-      //   },
-      // });
-
-      // expect(six).toEqual({
-      //   type: 'StateChange',
-      //   eventId: expect.any(Number),
-      //   source: c.id,
-      //   meta: {},
-      //   changes: {
-      //     registeredValidators: expect.any(Function),
-      //   },
-      // });
-
-      expect(four).toEqual({
+      expect(event3).toEqual<IControlValidationEvent<unknown, unknown>>({
         type: 'AsyncValidationStart',
-        eventId: expect.any(Number),
-        idOfOriginatingEvent: expect.any(Number),
         source: c.id,
+        rawValue: 'invalidValue',
         value: 'invalidValue',
+        trigger: { label: expect.any(String), source: expect.any(Symbol) },
         meta: {},
       });
 
-      expect(five).toEqual({
-        type: 'ValidationComplete',
-        eventId: expect.any(Number),
-        idOfOriginatingEvent: expect.any(Number),
+      expect(event4).toEqual<IControlStateChangeEvent>({
+        type: 'StateChange',
         source: c.id,
-        value: 'invalidValue',
+        meta: {},
+        trigger: { label: expect.any(String), source: expect.any(Symbol) },
+        changes: new Map<string, any>([
+          ['rawValue', 'invalidValue'],
+          ['value', 'invalidValue'],
+        ]),
+      });
+
+      expect(event5).toEqual<IControlValidationEvent<unknown, unknown>>({
+        type: 'ValidationStart',
+        source: c.id,
+        rawValue: 'validValue',
+        value: 'validValue',
+        trigger: { label: expect.any(String), source: expect.any(Symbol) },
         meta: {},
       });
 
-      return validatorPromise;
+      expect(event6).toEqual<IControlStateChangeEvent>({
+        type: 'StateChange',
+        source: 'myValidationService',
+        meta: {},
+        trigger: { label: expect.any(String), source: 'myValidationService' },
+        changes: new Map<string, any>([
+          ['errorsStore', new Map()],
+          ['selfErrors', null],
+          ['errors', null],
+          ['valid', true],
+          ['selfValid', true],
+          ['invalid', false],
+          ['selfInvalid', false],
+          ['status', 'VALID'],
+        ]),
+      });
+
+      expect(event7).toEqual<IControlValidationEvent<unknown, unknown>>({
+        type: 'AsyncValidationStart',
+        source: c.id,
+        rawValue: 'validValue',
+        value: 'validValue',
+        meta: {},
+        trigger: { label: expect.any(String), source: expect.any(Symbol) },
+      });
+
+      expect(event8).toEqual<IControlStateChangeEvent>({
+        type: 'StateChange',
+        source: c.id,
+        meta: {},
+        trigger: { label: expect.any(String), source: expect.any(Symbol) },
+        changes: new Map<string, any>([
+          ['rawValue', 'validValue'],
+          ['value', 'validValue'],
+        ]),
+      });
+
+      expect(event9).toEqual(undefined);
+    });
+
+    it('with two services', async () => {
+      const [promise1, end] = getControlEventsUntilEnd(c);
+
+      c.events
+        .pipe(
+          filter((event) => event.type === 'ValidationStart'),
+          takeUntil(end)
+        )
+        .subscribe((_e) => {
+          const e = _e as IControlValidationEvent<string, string>;
+
+          const errors =
+            e.rawValue.toLowerCase() === e.rawValue
+              ? null
+              : { mustBeLowercase: true };
+
+          c.setErrors(errors, { source: 'lowercaseValidationService' });
+        });
+
+      c.events
+        .pipe(
+          filter((event) => event.type === 'ValidationStart'),
+          takeUntil(end)
+        )
+        .subscribe((_e) => {
+          const e = _e as IControlValidationEvent<string, string>;
+
+          const errors =
+            e.rawValue.toLowerCase() === 'validvalue'
+              ? null
+              : { invalidValue: true };
+
+          c.setErrors(errors, { source: 'valueValidationService' });
+        });
+
+      c.setValue('invalidValue');
+      expect(c.rawValue).toEqual('invalidValue');
+
+      c.setValue('validValue');
+      expect(c.rawValue).toEqual('validValue');
+
+      c.setValue('validvalue');
+      expect(c.rawValue).toEqual('validvalue');
+
+      end.next();
+      end.complete();
+
+      const [
+        event1,
+        event2,
+        event3,
+        event4,
+        event5,
+        event6,
+        event7,
+        event8,
+        event9,
+        event10,
+        event11,
+        event12,
+        event13,
+        event14,
+      ] = await promise1;
+
+      expect(event1).toEqual<IControlValidationEvent<unknown, unknown>>({
+        type: 'ValidationStart',
+        source: c.id,
+        rawValue: 'invalidValue',
+        value: 'invalidValue',
+        meta: {},
+        trigger: { label: expect.any(String), source: expect.any(Symbol) },
+      });
+
+      expect(event2).toEqual<IControlStateChangeEvent>({
+        type: 'StateChange',
+        source: 'lowercaseValidationService',
+        meta: {},
+        trigger: {
+          label: expect.any(String),
+          source: 'lowercaseValidationService',
+        },
+        changes: new Map<string, any>([
+          [
+            'errorsStore',
+            new Map([
+              ['lowercaseValidationService', { mustBeLowercase: true }],
+            ]),
+          ],
+          ['selfErrors', { mustBeLowercase: true }],
+          ['errors', { mustBeLowercase: true }],
+          ['valid', false],
+          ['selfValid', false],
+          ['invalid', true],
+          ['selfInvalid', true],
+          ['status', 'INVALID'],
+        ]),
+      });
+
+      expect(event3).toEqual<IControlStateChangeEvent>({
+        type: 'StateChange',
+        source: 'valueValidationService',
+        meta: {},
+        trigger: {
+          label: expect.any(String),
+          source: 'valueValidationService',
+        },
+        changes: new Map<string, any>([
+          [
+            'errorsStore',
+            new Map([
+              ['lowercaseValidationService', { mustBeLowercase: true }],
+              ['valueValidationService', { invalidValue: true }],
+            ]),
+          ],
+          ['selfErrors', { invalidValue: true, mustBeLowercase: true }],
+          ['errors', { invalidValue: true, mustBeLowercase: true }],
+        ]),
+      });
+
+      expect(event4).toEqual<IControlValidationEvent<unknown, unknown>>({
+        type: 'AsyncValidationStart',
+        source: c.id,
+        rawValue: 'invalidValue',
+        value: 'invalidValue',
+        trigger: { label: expect.any(String), source: expect.any(Symbol) },
+        meta: {},
+      });
+
+      expect(event5).toEqual<IControlStateChangeEvent>({
+        type: 'StateChange',
+        source: c.id,
+        meta: {},
+        trigger: { label: expect.any(String), source: expect.any(Symbol) },
+        changes: new Map<string, any>([
+          ['rawValue', 'invalidValue'],
+          ['value', 'invalidValue'],
+        ]),
+      });
+
+      expect(event6).toEqual<IControlValidationEvent<unknown, unknown>>({
+        type: 'ValidationStart',
+        source: c.id,
+        rawValue: 'validValue',
+        value: 'validValue',
+        trigger: { label: expect.any(String), source: expect.any(Symbol) },
+        meta: {},
+      });
+
+      expect(event7).toEqual<IControlStateChangeEvent>({
+        type: 'StateChange',
+        source: 'valueValidationService',
+        meta: {},
+        trigger: {
+          label: expect.any(String),
+          source: 'valueValidationService',
+        },
+        changes: new Map<string, any>([
+          [
+            'errorsStore',
+            new Map([
+              ['lowercaseValidationService', { mustBeLowercase: true }],
+            ]),
+          ],
+          ['selfErrors', { mustBeLowercase: true }],
+          ['errors', { mustBeLowercase: true }],
+        ]),
+      });
+
+      expect(event8).toEqual<IControlValidationEvent<unknown, unknown>>({
+        type: 'AsyncValidationStart',
+        source: c.id,
+        rawValue: 'validValue',
+        value: 'validValue',
+        trigger: { label: expect.any(String), source: expect.any(Symbol) },
+        meta: {},
+      });
+
+      expect(event9).toEqual<IControlStateChangeEvent>({
+        type: 'StateChange',
+        source: c.id,
+        meta: {},
+        trigger: { label: expect.any(String), source: expect.any(Symbol) },
+        changes: new Map<string, any>([
+          ['rawValue', 'validValue'],
+          ['value', 'validValue'],
+        ]),
+      });
+
+      expect(event10).toEqual<IControlValidationEvent<unknown, unknown>>({
+        type: 'ValidationStart',
+        source: c.id,
+        rawValue: 'validvalue',
+        value: 'validvalue',
+        trigger: { label: expect.any(String), source: expect.any(Symbol) },
+        meta: {},
+      });
+
+      expect(event11).toEqual<IControlStateChangeEvent>({
+        type: 'StateChange',
+        source: 'lowercaseValidationService',
+        meta: {},
+        trigger: {
+          label: expect.any(String),
+          source: 'lowercaseValidationService',
+        },
+        changes: new Map<string, any>([
+          ['errorsStore', new Map()],
+          ['selfErrors', null],
+          ['errors', null],
+          ['valid', true],
+          ['selfValid', true],
+          ['invalid', false],
+          ['selfInvalid', false],
+          ['status', 'VALID'],
+        ]),
+      });
+
+      expect(event12).toEqual<IControlValidationEvent<unknown, unknown>>({
+        type: 'AsyncValidationStart',
+        source: c.id,
+        rawValue: 'validvalue',
+        value: 'validvalue',
+        trigger: { label: expect.any(String), source: expect.any(Symbol) },
+        meta: {},
+      });
+
+      expect(event13).toEqual<IControlStateChangeEvent>({
+        type: 'StateChange',
+        source: c.id,
+        meta: {},
+        trigger: { label: expect.any(String), source: expect.any(Symbol) },
+        changes: new Map<string, any>([
+          ['rawValue', 'validvalue'],
+          ['value', 'validvalue'],
+        ]),
+      });
+
+      expect(event14).toEqual(undefined);
     });
   });
 
@@ -723,66 +712,43 @@ describe('FormControl', () => {
     });
 
     it('', async () => {
-      const state = a.replayState();
+      const event1 = await a.replayState().toPromise();
 
-      const changes = [
-        {
-          change: { validatorStore: expect.any(Function) },
-          changedProps: ['validatorStore'],
-        },
-        {
-          change: { rawValue: expect.any(Function) },
-          changedProps: ['value', 'rawValue'],
-        },
-        {
-          change: { disabled: expect.any(Function) },
-          changedProps: ['disabled', 'enabled'],
-        },
-        {
-          change: { touched: expect.any(Function) },
-          changedProps: ['touched'],
-        },
-        {
-          change: { dirty: expect.any(Function) },
-          changedProps: ['dirty'],
-        },
-        {
-          change: { readonly: expect.any(Function) },
-          changedProps: ['readonly'],
-        },
-        {
-          change: { submitted: expect.any(Function) },
-          changedProps: ['submitted'],
-        },
-        { change: { data: expect.any(Function) }, changedProps: ['data'] },
-        {
-          change: { validatorStore: expect.any(Function) },
-          changedProps: ['validatorStore'],
-        },
-        {
-          change: { pendingStore: expect.any(Function) },
-          changedProps: ['pendingStore'],
-        },
-        {
-          change: { errorsStore: expect.any(Function) },
-          changedProps: ['errorsStore'],
-        },
-      ];
-
-      const events = await state
-        .pipe(take(changes.length), toArray())
-        .toPromise();
-
-      events.forEach((event, i) => {
-        expect(event).toEqual<IControlSelfStateChangeEvent<unknown, unknown>>({
-          type: 'StateChange',
-          subtype: 'Self',
-          eventId: expect.any(Number),
-          idOfOriginatingEvent: expect.any(Number),
-          source: a.id,
-          meta: {},
-          ...changes[i],
-        });
+      expect(event1).toEqual<IControlStateChangeEvent>({
+        type: 'StateChange',
+        source: a.id,
+        meta: {},
+        trigger: { label: expect.any(String), source: expect.any(Symbol) },
+        changes: new Map<string, any>([
+          ['enabled', true],
+          ['selfEnabled', true],
+          ['disabled', false],
+          ['selfDisabled', false],
+          ['touched', false],
+          ['selfTouched', false],
+          ['dirty', false],
+          ['selfDirty', false],
+          ['readonly', false],
+          ['selfReadonly', false],
+          ['submitted', false],
+          ['selfSubmitted', false],
+          ['data', undefined],
+          ['value', 'one'],
+          ['rawValue', 'one'],
+          ['validator', null],
+          ['validatorStore', new Map()],
+          ['pending', false],
+          ['selfPending', false],
+          ['pendingStore', new Set()],
+          ['valid', true],
+          ['selfValid', true],
+          ['invalid', false],
+          ['selfInvalid', false],
+          ['status', 'VALID'],
+          ['errors', null],
+          ['selfErrors', null],
+          ['errorsStore', new Map()],
+        ]),
       });
     });
 
@@ -793,7 +759,7 @@ describe('FormControl', () => {
 
       expect(b.rawValue).toEqual(2);
 
-      state.subscribe(b.source);
+      state.subscribe((e) => b.processEvent(e));
 
       expect(b.rawValue).toEqual(a.rawValue);
 
@@ -802,7 +768,7 @@ describe('FormControl', () => {
       expect(b.rawValue).not.toEqual(a.rawValue);
       expect(b.rawValue).toEqual(3);
 
-      state.subscribe(b.source);
+      state.subscribe((e) => b.processEvent(e));
 
       expect(b.rawValue).toEqual(a.rawValue);
     });
@@ -835,50 +801,27 @@ describe('FormControl', () => {
         return Promise.all([promise1, promise2]);
       });
 
-      it('waits for sync validation complete', () => {
-        const testCompleteSignal = new Subject();
+      it('waits for sync validation complete', async () => {
+        const [_, end] = getControlEventsUntilEnd(a);
 
-        const validatorPromise = a
-          .validationService('myValidationService')
-          .pipe(takeUntil(testCompleteSignal))
-          .forEach((e) => {
-            if (e.rawValue === 'validValue') {
-              a.setErrors(null, { source: 'myValidationService' });
-              a.markValidationComplete('myValidationService');
-              return;
-            }
+        a.events
+          .pipe(
+            filter((event) => event.type === 'ValidationStart'),
+            takeUntil(end)
+          )
+          .subscribe((_e) => {
+            const e = _e as IControlValidationEvent<string, string>;
 
-            a.setErrors(
-              { invalidValue: true },
-              { source: 'myValidationService' }
-            );
+            const errors =
+              e.rawValue === 'validValue' ? null : { invalidValue: true };
 
-            a.markValidationComplete('myValidationService');
+            a.setErrors(errors, { source: 'myValidationService' });
           });
 
         const promise1 = a
           .observe(valueProp)
-          .pipe(take(1))
-          .forEach((value) => {
-            expect(a.errors).toEqual(null);
-            expect(value).toEqual(null);
-          });
-
-        const promise2 = a
-          .observe(valueProp)
-          .pipe(skip(1), take(1))
-          .forEach((value) => {
-            expect(a.errors).toEqual({ invalidValue: true });
-            expect(value).toEqual('invalidValue');
-          });
-
-        const promise3 = a
-          .observe(valueProp)
-          .pipe(skip(2), take(1))
-          .forEach((value) => {
-            expect(a.errors).toEqual(null);
-            expect(value).toEqual('validValue');
-          });
+          .pipe(takeUntil(end), toArray())
+          .toPromise();
 
         a.setValue('invalidValue');
 
@@ -892,10 +835,15 @@ describe('FormControl', () => {
         expect(a.rawValue).toEqual('validValue');
         expect(a.value).toEqual('validValue');
 
-        testCompleteSignal.next();
-        testCompleteSignal.complete();
+        end.next();
+        end.complete();
 
-        return Promise.all([promise1, promise2, promise3, validatorPromise]);
+        const [value1, value2, value3, value4] = await promise1;
+
+        expect(value1).toEqual(null);
+        expect(value2).toEqual('invalidValue');
+        expect(value3).toEqual('validValue');
+        expect(value4).toEqual(undefined);
       });
 
       it('parent', () => {
@@ -915,7 +863,7 @@ describe('FormControl', () => {
             expect(p).toEqual(parent);
           });
 
-        a.setParent(parent);
+        a._setParent(parent);
 
         return Promise.all([promise1, promise2]);
       });
@@ -938,7 +886,7 @@ describe('FormControl', () => {
               throw new Error('This should never be called');
             });
 
-          a.setValue('one', { noEmit: true });
+          a.setValue('one', { noObserve: true });
 
           await wait(0);
 
@@ -950,20 +898,20 @@ describe('FormControl', () => {
 
         it('ignoreNoEmit', async () => {
           const promise1 = a
-            .observe(valueProp, { ignoreNoEmit: true })
+            .observe(valueProp, { ignoreNoObserve: true })
             .pipe(take(1))
             .forEach((value) => {
               expect(value).toEqual(null);
             });
 
           const promise2 = a
-            .observe(valueProp, { ignoreNoEmit: true })
+            .observe(valueProp, { ignoreNoObserve: true })
             .pipe(skip(1), take(1))
             .forEach((value) => {
               expect(value).toEqual('one');
             });
 
-          a.setValue('one', { noEmit: true });
+          a.setValue('one', { noObserve: true });
 
           return Promise.all([promise1, promise2]);
         });
@@ -994,42 +942,27 @@ describe('FormControl', () => {
         return promise1;
       });
 
-      it('waits for sync validation complete', () => {
-        const testCompleteSignal = new Subject();
+      it('waits for sync validation complete', async () => {
+        const [_, end] = getControlEventsUntilEnd(a);
 
-        const validatorPromise = a
-          .validationService('myValidationService')
-          .pipe(takeUntil(testCompleteSignal))
-          .forEach((e) => {
-            if (e.rawValue === 'validValue') {
-              a.setErrors(null, { source: 'myValidationService' });
-              a.markValidationComplete('myValidationService');
-              return;
-            }
+        a.events
+          .pipe(
+            filter((event) => event.type === 'ValidationStart'),
+            takeUntil(end)
+          )
+          .subscribe((_e) => {
+            const e = _e as IControlValidationEvent<string, string>;
 
-            a.setErrors(
-              { invalidValue: true },
-              { source: 'myValidationService' }
-            );
+            const errors =
+              e.rawValue === 'validValue' ? null : { invalidValue: true };
 
-            a.markValidationComplete('myValidationService');
+            a.setErrors(errors, { source: 'myValidationService' });
           });
 
         const promise1 = a
           .observeChanges(valueProp)
-          .pipe(take(1))
-          .forEach((value) => {
-            expect(a.errors).toEqual({ invalidValue: true });
-            expect(value).toEqual('invalidValue');
-          });
-
-        const promise2 = a
-          .observeChanges(valueProp)
-          .pipe(skip(1), take(1))
-          .forEach((value) => {
-            expect(a.errors).toEqual(null);
-            expect(value).toEqual('validValue');
-          });
+          .pipe(takeUntil(end), toArray())
+          .toPromise();
 
         a.setValue('invalidValue');
 
@@ -1043,10 +976,13 @@ describe('FormControl', () => {
         expect(a.rawValue).toEqual('validValue');
         expect(a.value).toEqual('validValue');
 
-        testCompleteSignal.next();
-        testCompleteSignal.complete();
+        end.next();
+        end.complete();
 
-        return Promise.all([promise1, promise2, validatorPromise]);
+        const [value1, value2] = await promise1;
+
+        expect(value1).toEqual('invalidValue');
+        expect(value2).toEqual('validValue');
       });
     }
 
@@ -1063,7 +999,7 @@ describe('FormControl', () => {
     });
 
     it(`a to b`, () => {
-      a.events.subscribe(b.source);
+      a.events.subscribe((e) => b.processEvent(e));
 
       a.setValue('two');
 
@@ -1077,8 +1013,8 @@ describe('FormControl', () => {
     });
 
     it(`a & b`, () => {
-      a.events.subscribe(b.source);
-      b.events.subscribe(a.source);
+      a.events.subscribe((e) => b.processEvent(e));
+      b.events.subscribe((e) => a.processEvent(e));
 
       a.setValue('two');
 

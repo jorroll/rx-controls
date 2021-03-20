@@ -1,6 +1,12 @@
-import { AbstractControl, ControlId, ValidatorFn } from './abstract-control';
+import {
+  AbstractControl,
+  ControlId,
+  IControlStateChangeEvent,
+  ValidatorFn,
+} from './abstract-control';
 import {
   AbstractControlBase,
+  CONTROL_SELF_ID,
   IAbstractControlBaseArgs,
 } from './abstract-control-base';
 import {
@@ -16,7 +22,7 @@ export default function runAbstractControlBaseTestSuite(
     options?: IAbstractControlBaseArgs;
   }) => AbstractControlBase<any, any, any>
 ) {
-  describe(name, () => {
+  describe(`AbstractControlBase`, () => {
     let a: AbstractControlBase<any, any, any>;
 
     beforeEach(() => {
@@ -48,72 +54,94 @@ export default function runAbstractControlBaseTestSuite(
 
           expect(a).toImplementObject({
             enabled: false,
+            selfEnabled: false,
             disabled: true,
+            selfDisabled: true,
             status: 'DISABLED',
           });
 
-          testAllDefaultsExcept(a, 'enabled', 'disabled', 'status');
+          testAllDefaultsExcept(
+            a,
+            'enabled',
+            'selfEnabled',
+            'disabled',
+            'selfDisabled',
+            'status'
+          );
 
           a = createControlBase({ options: { disabled: false } });
 
-          expect(a).toImplementObject({
-            enabled: true,
-            disabled: false,
-          });
-
-          testAllDefaultsExcept(a, 'enabled', 'disabled');
+          testAllDefaultsExcept(a);
         });
 
         it('dirty', () => {
           a = createControlBase({ options: { dirty: true } });
 
-          expect(a.dirty).toEqual(true);
-          testAllDefaultsExcept(a, 'dirty');
+          expect(a).toImplementObject({
+            dirty: true,
+            selfDirty: true,
+          });
+
+          testAllDefaultsExcept(a, 'dirty', 'selfDirty');
 
           a = createControlBase({ options: { dirty: false } });
 
-          expect(a.dirty).toEqual(false);
-          testAllDefaultsExcept(a, 'dirty');
+          testAllDefaultsExcept(a);
         });
 
         it('readonly', () => {
           a = createControlBase({ options: { readonly: true } });
 
-          expect(a.readonly).toEqual(true);
-          testAllDefaultsExcept(a, 'readonly');
+          expect(a).toImplementObject({
+            readonly: true,
+            selfReadonly: true,
+          });
+
+          testAllDefaultsExcept(a, 'readonly', 'selfReadonly');
 
           a = createControlBase({ options: { readonly: false } });
 
-          expect(a.readonly).toEqual(false);
-          testAllDefaultsExcept(a, 'readonly');
+          testAllDefaultsExcept(a);
         });
 
         it('submitted', () => {
           a = createControlBase({ options: { submitted: true } });
 
-          expect(a.submitted).toEqual(true);
-          testAllDefaultsExcept(a, 'submitted');
+          expect(a).toImplementObject({
+            submitted: true,
+            selfSubmitted: true,
+          });
+
+          testAllDefaultsExcept(a, 'submitted', 'selfSubmitted');
 
           a = createControlBase({ options: { submitted: false } });
 
-          expect(a.submitted).toEqual(false);
-          testAllDefaultsExcept(a, 'submitted');
+          testAllDefaultsExcept(a);
         });
 
         it('errors', () => {
           a = createControlBase({ options: { errors: { anError: true } } });
 
-          expect(a.errors).toEqual({ anError: true });
-          expect(a.errorsStore).toEqual(new Map([[a.id, { anError: true }]]));
-          expect(a.valid).toEqual(false);
-          expect(a.invalid).toEqual(true);
-          expect(a.status).toEqual('INVALID');
+          expect(a).toImplementObject({
+            errors: { anError: true },
+            selfErrors: { anError: true },
+            errorsStore: new Map([[CONTROL_SELF_ID, { anError: true }]]),
+            valid: false,
+            selfValid: false,
+            invalid: true,
+            selfInvalid: true,
+            status: 'INVALID',
+          });
+
           testAllDefaultsExcept(
             a,
             'errors',
+            'selfErrors',
             'errorsStore',
             'valid',
+            'selfValid',
             'invalid',
+            'selfInvalid',
             'status'
           );
 
@@ -121,35 +149,32 @@ export default function runAbstractControlBaseTestSuite(
 
           a = createControlBase({ options: { errors } });
 
-          expect(a.errors).toEqual(errors.get('one'));
-          expect(a.errorsStore).toEqual(errors);
-          expect(a.valid).toEqual(false);
-          expect(a.invalid).toEqual(true);
-          expect(a.status).toEqual('INVALID');
+          expect(a).toImplementObject({
+            errors: errors.get('one'),
+            selfErrors: errors.get('one'),
+            errorsStore: errors,
+            valid: false,
+            selfValid: false,
+            invalid: true,
+            selfInvalid: true,
+            status: 'INVALID',
+          });
+
           testAllDefaultsExcept(
             a,
             'errors',
+            'selfErrors',
             'errorsStore',
             'valid',
+            'selfValid',
             'invalid',
+            'selfInvalid',
             'status'
           );
 
           a = createControlBase({ options: { errors: null } });
 
-          expect(a.errors).toEqual(null);
-          expect(a.errorsStore).toEqual(new Map());
-          expect(a.valid).toEqual(true);
-          expect(a.invalid).toEqual(false);
-          expect(a.status).toEqual('VALID');
-          testAllDefaultsExcept(
-            a,
-            'errors',
-            'errorsStore',
-            'valid',
-            'invalid',
-            'status'
-          );
+          testAllDefaultsExcept(a);
         });
 
         it('validator', () => {
@@ -160,44 +185,40 @@ export default function runAbstractControlBaseTestSuite(
 
           a = createControlBase({ options: { validators } });
 
-          expect(a.validator).toEqual(expect.any(Function));
-          expect(a.validatorStore).toEqual(new Map([[a.id, validators]]));
-          expect(a.valid).toEqual(true);
-          expect(a.invalid).toEqual(false);
-          expect(a.errors).toEqual(null);
-          expect(a.errorsStore).toEqual(new Map());
-          expect(a.status).toEqual('VALID');
-          testAllDefaultsExcept(
-            a,
-            'validator',
-            'validatorStore',
-            'valid',
-            'invalid',
-            'errors',
-            'errorsStore',
-            'status'
-          );
+          expect(a).toImplementObject({
+            validator: expect.any(Function),
+            validatorStore: new Map([[CONTROL_SELF_ID, validators]]),
+          });
+
+          testAllDefaultsExcept(a, 'validator', 'validatorStore');
 
           validators = [() => null, () => ({ error: true })];
 
           a = createControlBase({ options: { validators } });
 
-          expect(a.validator).toEqual(expect.any(Function));
-          expect(a.validatorStore).toEqual(
-            new Map([[a.id, expect.any(Function)]])
-          );
-          expect(a.valid).toEqual(false);
-          expect(a.invalid).toEqual(true);
-          expect(a.errors).toEqual({ error: true });
-          expect(a.errorsStore).toEqual(new Map([[a.id, { error: true }]]));
-          expect(a.status).toEqual('INVALID');
+          expect(a).toImplementObject({
+            validator: expect.any(Function),
+            validatorStore: new Map([[CONTROL_SELF_ID, expect.any(Function)]]),
+            valid: false,
+            selfValid: false,
+            invalid: true,
+            selfInvalid: true,
+            errors: { error: true },
+            selfErrors: { error: true },
+            errorsStore: new Map([[CONTROL_SELF_ID, { error: true }]]),
+            status: 'INVALID',
+          });
+
           testAllDefaultsExcept(
             a,
             'validator',
             'validatorStore',
             'valid',
+            'selfValid',
             'invalid',
+            'selfInvalid',
             'errors',
+            'selfErrors',
             'errorsStore',
             'status'
           );
@@ -212,71 +233,420 @@ export default function runAbstractControlBaseTestSuite(
 
           a = createControlBase({ options: { validators } });
 
-          expect(a.validator).toEqual(expect.any(Function));
-          expect(a.validatorStore).toEqual(
-            new Map([
+          expect(a).toImplementObject({
+            validator: expect.any(Function),
+            validatorStore: new Map([
               ['one', fn1],
               ['two', fn2],
-            ])
-          );
-          expect(a.valid).toEqual(false);
-          expect(a.invalid).toEqual(true);
-          expect(a.errors).toEqual({ error: true });
-          expect(a.errorsStore).toEqual(new Map([[a.id, { error: true }]]));
-          expect(a.status).toEqual('INVALID');
+            ]),
+            valid: false,
+            selfValid: false,
+            invalid: true,
+            selfInvalid: true,
+            errors: { error: true },
+            selfErrors: { error: true },
+            errorsStore: new Map([[CONTROL_SELF_ID, { error: true }]]),
+            status: 'INVALID',
+          });
+
           testAllDefaultsExcept(
             a,
             'validator',
             'validatorStore',
             'valid',
+            'selfValid',
             'invalid',
+            'selfInvalid',
             'errors',
+            'selfErrors',
             'errorsStore',
             'status'
           );
 
           a = createControlBase({ options: { validators: null } });
 
-          expect(a.validator).toEqual(null);
-          expect(a.validatorStore).toEqual(new Map());
-          expect(a.valid).toEqual(true);
-          expect(a.invalid).toEqual(false);
-          expect(a.errors).toEqual(null);
-          expect(a.errorsStore).toEqual(new Map());
-          expect(a.status).toEqual('VALID');
-          testAllDefaultsExcept(
-            a,
-            'validator',
-            'validatorStore',
-            'valid',
-            'invalid',
-            'errors',
-            'errorsStore',
-            'status'
-          );
+          testAllDefaultsExcept(a);
         });
 
         it('pending', () => {
           a = createControlBase({ options: { pending: true } });
 
-          expect(a.pending).toEqual(true);
-          expect(a.pendingStore).toEqual(new Set([a.id]));
-          expect(a.status).toEqual('PENDING');
-          testAllDefaultsExcept(a, 'pending', 'pendingStore', 'status');
+          expect(a).toImplementObject({
+            pending: true,
+            selfPending: true,
+            pendingStore: new Set([CONTROL_SELF_ID]),
+            status: 'PENDING',
+          });
+
+          testAllDefaultsExcept(
+            a,
+            'pending',
+            'selfPending',
+            'pendingStore',
+            'status'
+          );
 
           a = createControlBase({ options: { pending: new Set(['one']) } });
 
-          expect(a.pending).toEqual(true);
-          expect(a.pendingStore).toEqual(new Set(['one']));
-          expect(a.status).toEqual('PENDING');
-          testAllDefaultsExcept(a, 'pending', 'pendingStore', 'status');
+          expect(a).toImplementObject({
+            pending: true,
+            selfPending: true,
+            pendingStore: new Set(['one']),
+            status: 'PENDING',
+          });
+
+          testAllDefaultsExcept(
+            a,
+            'pending',
+            'selfPending',
+            'pendingStore',
+            'status'
+          );
 
           a = createControlBase({ options: { pending: false } });
 
-          expect(a.pending).toEqual(false);
-          expect(a.pendingStore).toEqual(new Set());
-          expect(a.status).toEqual('VALID');
-          testAllDefaultsExcept(a, 'pending', 'pendingStore', 'status');
+          testAllDefaultsExcept(a);
+        });
+      });
+    });
+
+    describe('processEvent', () => {
+      beforeEach(() => {
+        a = createControlBase();
+      });
+
+      describe('StateChange', () => {
+        let e: IControlStateChangeEvent | null = null;
+
+        beforeEach(() => {
+          e = null;
+        });
+
+        it('selfDisabled', () => {
+          e = {
+            type: 'StateChange',
+            source: 'one',
+            meta: {},
+            trigger: { label: expect.any(String), source: expect.any(Symbol) },
+            changes: new Map([['selfDisabled', true]]),
+          };
+
+          const result = a.processEvent(e);
+
+          expect(a).toImplementObject({
+            disabled: true,
+            selfDisabled: true,
+            enabled: false,
+            selfEnabled: false,
+            status: 'DISABLED',
+          });
+
+          testAllDefaultsExcept(
+            a,
+            'disabled',
+            'selfDisabled',
+            'enabled',
+            'selfEnabled',
+            'status'
+          );
+
+          expect(result.status).toEqual('PROCESSED');
+          expect(result.result).toEqual<IControlStateChangeEvent>({
+            type: 'StateChange',
+            source: 'one',
+            meta: {},
+            trigger: { label: expect.any(String), source: expect.any(Symbol) },
+            changes: new Map<string, any>([
+              ['disabled', true],
+              ['selfDisabled', true],
+              ['enabled', false],
+              ['selfEnabled', false],
+              ['status', 'DISABLED'],
+            ]),
+          });
+        });
+
+        it('selfTouched', () => {
+          e = {
+            type: 'StateChange',
+            source: 'one',
+            meta: {},
+            trigger: { label: expect.any(String), source: expect.any(Symbol) },
+            changes: new Map([['selfTouched', true]]),
+          };
+
+          const result = a.processEvent(e);
+
+          expect(a).toImplementObject({
+            touched: true,
+            selfTouched: true,
+          });
+
+          testAllDefaultsExcept(a, 'touched', 'selfTouched');
+
+          expect(result.status).toEqual('PROCESSED');
+          expect(result.result).toEqual<IControlStateChangeEvent>({
+            type: 'StateChange',
+            source: 'one',
+            meta: {},
+            trigger: { label: expect.any(String), source: expect.any(Symbol) },
+            changes: new Map<string, any>([
+              ['touched', true],
+              ['selfTouched', true],
+            ]),
+          });
+        });
+
+        it('selfDirty', () => {
+          e = {
+            type: 'StateChange',
+            source: 'one',
+            meta: {},
+            trigger: { label: expect.any(String), source: expect.any(Symbol) },
+            changes: new Map([['selfDirty', true]]),
+          };
+
+          const result = a.processEvent(e);
+
+          expect(a).toImplementObject({
+            dirty: true,
+            selfDirty: true,
+          });
+
+          testAllDefaultsExcept(a, 'dirty', 'selfDirty');
+
+          expect(result.status).toEqual('PROCESSED');
+          expect(result.result).toEqual<IControlStateChangeEvent>({
+            type: 'StateChange',
+            source: 'one',
+            meta: {},
+            trigger: { label: expect.any(String), source: expect.any(Symbol) },
+            changes: new Map<string, any>([
+              ['dirty', true],
+              ['selfDirty', true],
+            ]),
+          });
+        });
+
+        it('selfReadonly', () => {
+          e = {
+            type: 'StateChange',
+            source: 'one',
+            meta: {},
+            trigger: { label: expect.any(String), source: expect.any(Symbol) },
+            changes: new Map([['selfReadonly', true]]),
+          };
+
+          const result = a.processEvent(e);
+
+          expect(a).toImplementObject({
+            readonly: true,
+            selfReadonly: true,
+          });
+
+          testAllDefaultsExcept(a, 'readonly', 'selfReadonly');
+
+          expect(result.status).toEqual('PROCESSED');
+          expect(result.result).toEqual<IControlStateChangeEvent>({
+            type: 'StateChange',
+            source: 'one',
+            meta: {},
+            trigger: { label: expect.any(String), source: expect.any(Symbol) },
+            changes: new Map<string, any>([
+              ['readonly', true],
+              ['selfReadonly', true],
+            ]),
+          });
+        });
+
+        it('selfSubmitted', () => {
+          e = {
+            type: 'StateChange',
+            source: 'one',
+            meta: {},
+            trigger: { label: expect.any(String), source: expect.any(Symbol) },
+            changes: new Map([['selfSubmitted', true]]),
+          };
+
+          const result = a.processEvent(e);
+
+          expect(a).toImplementObject({
+            submitted: true,
+            selfSubmitted: true,
+          });
+
+          testAllDefaultsExcept(a, 'submitted', 'selfSubmitted');
+
+          expect(result.status).toEqual('PROCESSED');
+          expect(result.result).toEqual<IControlStateChangeEvent>({
+            type: 'StateChange',
+            source: 'one',
+            meta: {},
+            trigger: { label: expect.any(String), source: expect.any(Symbol) },
+            changes: new Map<string, any>([
+              ['submitted', true],
+              ['selfSubmitted', true],
+            ]),
+          });
+        });
+
+        it('data', () => {
+          e = {
+            type: 'StateChange',
+            source: 'one',
+            meta: {},
+            trigger: { label: expect.any(String), source: expect.any(Symbol) },
+            changes: new Map([['data', { one: true }]]),
+          };
+
+          const result = a.processEvent(e);
+
+          expect(a).toImplementObject({
+            data: { one: true },
+          });
+
+          testAllDefaultsExcept(a, 'data');
+
+          expect(result.status).toEqual('PROCESSED');
+          expect(result.result).toEqual<IControlStateChangeEvent>({
+            type: 'StateChange',
+            source: 'one',
+            meta: {},
+            trigger: { label: expect.any(String), source: expect.any(Symbol) },
+            changes: new Map<string, any>([['data', { one: true }]]),
+          });
+        });
+
+        it('validatorStore', () => {
+          const validatorStore = new Map([['one', () => null]]);
+
+          e = {
+            type: 'StateChange',
+            source: 'one',
+            meta: {},
+            trigger: { label: expect.any(String), source: expect.any(Symbol) },
+            changes: new Map([['validatorStore', validatorStore]]),
+          };
+
+          const result = a.processEvent(e);
+
+          expect(a).toImplementObject({
+            validator: expect.any(Function),
+            validatorStore: new Map([['one', expect.any(Function)]]),
+          });
+
+          testAllDefaultsExcept(a, 'validator', 'validatorStore');
+
+          expect(result.status).toEqual('PROCESSED');
+          expect(result.result).toEqual<IControlStateChangeEvent>({
+            type: 'StateChange',
+            source: 'one',
+            meta: {},
+            trigger: { label: expect.any(String), source: expect.any(Symbol) },
+            changes: new Map<string, any>([
+              ['validatorStore', new Map([['one', expect.any(Function)]])],
+              ['validator', expect.any(Function)],
+            ]),
+          });
+        });
+
+        it('pendingStore', () => {
+          const pendingStore = new Set('one');
+
+          e = {
+            type: 'StateChange',
+            source: 'one',
+            meta: {},
+            trigger: { label: expect.any(String), source: expect.any(Symbol) },
+            changes: new Map([['pendingStore', pendingStore]]),
+          };
+
+          const result = a.processEvent(e);
+
+          expect(a).toImplementObject({
+            pending: true,
+            selfPending: true,
+            pendingStore,
+            status: 'PENDING',
+          });
+
+          testAllDefaultsExcept(
+            a,
+            'pending',
+            'selfPending',
+            'pendingStore',
+            'status'
+          );
+
+          expect(result.status).toEqual('PROCESSED');
+          expect(result.result).toEqual<IControlStateChangeEvent>({
+            type: 'StateChange',
+            source: 'one',
+            meta: {},
+            trigger: { label: expect.any(String), source: expect.any(Symbol) },
+            changes: new Map<string, any>([
+              ['pendingStore', pendingStore],
+              ['selfPending', true],
+              ['pending', true],
+              ['status', 'PENDING'],
+            ]),
+          });
+        });
+
+        it('errorsStore', () => {
+          const errors = { required: true };
+          const errorsStore = new Map([['one', errors]]);
+
+          e = {
+            type: 'StateChange',
+            source: 'one',
+            meta: {},
+            trigger: { label: expect.any(String), source: expect.any(Symbol) },
+            changes: new Map([['errorsStore', errorsStore]]),
+          };
+
+          const result = a.processEvent(e);
+
+          expect(a).toImplementObject({
+            errors,
+            selfErrors: errors,
+            errorsStore,
+            valid: false,
+            selfValid: false,
+            invalid: true,
+            selfInvalid: true,
+            status: 'INVALID',
+          });
+
+          testAllDefaultsExcept(
+            a,
+            'errors',
+            'selfErrors',
+            'errorsStore',
+            'status',
+            'valid',
+            'selfValid',
+            'invalid',
+            'selfInvalid'
+          );
+
+          expect(result.status).toEqual('PROCESSED');
+          expect(result.result).toEqual<IControlStateChangeEvent>({
+            type: 'StateChange',
+            source: 'one',
+            meta: {},
+            trigger: { label: expect.any(String), source: expect.any(Symbol) },
+            changes: new Map<string, any>([
+              ['errorsStore', errorsStore],
+              ['selfErrors', errors],
+              ['errors', errors],
+              ['valid', false],
+              ['selfValid', false],
+              ['invalid', true],
+              ['selfInvalid', true],
+              ['status', 'INVALID'],
+            ]),
+          });
         });
       });
     });

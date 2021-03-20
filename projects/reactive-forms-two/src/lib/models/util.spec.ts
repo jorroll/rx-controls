@@ -1,8 +1,9 @@
 import {
   IControlEvent,
   IControlEventOptions,
+  IControlStateChangeEvent,
 } from './abstract-control/abstract-control';
-import { pluckOptions } from './util';
+import { pluckOptions, transformRawValueStateChange } from './util';
 
 // describe('isMapEqual', () => {
 //   test('true', () => {
@@ -26,26 +27,20 @@ describe(`pluckOptions`, () => {
   it('', () => {
     const options: Partial<IControlEvent> = {
       type: 'TestEvent',
-      eventId: 1,
-      idOfOriginatingEvent: 1,
       meta: {
         one: 1,
       },
       source: 'one',
-      noEmit: true,
+      noObserve: true,
     };
 
     const pluckedOptions: Partial<IControlEventOptions> = {
       source: 'one',
-      idOfOriginatingEvent: 1,
       meta: { one: 1 },
-      noEmit: true,
+      noObserve: true,
     };
 
     expect(pluckOptions(options)).toEqual(pluckedOptions);
-
-    delete options.idOfOriginatingEvent;
-    delete pluckedOptions.idOfOriginatingEvent;
 
     expect(pluckOptions(options)).toEqual(pluckedOptions);
 
@@ -59,8 +54,8 @@ describe(`pluckOptions`, () => {
 
     expect(pluckOptions(options)).toEqual(pluckedOptions);
 
-    delete options.noEmit;
-    delete pluckedOptions.noEmit;
+    delete options.noObserve;
+    delete pluckedOptions.noObserve;
 
     expect(pluckOptions(options)).toEqual(pluckedOptions);
   });
@@ -94,3 +89,90 @@ describe(`pluckOptions`, () => {
 //     expect(mapIsProperty(one)).toBe(false);
 //   });
 // });
+describe('transformRawValueStateChange', () => {
+  it('', () => {
+    const source = Symbol('one');
+
+    const event: IControlStateChangeEvent = {
+      trigger: { label: 'test', source },
+      source,
+      meta: {},
+      type: 'StateChange',
+      changes: new Map([
+        ['rawValue', { one: 1, two: { three: 3 } }],
+        ['value', { one: 1, two: { three: 3 } }],
+      ]),
+      childEvents: {
+        two: {
+          trigger: { label: 'test', source },
+          source,
+          meta: {},
+          type: 'StateChange',
+          changes: new Map([
+            ['rawValue', { three: 3 }],
+            ['value', { three: 3 }],
+          ]),
+          childEvents: {
+            three: {
+              trigger: { label: 'test', source },
+              source,
+              meta: {},
+              type: 'StateChange',
+              changes: new Map([
+                ['rawValue', 3],
+                ['value', 3],
+              ]),
+            },
+          },
+        },
+      },
+    };
+
+    const newEvent = transformRawValueStateChange(
+      event,
+      (rawValue: { one: number; two: { three: number } }) => {
+        return {
+          ...rawValue,
+          two: {
+            three: rawValue.two.three + 1,
+          },
+        };
+      }
+    );
+
+    expect(newEvent).toEqual<IControlStateChangeEvent>({
+      trigger: { label: 'test', source },
+      source,
+      meta: {},
+      type: 'StateChange',
+      changes: new Map([
+        ['rawValue', { one: 1, two: { three: 4 } }],
+        ['value', { one: 1, two: { three: 3 } }],
+      ]),
+      childEvents: {
+        two: {
+          trigger: { label: 'test', source },
+          source,
+          meta: {},
+          type: 'StateChange',
+          changes: new Map([
+            ['rawValue', { three: 4 }],
+            ['value', { three: 3 }],
+          ]),
+          childEvents: {
+            three: {
+              trigger: { label: 'test', source },
+              source,
+              meta: {},
+              type: 'StateChange',
+              changes: new Map([
+                ['rawValue', 4],
+                ['value', 3],
+              ]),
+            },
+          },
+        },
+      },
+    });
+  });
+});

@@ -1,15 +1,10 @@
 import {
   AbstractControl,
   ControlId,
-  IControlEventArgs,
+  IControlEvent,
   IControlEventOptions,
-  IControlStateChange,
   IControlStateChangeEvent,
 } from './abstract-control/abstract-control';
-import {
-  GenericControlsObject,
-  IControlContainerStateChange,
-} from './abstract-control-container/abstract-control-container';
 
 export type Mutable<T> = {
   -readonly [P in keyof T]: T[P] extends ReadonlyArray<infer U> ? U[] : T[P];
@@ -60,26 +55,24 @@ export function isTruthy<T>(value: T): value is NonNullable<T> {
 
 export function isStateChange<
   T extends IControlStateChangeEvent = IControlStateChangeEvent
->(event: IControlEventArgs): event is T {
+>(event: IControlEvent): event is T {
   return event.type === 'StateChange';
 }
 
 export function pluckOptions({
   source,
-  // eventId,
-  idOfOriginatingEvent,
   meta,
-  noEmit,
-  [AbstractControl.SKIP_CONTROL_SOURCE_QUEUE]: skip,
+  noObserve: noEmit,
+  trigger,
+  [AbstractControl.NO_EVENT]: partial,
 }: IControlEventOptions = {}) {
   const options = {} as IControlEventOptions;
 
-  // if (eventId) options.eventId = eventId;
   if (source) options.source = source;
   if (meta) options.meta = meta;
-  if (noEmit) options.noEmit = noEmit;
-  if (idOfOriginatingEvent) options.idOfOriginatingEvent = idOfOriginatingEvent;
-  if (skip) options[AbstractControl.SKIP_CONTROL_SOURCE_QUEUE] = true;
+  if (noEmit) options.noObserve = noEmit;
+  if (trigger) options.trigger = trigger;
+  if (partial) options[AbstractControl.NO_EVENT] = partial;
 
   return options;
 }
@@ -95,28 +88,41 @@ export function pluckOptions({
 //   return array;
 // }
 
-export function getSimpleStateChangeEventArgs<V, D>(
-  change: IControlStateChange<V, D>
+export function getSimpleStateChangeEventArgs<T extends AbstractControl>(
+  control: T,
+  changedProps: Array<keyof T & string>
 ) {
   return {
     type: 'StateChange' as const,
-    subtype: 'Self' as const,
-    change,
-    changedProps: [],
+    // subtype: 'Self' as const,
+    changes: new Map(changedProps.map((p) => [p, control[p]])),
   };
 }
 
-export const getSimpleContainerStateChangeEventArgs: <
-  Controls extends GenericControlsObject,
-  D
->(
-  change: IControlContainerStateChange<Controls, D>
-) => {
-  type: 'StateChange';
-  subtype: 'Self';
-  change: IControlContainerStateChange<Controls, D>;
-  changedProps: never[];
-} = getSimpleStateChangeEventArgs;
+export function getSimpleChildStateChangeEventArgs<T extends AbstractControl>(
+  control: T,
+  childEvents: { [key: string]: IControlStateChangeEvent },
+  changedProps: Array<keyof T & string>
+) {
+  return {
+    type: 'StateChange' as const,
+    // subtype: 'Child' as const,
+    childEvents,
+    changes: new Map(changedProps.map((p) => [p, control[p]])),
+  };
+}
+
+// export const getSimpleContainerStateChangeEventArgs: <
+//   Controls extends GenericControlsObject,
+//   D
+// >(
+//   change: IControlContainerStateChange<Controls, D>
+// ) => {
+//   type: 'StateChange';
+//   subtype: 'Self';
+//   change: IControlContainerStateChange<Controls, D>;
+//   changedProps: never[];
+// } = getSimpleStateChangeEventArgs;
 
 // export function mapIsProperty(a: Map<any, any>) {
 //   if (a.size === 0) return true;
@@ -126,26 +132,64 @@ export const getSimpleContainerStateChangeEventArgs: <
 //   }
 // }
 
-export function buildReplayStateEvent<
-  C extends IControlStateChange<any, any>
->(args: {
-  change: {
-    change: C;
-    changedProps: string[];
-  };
-  id: ControlId;
-  options?: IControlEventOptions;
-}) {
-  let eventId: number;
+// export function buildReplayStateEvent<
+//   C extends IControlStateChanges<any, any>
+// >(args: {
+//   change: {
+//     change: C;
+//     changedProps: string[];
+//   };
+//   id: ControlId;
+//   options?: IControlEventOptions;
+// }) {
+//   let eventId: number;
 
-  return {
-    source: args.id,
-    meta: {},
-    ...pluckOptions(args.options),
-    eventId: (eventId = AbstractControl.eventId()),
-    idOfOriginatingEvent: eventId,
-    type: 'StateChange' as const,
-    subtype: 'Self' as const,
-    ...args.change,
-  };
+//   return {
+//     source: args.id,
+//     meta: {},
+//     ...pluckOptions(args.options),
+//     eventId: (eventId = AbstractControl.eventId()),
+//     idOfOriginatingEvent: eventId,
+//     type: 'StateChange' as const,
+//     subtype: 'Self' as const,
+//     ...args.change,
+//   };
+// }
+
+export function transformRawValueStateChange<RawValue, NewRawValue>(
+  event: IControlStateChangeEvent,
+  fn: (rawValue: RawValue) => NewRawValue
+) {
+  if (!event.changes.has('rawValue')) return event;
+
+  const oldRawValue = event.changes.get('rawValue') as any;
+  const newRawValue = fn(oldRawValue) as any;
+  const newChanges = new Map(event.changes).set('rawValue', newRawValue);
+
+  const newEvent = { ...event, changes: newChanges };
+
+  if (event.childEvents) {
+    const originalEntries = Object.entries(event.childEvents);
+    const newEntries: Array<[string, IControlStateChangeEvent]> = [];
+
+    for (const [key, childEvent] of originalEntries) {
+      if ((oldRawValue as { [key: string]: unknown })[key] === undefined) {
+        continue;
+      }
+
+      const childRawValue = newRawValue[key];
+      const newChildEvent = transformRawValueStateChange(
+        childEvent,
+        () => childRawValue
+      );
+
+      newEntries.push([key, newChildEvent]);
+    }
+
+    if (originalEntries.length > 0) {
+      newEvent.childEvents = Object.fromEntries(newEntries);
+    }
+  }
+
+  return newEvent;
 }
