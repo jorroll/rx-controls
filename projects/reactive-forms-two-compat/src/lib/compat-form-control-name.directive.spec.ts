@@ -1,6 +1,6 @@
 import { Component } from '@angular/core';
 import userEvent from '@testing-library/user-event';
-import { TestSingleChild } from './test-utils';
+import { TestSingleChild, wait } from './test-utils';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { CompatFormControlNameDirective } from './compat-form-control-name.directive';
@@ -10,6 +10,8 @@ import {
   FormControl,
 } from '@service-work/reactive-forms';
 import { CommonModule } from '@angular/common';
+import { AbstractControl } from '@service-work/reactive-forms/src/lib/models';
+import { inspect } from 'util';
 
 const beforeEachFn = TestSingleChild.buildBeforeEachFn({
   declarations: [CompatFormControlNameDirective],
@@ -43,7 +45,7 @@ export class MatInputTestComponent {
   private replay = this.control.replayState();
 
   toggle() {
-    this.showFormElement = !this.showFormElement;
+    // this.showFormElement = !this.showFormElement;
     this.replay.subscribe(this.control.source);
   }
 }
@@ -84,7 +86,7 @@ describe('MatInputTestComponent', () => {
     expect(o.input.disabled).toEqual(false);
   });
 
-  it('works', () => {
+  it.only('works', async () => {
     const { control } = o.component;
     const newValue = 'hi';
 
@@ -98,7 +100,39 @@ describe('MatInputTestComponent', () => {
     expect(control.invalid).toEqual(false);
     expect(control.errors).toEqual(null);
 
+    /**
+     * The problem appears to be that `component.toggle()` replayState
+     * is resetting the component#control's `controlStore` property.
+     * Even though the new `controlStore` is a clone of the old one,
+     * it still triggers the ControlNameDirective's `observe('controls', controlName)`
+     * to fire again which causes `ControlNameDirective#control.setValidators(new Map())`
+     * to fire but queue with the `providedControl.replayState()` to also fire and queue
+     * causing an infinite loop.
+     */
+
+    AbstractControl.throwInfiniteLoopErrorAfterEventCount = 200;
+    AbstractControl.debugCallback = function (a) {
+      console.log(inspect({ id: this.id, ...a }, { depth: null }));
+
+      if (a.event?.eventId === 209) {
+        console.log(
+          inspect(
+            {
+              id: this.id,
+              validatorStore: this.validatorStore,
+              errorsStore: this.errorsStore,
+              errors: this.errors,
+            },
+            { depth: null }
+          )
+        );
+      }
+    };
     o.component.toggle();
+    AbstractControl.debugCallback = undefined;
+
+    await wait(0);
+
     o.fixture.detectChanges();
 
     expect(o.container.querySelector('#theDiv')).toBeFalsy();

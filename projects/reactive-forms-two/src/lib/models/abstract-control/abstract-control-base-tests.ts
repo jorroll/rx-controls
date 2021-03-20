@@ -14,10 +14,10 @@ export default function runAbstractControlBaseTestSuite(
   name: string,
   createControlBase: (args?: {
     options?: IAbstractControlBaseArgs;
-  }) => AbstractControlBase
+  }) => AbstractControlBase<any, any, any>
 ) {
   describe(name, () => {
-    let a: AbstractControlBase;
+    let a: AbstractControlBase<any, any, any>;
 
     beforeEach(() => {
       AbstractControl.eventId(0);

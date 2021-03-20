@@ -23,6 +23,7 @@ export interface IControlEventArgs {
   type: string;
   meta?: { [key: string]: unknown };
   noEmit?: boolean;
+  [AbstractControl.SKIP_CONTROL_SOURCE_QUEUE]?: boolean;
 }
 
 export interface IControlEvent extends IControlEventArgs {
@@ -36,6 +37,7 @@ export interface IControlEventOptions {
   meta?: { [key: string]: unknown };
   idOfOriginatingEvent?: number;
   source?: ControlId;
+  [AbstractControl.SKIP_CONTROL_SOURCE_QUEUE]?: boolean;
 }
 
 export interface IControlValidationEvent<V> extends IControlEvent {
@@ -95,6 +97,9 @@ export class ControlSource extends Subject<IControlEvent> {
   complete() {}
 
   next(value?: IControlEvent) {
+    // during construction of a new AbstractControl, skip the queue
+    if (value?.[AbstractControl.SKIP_CONTROL_SOURCE_QUEUE]) super.next(value);
+
     queueScheduler.schedule((state) => super.next(state), 0, value);
   }
 }
@@ -138,6 +143,10 @@ export namespace AbstractControl {
           | { type: 'INPUT'; event: IControlEvent }
           | { type: 'OUTPUT'; event?: IControlEvent | null }
       ) => void);
+
+  export let throwInfiniteLoopErrorAfterEventCount = 500;
+
+  export const SKIP_CONTROL_SOURCE_QUEUE = Symbol('SKIP_CONTROL_SOURCE_QUEUE');
 }
 
 export interface AbstractControl<RawValue = any, Data = any, Value = RawValue> {

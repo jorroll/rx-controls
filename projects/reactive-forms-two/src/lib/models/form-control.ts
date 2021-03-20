@@ -31,17 +31,18 @@ export class FormControl<Value = any, Data = any> extends AbstractControlBase<
   ) {
     super(options.id || Symbol(`FormControl-${FormControl.id++}`));
 
+    const o = { [AbstractControl.SKIP_CONTROL_SOURCE_QUEUE]: true };
     this.data = options.data!;
-    this.setValue(value);
-    if (options.disabled) this.markDisabled(options.disabled);
-    if (options.touched) this.markTouched(options.touched);
-    if (options.dirty) this.markDirty(options.dirty);
-    if (options.readonly) this.markReadonly(options.readonly);
-    if (options.submitted) this.markSubmitted(options.submitted);
-    if (options.validators) this.setValidators(options.validators);
-    if (options.pending) this.markPending(options.pending);
+    this.setValue(value, o);
+    if (options.disabled) this.markDisabled(options.disabled, o);
+    if (options.touched) this.markTouched(options.touched, o);
+    if (options.dirty) this.markDirty(options.dirty, o);
+    if (options.readonly) this.markReadonly(options.readonly, o);
+    if (options.submitted) this.markSubmitted(options.submitted, o);
+    if (options.validators) this.setValidators(options.validators, o);
+    if (options.pending) this.markPending(options.pending, o);
     // this needs to be last to ensure that the errors aren't overwritten
-    if (options.errors) this.patchErrors(options.errors);
+    if (options.errors) this.patchErrors(options.errors, o);
   }
 
   replayState(

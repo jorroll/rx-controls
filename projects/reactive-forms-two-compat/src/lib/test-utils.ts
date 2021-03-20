@@ -85,3 +85,7 @@ export function testAllCompatControlDefaultsExcept<C extends CompatFormControl>(
     expect(compat.pending).toEqual(false);
   }
 }
+
+export function wait(ms: number) {
+  return new Promise((res) => setTimeout(res, ms));
+}

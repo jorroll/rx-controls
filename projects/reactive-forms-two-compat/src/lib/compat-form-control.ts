@@ -99,7 +99,7 @@ export class CompatFormControl extends OldFormControl {
   }
 
   setValue(value: any, options: any = {}) {
-    super.setValue(value, options);
+    super.setValue(value === undefined || value === null ? '' : value, options);
     if (!this.swControl || options[FROM_SWCONTROL]) return;
     this.swControl.setValue(value);
     this.swControl.setErrors(this.errors);

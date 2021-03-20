@@ -36,6 +36,7 @@ import {
   distinctUntilChanged,
   skip,
   shareReplay,
+  observeOn,
 } from 'rxjs/operators';
 import { isEqual } from '../../util';
 
@@ -113,15 +114,28 @@ export abstract class AbstractControlBase<RawValue, Data, Value>
 
       // Here we provide the user with an error message in case of an
       // infinite loop
-      if (event.eventId - event.idOfOriginatingEvent > 500) {
+      if (
+        event.eventId - event.idOfOriginatingEvent >
+        AbstractControl.throwInfiniteLoopErrorAfterEventCount
+      ) {
         throw new Error(
           `AbstractControl "${this.id.toString()}" appears to be caught ` +
-            `in an infinite event loop. You can register a debugCallback ` +
+            `in an infinite event loop originating from event ` +
+            `${event.idOfOriginatingEvent}. You can register a debugCallback ` +
             `with AbstractControl.debugCallback to help diagnose the issue.`
         );
       }
 
       const newEvent = this.processEvent(event);
+
+      if (newEvent && event.source !== this.id && newEvent.source !== this.id) {
+        // because events can come either from something like `AbstractControl#emitEvent()`
+        // or from another control's `events` property, we need to always assign a new eventId
+        // to this newEvent. Otherwise, synced controls will emit new events that share the
+        // same eventId as the source event (i.e. multiple controls will emit different events
+        // with the same eventId)
+        newEvent.eventId = AbstractControl.eventId();
+      }
 
       if (typeof (event as any)?.onEventProcessedFn === 'function') {
         queueScheduler.schedule((event as any).onEventProcessedFn, 0, newEvent);
@@ -129,6 +143,13 @@ export abstract class AbstractControlBase<RawValue, Data, Value>
       }
 
       if (AbstractControl.debugCallback) {
+        if (newEvent) {
+          (newEvent as any).debug = {
+            selfId: this.id,
+            source: event,
+          };
+        }
+
         AbstractControl.debugCallback.call(this, {
           type: 'OUTPUT',
           event: newEvent,
@@ -506,6 +527,7 @@ export abstract class AbstractControlBase<RawValue, Data, Value>
             (options.ignoreNoEmit || !event.noEmit);
 
     return this.events.pipe(
+      observeOn(queueScheduler),
       filter(eventFilterFn),
       startWith({}),
       map(() =>

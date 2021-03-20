@@ -70,6 +70,7 @@ export function pluckOptions({
   idOfOriginatingEvent,
   meta,
   noEmit,
+  [AbstractControl.SKIP_CONTROL_SOURCE_QUEUE]: skip,
 }: IControlEventOptions = {}) {
   const options = {} as IControlEventOptions;
 
@@ -78,6 +79,7 @@ export function pluckOptions({
   if (meta) options.meta = meta;
   if (noEmit) options.noEmit = noEmit;
   if (idOfOriginatingEvent) options.idOfOriginatingEvent = idOfOriginatingEvent;
+  if (skip) options[AbstractControl.SKIP_CONTROL_SOURCE_QUEUE] = true;
 
   return options;
 }

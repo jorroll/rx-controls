@@ -97,3 +97,48 @@ describe('SimpleValueMapperComponent', () => {
     expect(o.input.value).toEqual(newDate.toISOString());
   });
 });
+
+@Component({
+  selector: 'my-test-component',
+  template: ` <input [swFormControl]="control" /> `,
+})
+export class ReplayStateTestComponent {
+  readonly control = new FormControl('');
+
+  replay = this.control.replayState();
+
+  toggle() {
+    this.replay.subscribe(this.control.source);
+  }
+}
+
+describe('ReplayStateTestComponent', () => {
+  const o: TestSingleChild.TestArgs<
+    ReplayStateTestComponent,
+    HTMLInputElement,
+    'input'
+  > = {} as any;
+
+  beforeEach(beforeEachFn(ReplayStateTestComponent, 'input', o));
+
+  it('initializes', () => {
+    expect(o.input.value).toEqual(o.component.control.rawValue);
+  });
+
+  it.only('toggle', () => {
+    const { control } = o.component;
+    const newValue = 'hi';
+
+    userEvent.clear(o.input);
+    userEvent.type(o.input, newValue);
+
+    expect(control.rawValue).toEqual(newValue);
+    expect(o.input.value).toEqual(newValue);
+    expect(control.dirty).toEqual(true);
+
+    o.component.toggle();
+
+    expect(control.dirty).toEqual(false);
+    expect(control.value).toEqual('');
+  });
+});
