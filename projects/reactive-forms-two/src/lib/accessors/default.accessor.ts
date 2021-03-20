@@ -44,7 +44,11 @@ import { BaseAccessor } from './base.accessor';
 export abstract class DefaultAccessor
   extends BaseAccessor
   implements ControlAccessor<FormControl<string>>, OnInit, OnDestroy {
-  readonly control = new FormControl();
+  static id = 0;
+
+  readonly control = new FormControl('', {
+    id: Symbol(`SwDefaultAccessor-${DefaultAccessor.id++}`),
+  });
 
   constructor(
     protected renderer: Renderer2,

@@ -56,9 +56,13 @@ import { setupStdControlEventHandlers, setupListeners } from './util';
 export class RangeInputAccessor
   extends BaseAccessor
   implements ControlAccessor<FormControl<number | null>>, OnInit, OnDestroy {
+  static id = 0;
+
   [CONTROL_ACCESSOR_SPECIFICITY] = '0.2.1';
 
-  readonly control = new FormControl<number | null>();
+  readonly control = new FormControl<number | null>(null, {
+    id: Symbol(`SwRangeInputAccessor-${RangeInputAccessor.id++}`),
+  });
 
   constructor(
     protected renderer: Renderer2,

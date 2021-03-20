@@ -46,9 +46,13 @@ abstract class HTMLCollection {
 export abstract class SelectAccessor
   extends BaseAccessor
   implements ControlAccessor<FormControl>, OnInit, OnDestroy {
+  static id = 0;
+
   [CONTROL_ACCESSOR_SPECIFICITY] = '0.2.1';
 
-  readonly control = new FormControl();
+  readonly control = new FormControl(null as any, {
+    id: Symbol(`SwSelectAccessor-${SelectAccessor.id++}`),
+  });
 
   private _compareWith = Object.is;
 

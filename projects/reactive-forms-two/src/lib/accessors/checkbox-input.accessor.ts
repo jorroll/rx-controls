@@ -57,9 +57,13 @@ import { setupStdControlEventHandlers, setupListeners } from './util';
 export class CheckboxInputAccessor
   extends BaseAccessor
   implements ControlAccessor<FormControl<boolean>>, OnInit, OnDestroy {
+  static id = 0;
+
   [CONTROL_ACCESSOR_SPECIFICITY] = '0.2.1';
 
-  readonly control = new FormControl<boolean>();
+  readonly control = new FormControl<boolean>(null as any, {
+    id: Symbol(`SwCheckboxInputAccessor-${CheckboxInputAccessor.id++}`),
+  });
 
   constructor(
     protected renderer: Renderer2,
