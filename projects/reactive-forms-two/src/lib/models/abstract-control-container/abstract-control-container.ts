@@ -120,9 +120,9 @@ export type ContainerControls<C> = C extends AbstractControlContainer<
 //   >;
 // }
 
-export interface IChildControlEvent extends IControlEvent {
-  childEvents: { [key: string]: IControlEvent };
-}
+// export interface IChildControlEvent extends IControlEvent {
+//   readonly childEvents: { [key: string]: IControlEvent };
+// }
 
 // export interface IChildControlStateChangeEvent
 //   extends IChildControlEvent,
@@ -381,7 +381,7 @@ export interface AbstractControlContainer<
   replayState(
     options?: IControlEventOptions & {
       /**
-       * By default, the controls will be cloned so that
+       * By default, the child controls will be cloned so that
        * mutations to them do not affect the replayState snapshot.
        * Pass the `preserveControls: true` option to disable this.
        */
@@ -389,7 +389,15 @@ export interface AbstractControlContainer<
     }
   ): Observable<IControlEvent>;
 
-  clone(): AbstractControlContainer<Controls, Data>;
+  clone(
+    options?: IControlEventOptions & {
+      /**
+       * By default, the child controls will also be cloned.
+       * Pass the `preserveControls: true` option to disable this.
+       */
+      preserveControls?: boolean;
+    }
+  ): AbstractControlContainer<Controls, Data>;
 }
 
 /**

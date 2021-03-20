@@ -1,24 +1,17 @@
 import { Component } from '@angular/core';
 import userEvent from '@testing-library/user-event';
-import { TestSingleChild, wait } from './test-utils';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatInputModule } from '@angular/material/input';
-import { CompatFormControlNameDirective } from './compat-form-control-name.directive';
-import {
-  ReactiveFormsModuleTwo,
-  FormGroup,
-  FormControl,
-} from '@service-work/reactive-forms';
-import { CommonModule } from '@angular/common';
-import { IControlStateChangeEvent } from '@service-work/reactive-forms/src/lib/models';
+import { TestSingleChild } from './test-utils';
+import { FormGroupDirective } from './form-group.directive';
+import { FormControlNameDirective } from './form-control-name.directive';
+import { wait } from '../models/test-util';
+import { FormControl, FormGroup, IControlStateChangeEvent } from '../models';
+import { DefaultFormGroupDirectiveAccessor } from './default-form-group.directive.accessor';
 
 const beforeEachFn = TestSingleChild.buildBeforeEachFn({
-  declarations: [CompatFormControlNameDirective],
-  imports: [
-    MatFormFieldModule,
-    MatInputModule,
-    ReactiveFormsModuleTwo,
-    CommonModule,
+  declarations: [
+    FormControlNameDirective,
+    FormGroupDirective,
+    DefaultFormGroupDirectiveAccessor,
   ],
 });
 
@@ -26,13 +19,11 @@ const beforeEachFn = TestSingleChild.buildBeforeEachFn({
   selector: 'my-test-component',
   template: `
     <div id="theDiv" *ngIf="showFormElement" [swFormGroup]="control">
-      <mat-form-field>
-        <input matInput formControl swFormControlName="one" />
-      </mat-form-field>
+      <input swFormControlName="one" />
     </div>
   `,
 })
-export class MatInputTestComponent {
+export class InputTestComponent {
   readonly control = new FormGroup({
     one: new FormControl('', {
       validators: (c) => (c.value.length > 0 ? null : { required: true }),
@@ -52,14 +43,14 @@ export class MatInputTestComponent {
   }
 }
 
-describe('MatInputTestComponent', () => {
+describe('InputTestComponent', () => {
   const o: TestSingleChild.TestArgs<
-    MatInputTestComponent,
+    InputTestComponent,
     HTMLInputElement,
     'input'
   > = {} as any;
 
-  beforeEach(beforeEachFn(MatInputTestComponent, 'input', o));
+  beforeEach(beforeEachFn(InputTestComponent, 'input', o));
 
   it('initializes', () => {
     expect(o.component.control.errors).toEqual({ required: true });

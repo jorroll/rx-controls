@@ -1,6 +1,11 @@
 import { Component, forwardRef } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { FormControl, FormGroup } from '../models';
+import {
+  AbstractControl,
+  FormControl,
+  FormGroup,
+  IControlStateChangeEvent,
+} from '../models';
 import { ReactiveFormsModuleTwo } from './form.module';
 import {
   SW_CONTROL_ACCESSOR,
@@ -13,6 +18,8 @@ import { IControlValueMapper } from './interface';
 import { wait } from '../models/test-util';
 import { TestSingleChild } from './test-utils';
 import { FormControlDirective } from './form-control.directive';
+
+import { inspect } from 'util';
 
 const beforeEachFn = TestSingleChild.buildBeforeEachFn({
   declarations: [FormControlDirective],
@@ -140,5 +147,143 @@ describe('ReplayStateTestComponent', () => {
 
     expect(control.dirty).toEqual(false);
     expect(control.value).toEqual('');
+  });
+});
+
+@Component({
+  selector: 'my-test-component',
+  template: `
+    <input *ngIf="showInput" [swFormControl]="control.get('one')" />
+  `,
+})
+export class NgIfReplayStateWithFormGroupTestComponent {
+  readonly control = new FormGroup({
+    one: new FormControl('', {
+      validators: (o) => (o.value !== '' ? null : { required: true }),
+    }),
+  });
+
+  showInput = true;
+  replay = this.control.replayState();
+
+  async toggle() {
+    if (this.showInput) {
+      this.replay.subscribe((e) => this.control.processEvent(e));
+    }
+
+    this.showInput = !this.showInput;
+  }
+}
+
+describe('NgIfReplayStateWithFormGroupTestComponent', () => {
+  const o: TestSingleChild.TestArgs<
+    NgIfReplayStateWithFormGroupTestComponent,
+    HTMLInputElement,
+    'input'
+  > = {} as any;
+
+  beforeEach(
+    beforeEachFn(NgIfReplayStateWithFormGroupTestComponent, 'input', o)
+  );
+
+  it('initializes', () => {
+    expect(o.component.control.errors).toEqual({ required: true });
+    expect(o.input.value).toEqual(o.component.control.value.one);
+  });
+
+  // This tests a bug that I encountered in how replayState worked.
+  // The cause turned out to be that I was mutating the event object
+  // saved within replayState and so subsequent subscriptions would
+  // return unexpected results.
+  it('replayState resets value', async () => {
+    const { control } = o.component;
+    const newValue = 'hi';
+    const getInput = () => o.container.querySelector('input')!;
+
+    expect(getInput()).toBeTruthy();
+
+    expect(control.dirty).toEqual(false);
+    expect(control.selfDirty).toEqual(false);
+    expect(control.touched).toEqual(false);
+    expect(control.selfTouched).toEqual(false);
+    expect(control.rawValue).toEqual({ one: '' });
+    expect(control.value).toEqual({ one: '' });
+    expect(control.invalid).toEqual(true);
+    expect(control.selfInvalid).toEqual(false);
+    expect(control.errors).toEqual({ required: true });
+    expect(control.selfErrors).toEqual(null);
+    expect(control.childrenErrors).toEqual({ required: true });
+
+    userEvent.clear(getInput());
+    userEvent.type(getInput(), newValue);
+
+    expect(control.dirty).toEqual(true);
+    expect(control.selfDirty).toEqual(false);
+    expect(control.childDirty).toEqual(true);
+    expect(control.touched).toEqual(false);
+    expect(control.selfTouched).toEqual(false);
+    expect(control.rawValue).toEqual({ one: 'hi' });
+    expect(control.value).toEqual({ one: 'hi' });
+    expect(control.invalid).toEqual(false);
+    expect(control.selfInvalid).toEqual(false);
+    expect(control.errors).toEqual(null);
+    expect(control.selfErrors).toEqual(null);
+
+    await o.component.toggle();
+    o.fixture.detectChanges();
+
+    expect(getInput()).toBeFalsy();
+
+    expect(control.dirty).toEqual(false);
+    expect(control.selfDirty).toEqual(false);
+    expect(control.touched).toEqual(false);
+    expect(control.selfTouched).toEqual(false);
+    expect(control.rawValue).toEqual({ one: '' });
+    expect(control.value).toEqual({ one: '' });
+    expect(control.invalid).toEqual(true);
+    expect(control.selfInvalid).toEqual(false);
+    expect(control.errors).toEqual({ required: true });
+    expect(control.selfErrors).toEqual(null);
+    expect(control.childrenErrors).toEqual({ required: true });
+
+    await o.component.toggle();
+    o.fixture.detectChanges();
+
+    expect(getInput()).toBeTruthy();
+
+    userEvent.clear(getInput());
+    userEvent.type(getInput(), newValue);
+
+    expect(control.dirty).toEqual(true);
+    expect(control.selfDirty).toEqual(false);
+    expect(control.childDirty).toEqual(true);
+    expect(control.touched).toEqual(false);
+    expect(control.selfTouched).toEqual(false);
+    expect(control.rawValue).toEqual({ one: 'hi' });
+    expect(control.value).toEqual({ one: 'hi' });
+    expect(control.invalid).toEqual(false);
+    expect(control.selfInvalid).toEqual(false);
+    expect(control.errors).toEqual(null);
+    expect(control.selfErrors).toEqual(null);
+
+    await o.component.toggle();
+    o.fixture.detectChanges();
+
+    expect(getInput()).toBeFalsy();
+
+    expect(control.dirty).toEqual(false);
+    expect(control.selfDirty).toEqual(false);
+    expect(control.touched).toEqual(false);
+    expect(control.selfTouched).toEqual(false);
+    expect(control.rawValue).toEqual({ one: '' });
+    expect(control.value).toEqual({ one: '' });
+    expect(control.invalid).toEqual(true);
+    expect(control.selfInvalid).toEqual(false);
+    expect(control.errors).toEqual({ required: true });
+    expect(control.selfErrors).toEqual(null);
+    expect(control.childrenErrors).toEqual({ required: true });
+
+    // for some reason this is necessary to detect infinite loop errors
+    await wait(0);
   });
 });

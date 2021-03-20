@@ -1101,10 +1101,13 @@ export abstract class AbstractControlBase<RawValue, Data, Value>
     return of(event);
   }
 
-  clone(): this {
+  clone(options?: IControlEventOptions): this {
     const control: this = new (this.constructor as any)();
 
-    this.replayState().subscribe((e) => control.processEvent(e));
+    this.replayState({
+      trigger: { label: 'clone', source: this.id },
+      ...options,
+    }).subscribe((e) => control.processEvent(e));
 
     return control;
   }

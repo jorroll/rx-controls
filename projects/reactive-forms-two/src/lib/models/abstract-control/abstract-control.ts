@@ -1,4 +1,4 @@
-import { Observable, Subject, queueScheduler, Subscription } from 'rxjs';
+import { Observable } from 'rxjs';
 
 // *****************************
 // Misc Types
@@ -26,18 +26,18 @@ export interface ValidationErrors {
 // *****************************
 
 export interface IEventTrigger {
-  label: string;
-  source: ControlId;
+  readonly label: string;
+  readonly source: ControlId;
   // controlId: ControlId;
 }
 
 export interface IControlEvent {
-  trigger: IEventTrigger;
+  readonly trigger: IEventTrigger;
   // controlId: ControlId;
-  source: ControlId;
-  type: string;
-  meta: { [key: string]: unknown };
-  noObserve?: boolean;
+  readonly source: ControlId;
+  readonly type: string;
+  readonly meta: { [key: string]: unknown };
+  readonly noObserve?: boolean;
 }
 
 export interface IControlEventOptions {
@@ -66,25 +66,25 @@ export interface IControlEventOptions {
 
 export interface IControlValidationEvent<RawValue, Value = RawValue>
   extends IControlEvent {
-  type: 'ValidationStart' | 'AsyncValidationStart';
-  rawValue: RawValue;
-  value: Value;
+  readonly type: 'ValidationStart' | 'AsyncValidationStart';
+  readonly rawValue: RawValue;
+  readonly value: Value;
 }
 
 export interface IControlStateChangeEvent extends IControlEvent {
-  type: 'StateChange';
-  changes: ReadonlyMap<string, unknown>;
-  childEvents?: { [key: string]: IControlStateChangeEvent };
+  readonly type: 'StateChange';
+  readonly changes: ReadonlyMap<string, unknown>;
+  readonly childEvents?: { [key: string]: IControlStateChangeEvent };
 }
 
 export interface IControlFocusEvent extends IControlEvent {
-  type: 'Focus';
-  focus: boolean;
+  readonly type: 'Focus';
+  readonly focus: boolean;
 }
 
 export interface IProcessedEvent<T extends IControlEvent = IControlEvent> {
-  status: 'PROCESSED' | 'UNKNOWN';
-  result?: T;
+  readonly status: 'PROCESSED' | 'UNKNOWN';
+  readonly result?: T;
 }
 
 // *****************************
@@ -696,7 +696,7 @@ export interface AbstractControl<RawValue = any, Data = any, Value = RawValue> {
    * Returns a new AbstractControl which is identical to this one except
    * for the `id` and `parent` properties.
    */
-  clone(): AbstractControl<RawValue, Data, Value>;
+  clone(options?: IControlEventOptions): AbstractControl<RawValue, Data, Value>;
 
   processEvent<T extends IControlEvent>(
     event: T,

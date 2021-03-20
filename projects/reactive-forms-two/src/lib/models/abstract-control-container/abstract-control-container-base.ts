@@ -1,6 +1,6 @@
 import { Subscription, Observable, of } from 'rxjs';
 
-import { filter } from 'rxjs/operators';
+import { filter, map } from 'rxjs/operators';
 
 import {
   AbstractControl,
@@ -606,7 +606,10 @@ export abstract class AbstractControlContainerBase<
       // Merge the two `event.changes` objects together, favoring the second
       // round of results in case of conflicts, and then overwrite the
       // saved result changes
-      results[key].changes = new Map([...markChanges, ...markChildrenChanges]);
+      (results[key] as any).changes = new Map([
+        ...markChanges,
+        ...markChildrenChanges,
+      ]);
     });
 
     return this._processChildResults(childOptions, normOptions);
@@ -657,7 +660,49 @@ export abstract class AbstractControlContainerBase<
       ),
     };
 
-    return of(event);
+    // when we aren't preserving the controls, then we want to return
+    // a new controlsStore & child controls each time
+    return options.preserveControls
+      ? of(event)
+      : of(event).pipe(
+          map((e) => {
+            const changes = new Map(e.changes);
+
+            const controlsStore = new Map(
+              Array.from(
+                changes.get('controlsStore') as Map<
+                  ControlsKey<Controls>,
+                  NonNullable<Controls[ControlsKey<Controls>]>
+                >
+              ).map(([k, c]) => [k, (c as AbstractControl).clone() as typeof c])
+            );
+
+            changes.set('controlsStore', controlsStore);
+
+            const controls = Array.isArray(changes.get('controls'))
+              ? Array.from(controlsStore.values())
+              : Object.fromEntries(controlsStore);
+
+            changes.set('controls', controls);
+
+            return {
+              ...e,
+              changes,
+            };
+          })
+        );
+  }
+
+  clone(
+    options?: IControlEventOptions & {
+      /**
+       * By default, the child controls will be also cloned.
+       * Pass the `preserveControls: true` option to disable this.
+       */
+      preserveControls?: boolean;
+    }
+  ) {
+    return super.clone(options);
   }
 
   processEvent<T extends IControlEvent>(

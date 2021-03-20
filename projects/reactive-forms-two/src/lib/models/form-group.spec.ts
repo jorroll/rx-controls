@@ -1277,6 +1277,195 @@ describe('FormGroup', () => {
       expect(controlTwo).not.toBe(aControls.two);
       expect(controlTwo.value).toEqual('');
     });
+
+    it('is not mutated if control is mutated', async () => {
+      /**
+       * The problem could be that the MatInput element is somehow, ignoring
+       * the replayState value, holding onto the old value, and then updating the replayState
+       * control with the old value fast enough that it seems like the replayState always
+       * had that value
+       */
+      const group = new FormGroup({
+        one: new FormControl('', {
+          validators: (c) =>
+            c.rawValue.length > 0 ? null : { required: true },
+        }),
+      });
+
+      const control = () => group.get('one')!;
+
+      await wait(0);
+
+      const replay = group.replayState();
+
+      const event1 = await replay.toPromise();
+
+      const expectation: IControlStateChangeEvent = {
+        type: 'StateChange',
+        source: group.id,
+        meta: {},
+        trigger: {
+          label: 'replayState',
+          source: group.id,
+        },
+        changes: new Map<string, any>([
+          [
+            'controls',
+            { one: expect.toEqualControl(control().clone(), { skip: ['id'] }) },
+          ],
+          ['size', 1],
+          [
+            'controlsStore',
+            new Map([
+              [
+                'one',
+                expect.toEqualControl(control().clone(), { skip: ['id'] }),
+              ],
+            ]),
+          ],
+          ['childValid', false],
+          ['childrenValid', false],
+          ['childInvalid', true],
+          ['childrenInvalid', true],
+          ['childEnabled', true],
+          ['childrenEnabled', true],
+          ['childDisabled', false],
+          ['childrenDisabled', false],
+          ['childReadonly', false],
+          ['childrenReadonly', false],
+          ['childPending', false],
+          ['childrenPending', false],
+          ['childTouched', false],
+          ['childrenTouched', false],
+          ['childDirty', false],
+          ['childrenDirty', false],
+          ['childSubmitted', false],
+          ['childrenSubmitted', false],
+          ['childrenErrors', { required: true }],
+          ['enabled', true],
+          ['selfEnabled', true],
+          ['disabled', false],
+          ['selfDisabled', false],
+          ['touched', false],
+          ['selfTouched', false],
+          ['dirty', false],
+          ['selfDirty', false],
+          ['readonly', false],
+          ['selfReadonly', false],
+          ['submitted', false],
+          ['selfSubmitted', false],
+          ['data', undefined],
+          ['value', { one: '' }],
+          ['rawValue', { one: '' }],
+          ['validator', null],
+          ['validatorStore', new Map()],
+          ['pending', false],
+          ['selfPending', false],
+          ['pendingStore', new Set()],
+          ['valid', false],
+          ['selfValid', true],
+          ['invalid', true],
+          ['selfInvalid', false],
+          ['status', 'INVALID'],
+          ['errors', { required: true }],
+          ['selfErrors', null],
+          ['errorsStore', new Map()],
+        ]),
+      };
+
+      expect(event1).toEqual<IControlStateChangeEvent>(expectation);
+      expect((event1.changes.get('controls') as any).one).toImplementObject({
+        rawValue: '',
+        value: '',
+      });
+
+      control().setValue('changed');
+      control().markTouched(true);
+
+      const event2 = await replay.toPromise();
+
+      expect(event2).toEqual<IControlStateChangeEvent>(expectation);
+
+      expect((event2.changes.get('controls') as any).one).toImplementObject({
+        rawValue: '',
+        value: '',
+      });
+
+      expect(group).toImplementObject({
+        rawValue: { one: 'changed' },
+        value: { one: 'changed' },
+        touched: true,
+        childTouched: true,
+        childrenTouched: true,
+        selfTouched: false,
+      });
+
+      expect(control()).toImplementObject({
+        rawValue: 'changed',
+        value: 'changed',
+        touched: true,
+        selfTouched: true,
+      });
+
+      replay.subscribe((e) => group.processEvent(e));
+
+      const event3 = await replay.toPromise();
+
+      expect(event3).toEqual<IControlStateChangeEvent>(expectation);
+
+      expect(group).toImplementObject({
+        rawValue: { one: '' },
+        value: { one: '' },
+        touched: false,
+        childTouched: false,
+        childrenTouched: false,
+        selfTouched: false,
+      });
+
+      expect(control()).toImplementObject({
+        rawValue: '',
+        value: '',
+        touched: false,
+        selfTouched: false,
+      });
+
+      control().setValue('changed2');
+      control().markTouched(true);
+
+      expect(group).toImplementObject({
+        rawValue: { one: 'changed2' },
+        value: { one: 'changed2' },
+        touched: true,
+        childTouched: true,
+        childrenTouched: true,
+        selfTouched: false,
+      });
+
+      expect(control()).toImplementObject({
+        rawValue: 'changed2',
+        value: 'changed2',
+        touched: true,
+        selfTouched: true,
+      });
+
+      replay.subscribe((e) => group.processEvent(e));
+
+      expect(group).toImplementObject({
+        rawValue: { one: '' },
+        value: { one: '' },
+        touched: false,
+        childTouched: false,
+        childrenTouched: false,
+        selfTouched: false,
+      });
+
+      expect(control()).toImplementObject({
+        rawValue: '',
+        value: '',
+        touched: false,
+        selfTouched: false,
+      });
+    });
   });
 
   describe('children', () => {
@@ -1780,245 +1969,6 @@ describe('FormGroup', () => {
     });
 
     describe('c & b', () => {
-      // a = new FormGroup({
-      //   one: new FormControl('one'),
-      //   two: new FormControl(2),
-      // });
-
-      // b = new FormGroup();
-
-      // c = new FormGroup({
-      //   three: new FormControl(['one']),
-      //   four: a,
-      // });
-      // it.only(`setValue on parent`, async () => {
-      //   // const d = new FormGroup({
-      //   //   three: new FormControl(['one']),
-      //   //   four: new FormGroup({
-      //   //     one: new FormControl('one'),
-      //   //     two: new FormControl(2),
-      //   //   })
-      //   // });
-
-      //   const d = new FormGroup({
-      //     one: new FormGroup({
-      //       'one.a': new FormControl('original'),
-      //       'one.b': new FormControl('original'),
-      //     }),
-      //     two: new FormControl('original'),
-      //   });
-
-      //   // const d = new FormGroup({
-      //   //   one: new FormControl('original'),
-      //   //   // two: new FormControl(['two']),
-      //   // });
-
-      //   d.replayState().subscribe((e) => b.processEvent(e));
-
-      //   console.log('0 d.value', d.value);
-      //   console.log('0 b.value', b.value);
-
-      //   // const [end] = subscribeToControlEventsUntilEnd(c, b);
-      //   // subscribeToControlEventsUntilEnd(b, c, end);
-
-      //   const [end] = subscribeToControlEventsUntilEnd(b, d);
-      //   subscribeToControlEventsUntilEnd(d, b, end);
-
-      //   // AbstractControl.debugCallback = function (event) {
-      //   //   console.log(
-      //   //     inspect(
-      //   //       {
-      //   //         label: `${this.id.toString()} event`,
-      //   //         event,
-      //   //       },
-      //   //       false,
-      //   //       null
-      //   //     )
-      //   //   );
-      //   // };
-
-      //   const value1 = {
-      //     one: {
-      //       'one.a': 'changed',
-      //       'one.b': 'changed',
-      //     },
-      //     two: 'changed',
-      //   };
-
-      //   // const value1 = {
-      //   //   three: ['two'],
-      //   //   four: {
-      //   //     one: 'three',
-      //   //     two: 4,
-      //   //   },
-      //   // };
-
-      //   const promise0 = merge(b.events, d.events)
-      //     .pipe(takeUntil(end), toArray())
-      //     .toPromise();
-
-      //   const [promise1] = getControlEventsUntilEnd(b, end);
-      //   const [promise2] = getControlEventsUntilEnd(d, end);
-
-      //   b.setValue(value1);
-
-      //   end.next();
-      //   end.complete();
-
-      //   console.log('1 d.value', d.value);
-      //   console.log('1 b.value', b.value);
-
-      //   // const [
-      //   //   event1,
-      //   //   event2,
-      //   //   event3,
-      //   //   event4,
-      //   //   event5,
-      //   //   event6,
-      //   //   event7,
-      //   //   event8,
-      //   // ] = await promise1;
-      //   // const [
-      //   //   event11,
-      //   //   event12,
-      //   //   event13,
-      //   //   event14,
-      //   //   event15,
-      //   //   event16,
-      //   //   event17,
-      //   //   event18,
-      //   // ] = await promise2;
-
-      //   // console.log('event1', inspect(event1, false, null));
-      //   // console.log('event2', inspect(event2, false, null));
-      //   // console.log('event3', inspect(event3, false, null));
-      //   // console.log('event4', inspect(event4, false, null));
-      //   // console.log('event5', inspect(event5, false, null));
-      //   // console.log('event6', inspect(event6, false, null));
-      //   // console.log('event7', inspect(event7, false, null));
-      //   // console.log('event8', inspect(event8, false, null));
-
-      //   // console.log('');
-      //   // console.log('');
-      //   // console.log('');
-
-      //   // console.log('event11', inspect(event11, false, null));
-      //   // console.log('event12', inspect(event12, false, null));
-      //   // console.log('event13', inspect(event13, false, null));
-      //   // console.log('event14', inspect(event14, false, null));
-      //   // console.log('event15', inspect(event15, false, null));
-      //   // console.log('event16', inspect(event16, false, null));
-      //   // console.log('event17', inspect(event17, false, null));
-      //   // console.log('event18', inspect(event18, false, null));
-
-      //   console.log('');
-      //   console.log('');
-      //   console.log('');
-
-      //   const [
-      //     event21,
-      //     event22,
-      //     event23,
-      //     event24,
-      //     event25,
-      //     event26,
-      //     event27,
-      //     event28,
-      //     event29,
-      //     event30,
-      //     event31,
-      //     event32,
-      //     event33,
-      //     event34,
-      //     event35,
-      //     event36,
-      //     event37,
-      //     event38,
-      //     event39,
-      //   ] = await promise0;
-
-      //   console.log('event21', inspect(event21, false, null));
-      //   console.log('event22', inspect(event22, false, null));
-      //   console.log('event23', inspect(event23, false, null));
-      //   console.log('event24', inspect(event24, false, null));
-      //   console.log('event25', inspect(event25, false, null));
-      //   console.log('event26', inspect(event26, false, null));
-      //   console.log('event27', inspect(event27, false, null));
-      //   console.log('event28', inspect(event28, false, null));
-      //   console.log('event29', inspect(event29, false, null));
-      //   console.log('event30', inspect(event30, false, null));
-      //   console.log('event31', inspect(event31, false, null));
-      //   console.log('event32', inspect(event32, false, null));
-      //   console.log('event33', inspect(event33, false, null));
-      //   console.log('event34', inspect(event34, false, null));
-      //   console.log('event35', inspect(event35, false, null));
-      //   console.log('event36', inspect(event36, false, null));
-      //   console.log('event37', inspect(event37, false, null));
-      //   console.log('event38', inspect(event38, false, null));
-      //   console.log('event39', inspect(event39, false, null));
-
-      //   // console.log('1 a.value', a.value);
-      //   // console.log('1 b.value', b.value);
-      //   // console.log('1 c.value', c.value);
-
-      //   expect(b).toEqualControl(d);
-
-      //   // expect(a.rawValue).toEqual(value1.four);
-
-      //   // const value2 = {
-      //   //   three: ['three'],
-      //   //   four: {
-      //   //     one: 'one',
-      //   //     two: 5,
-      //   //   },
-      //   // };
-
-      //   await wait(0);
-
-      //   // console.warn('now!');
-      //   // // console.log('a', a.id);
-      //   // // console.log('b', b.id);
-      //   // // console.log('c', c.id);
-      //   // AbstractControl.debugCallback = function (event) {
-      //   //   console.log(
-      //   //     inspect(
-      //   //       {
-      //   //         label: `${this.id.toString()} event`,
-      //   //         event,
-      //   //       },
-      //   //       false,
-      //   //       null
-      //   //     )
-      //   //   );
-      //   // };
-
-      //   // b.setValue(value2);
-
-      //   // console.log('2 a.value', a.value);
-      //   // console.log('2 b.value', b.value);
-      //   // console.log('2 c.value', c.value);
-
-      //   // expect(c).toEqualControl(b);
-
-      //   // expect(a.rawValue).toEqual(value2.four);
-
-      //   // end.next();
-      //   // end.complete();
-      // });
-
-      function syncControls(
-        original: AbstractControl,
-        alternate: AbstractControl
-      ): Subject<any> {
-        // original.replayState().subscribe((e) => alternate.processEvent(e));
-
-        const [end] = subscribeToControlEventsUntilEnd(original, alternate);
-
-        subscribeToControlEventsUntilEnd(alternate, original, end);
-
-        return end;
-      }
-
       it(`setValue on parent 2`, async () => {
         const originalControl = new FormGroup(
           {
@@ -2056,7 +2006,16 @@ describe('FormGroup', () => {
           }
         );
 
-        const end = syncControls(originalControl, alternateControl);
+        const [end] = subscribeToControlEventsUntilEnd(
+          originalControl,
+          alternateControl
+        );
+
+        subscribeToControlEventsUntilEnd(
+          alternateControl,
+          originalControl,
+          end
+        );
 
         const value1 = {
           one: {
