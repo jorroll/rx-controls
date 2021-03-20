@@ -1,6 +1,7 @@
 import {
   AbstractControl,
   IControlEventOptions,
+  IControlStateChangeEvent,
 } from './abstract-control/abstract-control';
 import {
   AbstractControlContainerBase,
@@ -9,15 +10,16 @@ import {
 import {
   ControlsValue,
   ControlsRawValue,
-  IControlContainerStateChange,
   ControlsKey,
-  AbstractControlContainer,
-  IControlContainerSelfStateChangeEvent,
 } from './abstract-control-container/abstract-control-container';
-import { getSimpleContainerStateChangeEventArgs } from './util';
+import { getSimpleStateChangeEventArgs } from './util';
 import { isEqual } from '../util';
 
-export type IFormArrayArgs<D> = IAbstractControlContainerBaseArgs<D>;
+export type IFormArrayArgs<
+  Data = any,
+  RawValue = unknown,
+  Value = unknown
+> = IAbstractControlContainerBaseArgs<Data, RawValue, Value>;
 
 export class FormArray<
   Controls extends ReadonlyArray<AbstractControl> = ReadonlyArray<AbstractControl>,
@@ -27,7 +29,11 @@ export class FormArray<
 
   constructor(
     controls: Controls = ([] as unknown) as Controls,
-    options: IFormArrayArgs<Data> = {}
+    options: IFormArrayArgs<
+      Data,
+      ControlsRawValue<Controls>,
+      ControlsValue<Controls>
+    > = {}
   ) {
     super(
       options.id || Symbol(`FormArray-${FormArray.id++}`),
@@ -52,13 +58,12 @@ export class FormArray<
       throw new Error('AbstractControl can only have one parent');
     }
 
-    this.emitEvent<IControlContainerSelfStateChangeEvent<Controls, Data>>(
-      getSimpleContainerStateChangeEventArgs({
-        controlsStore: (old) =>
-          new Map(old).set(old.size as ControlsKey<Controls>, control),
-      }),
-      options
+    const controlsStore = new Map(this.controlsStore).set(
+      this.controlsStore.size as ControlsKey<Controls>,
+      control as NonNullable<Controls[ControlsKey<Controls>]>
     );
+
+    return this.setControls(controlsStore, options);
   }
 
   unshift(control: Controls[number], options?: IControlEventOptions) {
@@ -66,42 +71,45 @@ export class FormArray<
       throw new Error('AbstractControl can only have one parent');
     }
 
-    this.emitEvent<IControlContainerSelfStateChangeEvent<Controls, Data>>(
-      getSimpleContainerStateChangeEventArgs({
-        controlsStore: (old) => {
-          const controlsStore = new Map([
-            [0 as ControlsKey<Controls>, control],
-          ]);
+    const controlsStore = new Map([[0 as ControlsKey<Controls>, control]]);
 
-          for (const [k, v] of old) {
-            controlsStore.set(((k as number) + 1) as ControlsKey<Controls>, v);
-          }
+    for (const [k, v] of this.controlsStore) {
+      controlsStore.set(((k as number) + 1) as ControlsKey<Controls>, v);
+    }
 
-          return controlsStore;
-        },
-      }),
-      options
-    );
+    return this.setControls(controlsStore, options);
   }
 
-  protected processStateChange_ControlsStore(
-    event: IControlContainerSelfStateChangeEvent<Controls, Data>
-  ): IControlContainerSelfStateChangeEvent<Controls, Data> | null {
-    const change = event.change.controlsStore as NonNullable<
-      IControlContainerStateChange<Controls, Data>['controlsStore']
-    >;
+  setControls(
+    value:
+      | Controls
+      | ReadonlyMap<ControlsKey<Controls>, Controls[ControlsKey<Controls>]>,
+    options?: IControlEventOptions
+  ): Array<keyof this & string> {
+    const controlsStore =
+      value instanceof Map
+        ? new Map<ControlsKey<Controls>, Controls[ControlsKey<Controls>]>(value)
+        : new Map(
+            (value as Controls).map(
+              (c, i) =>
+                [i, c as unknown] as [
+                  ControlsKey<Controls>,
+                  Controls[ControlsKey<Controls>]
+                ]
+            )
+          );
 
-    const controlsStore = change(this._controlsStore) as Map<
-      ControlsKey<Controls>,
-      Controls[ControlsKey<Controls>]
-    >;
+    if (isEqual(this._controlsStore, controlsStore)) return [];
 
-    if (isEqual(this._controlsStore, controlsStore)) return null;
+    const normOptions = this._normalizeOptions('setControls', options);
 
     // controls that need to be removed
     for (const [key, control] of this._controlsStore) {
-      if (controlsStore.get(key) === control) continue;
-      this.unregisterControl(control);
+      if (controlsStore.get(key) === control) {
+        continue;
+      }
+
+      this._unregisterControl(control, normOptions);
     }
 
     const controls: Array<Controls[ControlsKey<Controls>]> = [];
@@ -117,43 +125,58 @@ export class FormArray<
         newValue.push(control.value);
       }
 
-      if (this._controlsStore.get(key) === control) continue;
+      if (this._controlsStore.get(key) === control) {
+        continue;
+      }
+
       // This is needed because the call to "registerControl" can clone
       // the provided control (returning a new one);
-      controlsStore.set(key, this.registerControl(key, control));
+      controlsStore.set(key, this._registerControl(key, control, normOptions));
     }
 
     this._controls = (controls as unknown) as Controls;
     // This is needed because the call to "registerControl" can clone
     // the provided control (returning a new one);
     this._controlsStore = (controlsStore as unknown) as this['controlsStore'];
-    this._rawValue = newRawValue as this['rawValue'];
-    this._value = (newValue as unknown) as this['value'];
 
-    const changedProps = [
+    const changedProps: Array<keyof this & string> = [
+      'controls',
       'controlsStore',
-      'value',
-      'rawValue',
-      ...this.runValidation(event),
-      ...this.processMetaProps(),
     ];
 
-    this.updateChildrenErrors(changedProps);
+    if (!isEqual(newRawValue, this._rawValue)) {
+      this._rawValue = newRawValue as this['rawValue'];
+      changedProps.push('rawValue');
+    }
 
-    return {
-      ...event,
-      change: { controlsStore: change },
-      changedProps,
-    };
+    if (!isEqual(newValue, this._value)) {
+      this._value = newValue as this['value'];
+      changedProps.push('value');
+    }
+
+    changedProps.push(
+      ...this._validate(normOptions),
+      ...this._calculateChildProps(),
+      ...this._calculateChildrenErrors()
+    );
+
+    if (!normOptions[AbstractControl.NO_EVENT]) {
+      this._emitEvent<IControlStateChangeEvent>(
+        getSimpleStateChangeEventArgs(this, changedProps),
+        normOptions
+      );
+    }
+
+    return changedProps;
   }
 
-  protected shallowCloneValue<T extends this['rawValue'] | this['value']>(
+  protected _shallowCloneValue<T extends this['rawValue'] | this['value']>(
     value: T
   ) {
     return (value as any).slice() as T;
   }
 
-  protected coerceControlStringKey(key: string) {
+  protected _coerceControlStringKey(key: string) {
     return parseInt(key, 10) as ControlsKey<Controls>;
   }
 }

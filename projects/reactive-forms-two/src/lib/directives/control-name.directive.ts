@@ -34,7 +34,7 @@ export abstract class ControlNameDirective<T extends AbstractControl>
     this.onChangesSubscriptions = [];
 
     const providedControlSub = this.containerAccessor.control
-      .observe('controls', this.controlName, { ignoreNoEmit: true })
+      .observe('controls', this.controlName, { ignoreNoObserve: true })
       .subscribe((providedControl: T) => {
         this.cleanupInnerSubs();
 
@@ -42,10 +42,10 @@ export abstract class ControlNameDirective<T extends AbstractControl>
 
         this.validateProvidedControl(providedControl);
 
-        this.control.emitEvent<IControlAccessorControlEvent>({
-          type: 'ControlAccessor',
-          label: 'PreInit',
-        });
+        // this.control.emitEvent<IControlAccessorControlEvent>({
+        //   type: 'ControlAccessor',
+        //   label: 'PreInit',
+        // });
 
         // need to clear any leftover validators before syncing with
         // providedControl because one of the first changes from
@@ -53,25 +53,25 @@ export abstract class ControlNameDirective<T extends AbstractControl>
         // value type might be different from what the existing validators
         // expect
         this.control.setValidators(new Map());
-        this.control.setParent(null);
-        this.control.setParent(providedControl.parent);
+        this.control._setParent(null);
+        this.control._setParent(providedControl.parent);
 
         this.innerSubscriptions.push(
           concat(providedControl.replayState(), providedControl.events)
-            .pipe(map(this.toAccessorEventMapFn(providedControl)))
-            .subscribe(this.control.source)
+            .pipe(map(this.toAccessorEventMapFn()))
+            .subscribe((e) => this.control.processEvent(e))
         );
 
         this.innerSubscriptions.push(
           this.control.events
             .pipe(map(this.fromAccessorEventMapFn()))
-            .subscribe(providedControl.source)
+            .subscribe((e) => providedControl.processEvent(e))
         );
 
-        this.control.emitEvent<IControlAccessorControlEvent>({
-          type: 'ControlAccessor',
-          label: 'PostInit',
-        });
+        // this.control.emitEvent<IControlAccessorControlEvent>({
+        //   type: 'ControlAccessor',
+        //   label: 'PostInit',
+        // });
       });
 
     this.onChangesSubscriptions.push(providedControlSub);
@@ -86,8 +86,8 @@ export abstract class ControlNameDirective<T extends AbstractControl>
       // validate the control via a service to avoid the possibility
       // of the user somehow deleting our validator function.
       this.onChangesSubscriptions.push(
-        this.control
-          .validationService(this.accessorValidatorId)
+        this.control.events
+          .pipe(filter((e) => e.type === 'ValidationStart'))
           .subscribe(() => {
             this.control.setErrors(validator(this.control), {
               source: this.accessorValidatorId,
@@ -112,10 +112,10 @@ export abstract class ControlNameDirective<T extends AbstractControl>
   protected cleanupInnerSubs() {
     this.innerSubscriptions.forEach((sub) => sub.unsubscribe());
 
-    this.control.emitEvent<IControlAccessorControlEvent>({
-      type: 'ControlAccessor',
-      label: 'Cleanup',
-    });
+    // this.control.emitEvent<IControlAccessorControlEvent>({
+    //   type: 'ControlAccessor',
+    //   label: 'Cleanup',
+    // });
 
     this.innerSubscriptions = [];
   }

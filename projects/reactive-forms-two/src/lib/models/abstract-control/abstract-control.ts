@@ -1,4 +1,4 @@
-import { Observable, Subject, queueScheduler } from 'rxjs';
+import { Observable, Subject, queueScheduler, Subscription } from 'rxjs';
 
 // *****************************
 // Misc Types
@@ -6,7 +6,16 @@ import { Observable, Subject, queueScheduler } from 'rxjs';
 
 export type ControlId = string | symbol;
 
-export type ValidatorFn = (control: AbstractControl) => ValidationErrors | null;
+// Passing a whole `AbstractControl` to validator functions could create
+// unexpected bugs in ControlDirectives if the control type changes in
+// a way the developer didn't expect (e.g. from FormControl to FormGroup).
+// Because validator services are now an option, I don't think it's necessary
+// for ValidatorFn to receive the control. Instead they can just receive the
+// rawValue and value.
+export type ValidatorFn<RawValue = any, Value = any> = (obj: {
+  rawValue: RawValue;
+  value: Value;
+}) => ValidationErrors | null;
 
 export interface ValidationErrors {
   [key: string]: any;
@@ -16,67 +25,56 @@ export interface ValidationErrors {
 // ControlEvent interfaces
 // *****************************
 
-export interface IControlEventArgs {
-  eventId?: number;
-  idOfOriginatingEvent?: number;
+export interface IEventTrigger {
+  label: string;
   source: ControlId;
-  type: string;
-  meta?: { [key: string]: unknown };
-  noEmit?: boolean;
-  [AbstractControl.SKIP_CONTROL_SOURCE_QUEUE]?: boolean;
+  // controlId: ControlId;
 }
 
-export interface IControlEvent extends IControlEventArgs {
-  eventId: number;
-  idOfOriginatingEvent: number;
+export interface IControlEvent {
+  trigger: IEventTrigger;
+  // controlId: ControlId;
+  source: ControlId;
+  type: string;
   meta: { [key: string]: unknown };
+  noObserve?: boolean;
 }
 
 export interface IControlEventOptions {
-  noEmit?: boolean;
-  meta?: { [key: string]: unknown };
-  idOfOriginatingEvent?: number;
+  /**
+   * Contains information on what originally triggered this event. The
+   * `label` generally contains the name of the triggering method
+   * and the `source` contains the `ControlId` of the triggering
+   * AbstractControl.
+   */
+  trigger?: IEventTrigger;
+  /** The ControlId of the thing which emitted this event */
   source?: ControlId;
-  [AbstractControl.SKIP_CONTROL_SOURCE_QUEUE]?: boolean;
+  /** Allows attaching arbitrary metadata to a ControlEvent */
+  meta?: { [key: string]: unknown };
+  /** Prevents `observe` and `observeChanges` subscriptions from triggering */
+  noObserve?: boolean;
+  /**
+   * **ADVANCED USE ONLY**
+   *
+   * Prevents any ControlEvents from being emitted. The primary use case
+   * for this is if you are performing many small changes to a control
+   * that you want to manually bundle together into a single ControlEvent.
+   */
+  [AbstractControl.NO_EVENT]?: boolean;
 }
 
-export interface IControlValidationEvent<V> extends IControlEvent {
-  type: 'ValidationStart' | 'AsyncValidationStart' | 'ValidationComplete';
-  rawValue: V;
-}
-
-export type IStateChange<V = unknown> = (old: V) => V;
-
-export interface IControlStateChange<V, D> {
-  rawValue?: IStateChange<V>;
-  disabled?: IStateChange<boolean>;
-  touched?: IStateChange<boolean>;
-  dirty?: IStateChange<boolean>;
-  readonly?: IStateChange<boolean>;
-  submitted?: IStateChange<boolean>;
-  errorsStore?: IStateChange<ReadonlyMap<ControlId, ValidationErrors>>;
-  validatorStore?: IStateChange<ReadonlyMap<ControlId, ValidatorFn>>;
-  registeredValidators?: IStateChange<ReadonlySet<ControlId>>;
-  registeredAsyncValidators?: IStateChange<ReadonlySet<ControlId>>;
-  runningValidation?: IStateChange<ReadonlySet<ControlId>>;
-  runningAsyncValidation?: IStateChange<ReadonlySet<ControlId>>;
-  pendingStore?: IStateChange<ReadonlySet<ControlId>>;
-  parent?: IStateChange<AbstractControl | null>;
-  data?: IStateChange<D>;
-  [key: string]: IStateChange<any> | undefined;
+export interface IControlValidationEvent<RawValue, Value = RawValue>
+  extends IControlEvent {
+  type: 'ValidationStart' | 'AsyncValidationStart';
+  rawValue: RawValue;
+  value: Value;
 }
 
 export interface IControlStateChangeEvent extends IControlEvent {
   type: 'StateChange';
-  subtype: string;
-  /** Array of props that have changed */
-  changedProps: string[];
-}
-
-export interface IControlSelfStateChangeEvent<V, D>
-  extends IControlStateChangeEvent {
-  subtype: 'Self';
-  change: IControlStateChange<V, D>;
+  changes: ReadonlyMap<string, unknown>;
+  childEvents?: { [key: string]: IControlStateChangeEvent };
 }
 
 export interface IControlFocusEvent extends IControlEvent {
@@ -84,24 +82,9 @@ export interface IControlFocusEvent extends IControlEvent {
   focus: boolean;
 }
 
-// *****************************
-// ControlSource
-// *****************************
-
-/**
- * ControlSource is a special rxjs Subject which never
- * completes.
- */
-export class ControlSource extends Subject<IControlEvent> {
-  /** NOOP: Complete does nothing */
-  complete() {}
-
-  next(value?: IControlEvent) {
-    // during construction of a new AbstractControl, skip the queue
-    if (value?.[AbstractControl.SKIP_CONTROL_SOURCE_QUEUE]) super.next(value);
-
-    queueScheduler.schedule((state) => super.next(state), 0, value);
-  }
+export interface IProcessedEvent<T extends IControlEvent = IControlEvent> {
+  status: 'PROCESSED' | 'UNKNOWN';
+  result?: T;
 }
 
 // *****************************
@@ -137,16 +120,45 @@ export namespace AbstractControl {
    */
   export let debugCallback:
     | undefined
-    | ((
-        this: AbstractControl,
-        args:
-          | { type: 'INPUT'; event: IControlEvent }
-          | { type: 'OUTPUT'; event?: IControlEvent | null }
-      ) => void);
+    | ((this: AbstractControl, event: IControlEvent) => void);
 
   export let throwInfiniteLoopErrorAfterEventCount = 500;
 
-  export const SKIP_CONTROL_SOURCE_QUEUE = Symbol('SKIP_CONTROL_SOURCE_QUEUE');
+  export const NO_EVENT = Symbol('NO_EVENT');
+
+  export const PUBLIC_PROPERTIES = [
+    // The order is important since it defines the order of the `replayState`
+    // changes. Here we establish the convension of placing derived properties
+    // before "real" properties.
+    'enabled',
+    'selfEnabled',
+    'disabled',
+    'selfDisabled',
+    'touched',
+    'selfTouched',
+    'dirty',
+    'selfDirty',
+    'readonly',
+    'selfReadonly',
+    'submitted',
+    'selfSubmitted',
+    'data',
+    'value',
+    'rawValue',
+    'validator',
+    'validatorStore',
+    'pending',
+    'selfPending',
+    'pendingStore',
+    'valid',
+    'selfValid',
+    'invalid',
+    'selfInvalid',
+    'status',
+    'errors',
+    'selfErrors',
+    'errorsStore',
+  ] as const;
 }
 
 export interface AbstractControl<RawValue = any, Data = any, Value = RawValue> {
@@ -159,57 +171,104 @@ export interface AbstractControl<RawValue = any, Data = any, Value = RawValue> {
 
   data: Data;
 
-  /**
-   * **Warning!** Do not use this property unless you know what you are doing.
-   *
-   * A control's `source` is the source of truth for the control. Events emitted
-   * by the source are used to update the control's values. By passing events to
-   * this control's source, you can programmatically control every aspect of
-   * of this control.
-   *
-   * Never subscribe to the source directly. If you want to receive events for
-   * this control, subscribe to the `events` observable.
-   */
-  source: ControlSource;
-
   /** An observable of all events for this AbstractControl */
   events: Observable<
     IControlEvent | (IControlEvent & { [key: string]: unknown })
   >;
 
+  /**
+   * The value of the AbstractControl. This is an alias for `rawValue`.
+   */
   readonly value: Value;
+  /** The value of the AbstractControl. */
   readonly rawValue: RawValue;
+  /**
+   * `true` if this control is not disabled, false otherwise.
+   * This is an alias for `selfEnabled`.
+   */
   readonly enabled: boolean;
+  /** `true` if this control is not disabled, false otherwise. */
+  readonly selfEnabled: boolean;
+  /**
+   * `true` if this control is disabled, false otherwise.
+   * This is an alias for `selfDisabled`.
+   */
   readonly disabled: boolean;
+  /** `true` if this control is disabled, false otherwise. */
+  readonly selfDisabled: boolean;
+  /**
+   * `true` if this control is touched, false otherwise.
+   * This is an alias for `selfTouched`.
+   */
   readonly touched: boolean;
+  /** `true` if this control is touched, false otherwise. */
+  readonly selfTouched: boolean;
+  /**
+   * `true` if this control is dirty, false otherwise.
+   * This is an alias for `selfDirty`.
+   */
   readonly dirty: boolean;
+  /** `true` if this control is dirty, false otherwise. */
+  readonly selfDirty: boolean;
+  /**
+   * `true` if this control is readonly, false otherwise.
+   * This is an alias for `selfReadonly`.
+   */
   readonly readonly: boolean;
+  /** `true` if this control is readonly, false otherwise. */
+  readonly selfReadonly: boolean;
+  /**
+   * `true` if this control is submitted, false otherwise.
+   * This is an alias for `selfSubmitted`.
+   */
   readonly submitted: boolean;
+  /** `true` if this control is submitted, false otherwise. */
+  readonly selfSubmitted: boolean;
 
+  /**
+   * Contains a `ValidationErrors` object if this control
+   * has any errors. Otherwise contains `null`.
+   *
+   * An alias for `selfErrors`.
+   */
   readonly errors: ValidationErrors | null;
+  /**
+   * Contains a `ValidationErrors` object if this control
+   * has any errors. Otherwise contains `null`.
+   */
+  readonly selfErrors: ValidationErrors | null;
   readonly errorsStore: ReadonlyMap<ControlId, ValidationErrors>;
 
   readonly validator: ValidatorFn | null;
   readonly validatorStore: ReadonlyMap<ControlId, ValidatorFn>;
 
+  /**
+   * `true` if this control is pending, false otherwise.
+   * This is an alias for `selfPending`.
+   */
   readonly pending: boolean;
+  /** `true` if this control is pending, false otherwise. */
+  readonly selfPending: boolean;
   readonly pendingStore: ReadonlySet<ControlId>;
 
+  /**
+   * `true` if `selfErrors` is `null`, `false` otherwise.
+   * This is an alias for `selfValid`.
+   */
   readonly valid: boolean;
+  /** `true` if `selfErrors` is `null`, `false` otherwise. */
+  readonly selfValid: boolean;
+
+  /**
+   * `true` if `selfErrors` contains errors, `false` otherwise.
+   * This is an alias for `selfInvalid`.
+   */
   readonly invalid: boolean;
+  /** `true` if `selfErrors` contains errors, `false` otherwise. */
+  readonly selfInvalid: boolean;
   readonly status: 'DISABLED' | 'PENDING' | 'VALID' | 'INVALID';
 
   readonly parent: AbstractControl | null;
-  // /** `true` if either `parent#containerDisabled` or `parent#parentContainerDisabled` */
-  // readonly parentContainerDisabled: boolean;
-  // /** `true` if either `parent#containerTouched` or `parent#parentContainerTouched` */
-  // readonly parentContainerTouched: boolean;
-  // /** `true` if either `parent#containerDirty` or `parent#parentContainerDirty` */
-  // readonly parentContainerDirty: boolean;
-  // /** `true` if either `parent#containerReadonly` or `parent#parentContainerReadonly` */
-  // readonly parentContainerReadonly: boolean;
-  // /** `true` if either `parent#containerSubmitted` or `parent#parentContainerSubmitted` */
-  // readonly parentContainerSubmitted: boolean;
 
   [AbstractControl.INTERFACE](): this;
 
@@ -237,7 +296,7 @@ export interface AbstractControl<RawValue = any, Data = any, Value = RawValue> {
     i: I,
     j: J,
     k: K,
-    options?: { ignoreNoEmit?: boolean }
+    options?: { ignoreNoObserve?: boolean }
   ): Observable<this[A][B][C][D][E][F][G][H][I][J][K] | undefined>;
   observe<
     A extends keyof this,
@@ -261,7 +320,7 @@ export interface AbstractControl<RawValue = any, Data = any, Value = RawValue> {
     h: H,
     i: I,
     j: J,
-    options?: { ignoreNoEmit?: boolean }
+    options?: { ignoreNoObserve?: boolean }
   ): Observable<this[A][B][C][D][E][F][G][H][I][J] | undefined>;
   observe<
     A extends keyof this,
@@ -283,7 +342,7 @@ export interface AbstractControl<RawValue = any, Data = any, Value = RawValue> {
     g: G,
     h: H,
     i: I,
-    options?: { ignoreNoEmit?: boolean }
+    options?: { ignoreNoObserve?: boolean }
   ): Observable<this[A][B][C][D][E][F][G][H][I] | undefined>;
   observe<
     A extends keyof this,
@@ -303,7 +362,7 @@ export interface AbstractControl<RawValue = any, Data = any, Value = RawValue> {
     f: F,
     g: G,
     h: H,
-    options?: { ignoreNoEmit?: boolean }
+    options?: { ignoreNoObserve?: boolean }
   ): Observable<this[A][B][C][D][E][F][G][H] | undefined>;
   observe<
     A extends keyof this,
@@ -321,7 +380,7 @@ export interface AbstractControl<RawValue = any, Data = any, Value = RawValue> {
     e: E,
     f: F,
     g: G,
-    options?: { ignoreNoEmit?: boolean }
+    options?: { ignoreNoObserve?: boolean }
   ): Observable<this[A][B][C][D][E][F][G] | undefined>;
   observe<
     A extends keyof this,
@@ -337,7 +396,7 @@ export interface AbstractControl<RawValue = any, Data = any, Value = RawValue> {
     d: D,
     e: E,
     f: F,
-    options?: { ignoreNoEmit?: boolean }
+    options?: { ignoreNoObserve?: boolean }
   ): Observable<this[A][B][C][D][E][F] | undefined>;
   observe<
     A extends keyof this,
@@ -363,7 +422,7 @@ export interface AbstractControl<RawValue = any, Data = any, Value = RawValue> {
     b: B,
     c: C,
     d: D,
-    options?: { ignoreNoEmit?: boolean }
+    options?: { ignoreNoObserve?: boolean }
   ): Observable<this[A][B][C][D] | undefined>;
   observe<
     A extends keyof this,
@@ -373,20 +432,20 @@ export interface AbstractControl<RawValue = any, Data = any, Value = RawValue> {
     a: A,
     b: B,
     c: C,
-    options?: { ignoreNoEmit?: boolean }
+    options?: { ignoreNoObserve?: boolean }
   ): Observable<this[A][B][C] | undefined>;
   observe<A extends keyof this, B extends keyof this[A]>(
     a: A,
     b: B,
-    options?: { ignoreNoEmit?: boolean }
+    options?: { ignoreNoObserve?: boolean }
   ): Observable<this[A][B] | undefined>;
   observe<A extends keyof this>(
     a: A,
-    options?: { ignoreNoEmit?: boolean }
+    options?: { ignoreNoObserve?: boolean }
   ): Observable<this[A]>;
   observe<T = any>(
     props: string[],
-    options?: { ignoreNoEmit?: boolean }
+    options?: { ignoreNoObserve?: boolean }
   ): Observable<T>;
 
   observeChanges<
@@ -413,7 +472,7 @@ export interface AbstractControl<RawValue = any, Data = any, Value = RawValue> {
     i: I,
     j: J,
     k: K,
-    options?: { ignoreNoEmit?: boolean }
+    options?: { ignoreNoObserve?: boolean }
   ): Observable<this[A][B][C][D][E][F][G][H][I][J][K] | undefined>;
   observeChanges<
     A extends keyof this,
@@ -437,7 +496,7 @@ export interface AbstractControl<RawValue = any, Data = any, Value = RawValue> {
     h: H,
     i: I,
     j: J,
-    options?: { ignoreNoEmit?: boolean }
+    options?: { ignoreNoObserve?: boolean }
   ): Observable<this[A][B][C][D][E][F][G][H][I][J] | undefined>;
   observeChanges<
     A extends keyof this,
@@ -459,7 +518,7 @@ export interface AbstractControl<RawValue = any, Data = any, Value = RawValue> {
     g: G,
     h: H,
     i: I,
-    options?: { ignoreNoEmit?: boolean }
+    options?: { ignoreNoObserve?: boolean }
   ): Observable<this[A][B][C][D][E][F][G][H][I] | undefined>;
   observeChanges<
     A extends keyof this,
@@ -479,7 +538,7 @@ export interface AbstractControl<RawValue = any, Data = any, Value = RawValue> {
     f: F,
     g: G,
     h: H,
-    options?: { ignoreNoEmit?: boolean }
+    options?: { ignoreNoObserve?: boolean }
   ): Observable<this[A][B][C][D][E][F][G][H] | undefined>;
   observeChanges<
     A extends keyof this,
@@ -497,7 +556,7 @@ export interface AbstractControl<RawValue = any, Data = any, Value = RawValue> {
     e: E,
     f: F,
     g: G,
-    options?: { ignoreNoEmit?: boolean }
+    options?: { ignoreNoObserve?: boolean }
   ): Observable<this[A][B][C][D][E][F][G] | undefined>;
   observeChanges<
     A extends keyof this,
@@ -513,7 +572,7 @@ export interface AbstractControl<RawValue = any, Data = any, Value = RawValue> {
     d: D,
     e: E,
     f: F,
-    options?: { ignoreNoEmit?: boolean }
+    options?: { ignoreNoObserve?: boolean }
   ): Observable<this[A][B][C][D][E][F] | undefined>;
   observeChanges<
     A extends keyof this,
@@ -527,7 +586,7 @@ export interface AbstractControl<RawValue = any, Data = any, Value = RawValue> {
     c: C,
     d: D,
     e: E,
-    options?: { ignoreNoEmit?: boolean }
+    options?: { ignoreNoObserve?: boolean }
   ): Observable<this[A][B][C][D][E] | undefined>;
   observeChanges<
     A extends keyof this,
@@ -539,7 +598,7 @@ export interface AbstractControl<RawValue = any, Data = any, Value = RawValue> {
     b: B,
     c: C,
     d: D,
-    options?: { ignoreNoEmit?: boolean }
+    options?: { ignoreNoObserve?: boolean }
   ): Observable<this[A][B][C][D] | undefined>;
   observeChanges<
     A extends keyof this,
@@ -549,24 +608,23 @@ export interface AbstractControl<RawValue = any, Data = any, Value = RawValue> {
     a: A,
     b: B,
     c: C,
-    options?: { ignoreNoEmit?: boolean }
+    options?: { ignoreNoObserve?: boolean }
   ): Observable<this[A][B][C] | undefined>;
   observeChanges<A extends keyof this, B extends keyof this[A]>(
     a: A,
     b: B,
-    options?: { ignoreNoEmit?: boolean }
+    options?: { ignoreNoObserve?: boolean }
   ): Observable<this[A][B] | undefined>;
   observeChanges<A extends keyof this>(
     a: A,
-    options?: { ignoreNoEmit?: boolean }
+    options?: { ignoreNoObserve?: boolean }
   ): Observable<this[A]>;
   observeChanges<T = any>(
     props: string[],
-    options?: { ignoreNoEmit?: boolean }
+    options?: { ignoreNoObserve?: boolean }
   ): Observable<T>;
 
-  setValue(value: RawValue, options?: IControlEventOptions): void;
-  // patchValue(value: any, options?: IControlEventOptions): void;
+  setValue(value: RawValue, options?: IControlEventOptions): string[];
 
   /**
    * If provided a `ValidationErrors` object or `null`, replaces the errors
@@ -578,7 +636,7 @@ export interface AbstractControl<RawValue = any, Data = any, Value = RawValue> {
   setErrors(
     value: ValidationErrors | null | ReadonlyMap<ControlId, ValidationErrors>,
     options?: IControlEventOptions
-  ): void;
+  ): string[];
 
   /**
    * If provided a `ValidationErrors` object, that object is merged with the
@@ -592,22 +650,17 @@ export interface AbstractControl<RawValue = any, Data = any, Value = RawValue> {
   patchErrors(
     value: ValidationErrors | ReadonlyMap<ControlId, ValidationErrors>,
     options?: IControlEventOptions
-  ): void;
+  ): string[];
 
-  markTouched(value: boolean, options?: IControlEventOptions): void;
-  markDirty(value: boolean, options?: IControlEventOptions): void;
-  markReadonly(value: boolean, options?: IControlEventOptions): void;
-  markDisabled(value: boolean, options?: IControlEventOptions): void;
-  markSubmitted(value: boolean, options?: IControlEventOptions): void;
+  markTouched(value: boolean, options?: IControlEventOptions): string[];
+  markDirty(value: boolean, options?: IControlEventOptions): string[];
+  markReadonly(value: boolean, options?: IControlEventOptions): string[];
+  markDisabled(value: boolean, options?: IControlEventOptions): string[];
+  markSubmitted(value: boolean, options?: IControlEventOptions): string[];
   markPending(
     value: boolean | ReadonlySet<ControlId>,
     options?: IControlEventOptions
-  ): void;
-
-  setParent(
-    parent: AbstractControl | null,
-    options?: IControlEventOptions
-  ): void;
+  ): string[];
 
   setValidators(
     value:
@@ -616,35 +669,7 @@ export interface AbstractControl<RawValue = any, Data = any, Value = RawValue> {
       | ReadonlyMap<ControlId, ValidatorFn>
       | null,
     options?: IControlEventOptions
-  ): void;
-
-  validationService(
-    source: ControlId,
-    options?: IControlEventOptions
-  ): Observable<
-    IControlValidationEvent<RawValue> & {
-      type: 'ValidationStart';
-    }
-  >;
-
-  markValidationComplete(
-    source: ControlId,
-    options?: IControlEventOptions
-  ): void;
-
-  asyncValidationService(
-    source: ControlId,
-    options?: IControlEventOptions
-  ): Observable<
-    IControlValidationEvent<RawValue> & {
-      type: 'AsyncValidationStart';
-    }
-  >;
-
-  markAsyncValidationComplete(
-    source: ControlId,
-    options?: IControlEventOptions
-  ): void;
+  ): string[];
 
   /**
    * Unlike other AbstractControl properties, the `data` property can be set directly.
@@ -654,14 +679,8 @@ export interface AbstractControl<RawValue = any, Data = any, Value = RawValue> {
    * you can use `setData()` which uses the standard ControlEvent API and emits a `data`
    * StateChange that can be observed. Data values are compared with strict equality
    * (`===`). If it doesn't look like the data has changed, the event will be ignored.
-   *
-   * You can also pass a change function instead. This function will be passed the old data
-   * value and is expected to return a new data value.
    */
-  setData(
-    data: Data | ((data: Data) => Data),
-    options?: IControlEventOptions
-  ): void;
+  setData(data: Data, options?: IControlEventOptions): string[];
 
   focus(value?: boolean, options?: Omit<IControlEventOptions, 'noEmit'>): void;
 
@@ -671,9 +690,7 @@ export interface AbstractControl<RawValue = any, Data = any, Value = RawValue> {
    * identical to this one. This observable will complete upon
    * replaying the necessary state changes.
    */
-  replayState(
-    options?: Omit<IControlEventOptions, 'idOfOriginatingEvent'>
-  ): Observable<IControlEvent>;
+  replayState(options?: IControlEventOptions): Observable<IControlEvent>;
 
   /**
    * Returns a new AbstractControl which is identical to this one except
@@ -681,23 +698,112 @@ export interface AbstractControl<RawValue = any, Data = any, Value = RawValue> {
    */
   clone(): AbstractControl<RawValue, Data, Value>;
 
-  /**
-   * A convenience method for emitting an arbitrary control event.
-   *
-   * @returns the `eventId` of the emitted event
-   */
-  emitEvent<
-    T extends IControlEventArgs = IControlEventArgs & { [key: string]: any }
-  >(
-    event: Partial<
-      Pick<T, 'source' | 'idOfOriginatingEvent' | 'noEmit' | 'meta'>
-    > &
-      Omit<
-        T,
-        'eventId' | 'source' | 'idOfOriginatingEvent' | 'noEmit' | 'meta'
-      > & {
-        type: string;
-      },
+  processEvent<T extends IControlEvent>(
+    event: T,
     options?: IControlEventOptions
-  ): number;
+  ): IProcessedEvent<T>;
+
+  /**
+   * *INTERNAL USE*
+   *
+   * Sets the `parent` property of an AbstractControl. Generally,
+   * you shouldn't use this directly. The parent will be automatically
+   * set when you add or remove a control from an AbstractControlContainer.
+   */
+  _setParent(
+    parent: AbstractControl | null,
+    options?: IControlEventOptions
+  ): string[];
+
+  // /**
+  //  * A convenience method for emitting an arbitrary control event.
+  //  *
+  //  * @returns the `eventId` of the emitted event
+  //  */
+  // emitEvent<T extends IControlEvent = IControlEvent & { [key: string]: any }>(
+  //   event: Partial<Pick<T, 'source' | 'noEmit' | 'meta'>> &
+  //     Omit<T, 'source' | 'noEmit' | 'meta'> & {
+  //       type: string;
+  //     },
+  //   options?: IControlEventOptions
+  // ): void;
+}
+
+// this `isEqual` implementation is adapted from the `fast-deep-equal` library
+export function isEqual<T>(a: T, b: T): boolean;
+export function isEqual(a: unknown, b: unknown): boolean;
+export function isEqual(a: any, b: any) {
+  if (a === b) return true;
+
+  if (a && b && typeof a == 'object' && typeof b == 'object') {
+    if (a.constructor !== b.constructor) return false;
+
+    let length, i, keys;
+    if (Array.isArray(a)) {
+      length = a.length;
+      if (length != b.length) return false;
+      for (i = length; i-- !== 0; ) if (!isEqual(a[i], b[i])) return false;
+      return true;
+    }
+
+    if (a instanceof Map && b instanceof Map) {
+      if (a.size !== b.size) return false;
+      for (i of a.entries()) if (!b.has(i[0])) return false;
+      for (i of a.entries()) if (!isEqual(i[1], b.get(i[0]))) return false;
+      return true;
+    }
+
+    if (a instanceof Set && b instanceof Set) {
+      if (a.size !== b.size) return false;
+      for (i of a.entries()) if (!b.has(i[0])) return false;
+      return true;
+    }
+
+    if (ArrayBuffer.isView(a) && ArrayBuffer.isView(b)) {
+      length = (a as any).length;
+      if (length != (b as any).length) return false;
+      for (i = length; i-- !== 0; )
+        if ((a as any)[i] !== (b as any)[i]) return false;
+      return true;
+    }
+
+    if (a.constructor === RegExp)
+      return a.source === b.source && a.flags === b.flags;
+    if (a.valueOf !== Object.prototype.valueOf)
+      return a.valueOf() === b.valueOf();
+    if (a.toString !== Object.prototype.toString)
+      return a.toString() === b.toString();
+
+    keys = Object.keys(a);
+    length = keys.length;
+    if (length !== Object.keys(b).length) return false;
+
+    for (i = length; i-- !== 0; )
+      if (!Object.prototype.hasOwnProperty.call(b, keys[i])) return false;
+
+    const isControl = AbstractControl.isControl(a);
+    const omit = isControl && [
+      'events',
+      '_source',
+      'id',
+      '_parent',
+      '_validator',
+    ];
+
+    for (i = length; i-- !== 0; ) {
+      var key = keys[i];
+
+      if (
+        !(isControl && (omit as string[]).includes(key)) &&
+        !isEqual(a[key], b[key])
+      ) {
+        return false;
+      }
+    }
+
+    return true;
+  }
+
+  // true if both NaN, false otherwise
+  return a !== a && b !== b;
 }

@@ -3,12 +3,10 @@ import {
   AbstractControl,
   IControlEvent,
   IControlEventOptions,
-  IStateChange,
   ValidationErrors,
-  IControlStateChange,
-  IControlStateChangeEvent,
-  IControlSelfStateChangeEvent,
-  ControlId,
+  // IControlStateChangeEvent,
+  // IControlSelfStateChangeEvent,
+  // ControlId,
 } from '../abstract-control/abstract-control';
 
 // UTILITY TYPES
@@ -113,35 +111,26 @@ export type ContainerControls<C> = C extends AbstractControlContainer<
   ? Controls
   : unknown;
 
-export interface IControlContainerStateChange<
-  Controls extends GenericControlsObject,
-  D
-> extends IControlStateChange<ControlsRawValue<Controls>, D> {
-  controlsStore?: IStateChange<
-    ReadonlyMap<ControlsKey<Controls>, Controls[ControlsKey<Controls>]>
-  >;
-}
-
-export interface IControlContainerSelfStateChangeEvent<
-  Controls extends GenericControlsObject,
-  D
-> extends IControlSelfStateChangeEvent<ControlsRawValue<Controls>, D> {
-  change: IControlContainerStateChange<Controls, D>;
-}
+// export interface IControlContainerStateChange<
+//   Controls extends GenericControlsObject,
+//   D
+// > extends IControlStateChanges<ControlsRawValue<Controls>, D> {
+//   controlsStore?: IStateChange<
+//     ReadonlyMap<ControlsKey<Controls>, Controls[ControlsKey<Controls>]>
+//   >;
+// }
 
 export interface IChildControlEvent extends IControlEvent {
   childEvents: { [key: string]: IControlEvent };
 }
 
-export interface IChildControlStateChangeEvent
-  extends IChildControlEvent,
-    IControlStateChangeEvent {
-  type: 'StateChange';
-  subtype: 'Child';
-  childEvents: { [key: string]: IControlStateChangeEvent };
-  onEventProcessedId?: ControlId;
-  onEventProcessedFn?: (result?: IControlStateChangeEvent) => void;
-}
+// export interface IChildControlStateChangeEvent
+//   extends IChildControlEvent,
+//     IControlStateChangeEvent {
+//   type: 'StateChange';
+//   subtype: 'Child';
+//   childEvents: { [key: string]: IControlStateChangeEvent };
+// }
 
 export namespace AbstractControlContainer {
   export const INTERFACE = Symbol('@@AbstractControlContainerInterface');
@@ -156,6 +145,32 @@ export namespace AbstractControlContainer {
       (object as any)[AbstractControlContainer.INTERFACE]() === object
     );
   }
+
+  export const PUBLIC_PROPERTIES = [
+    'controls',
+    'size',
+    'controlsStore',
+    'childValid',
+    'childrenValid',
+    'childInvalid',
+    'childrenInvalid',
+    'childEnabled',
+    'childrenEnabled',
+    'childDisabled',
+    'childrenDisabled',
+    'childReadonly',
+    'childrenReadonly',
+    'childPending',
+    'childrenPending',
+    'childTouched',
+    'childrenTouched',
+    'childDirty',
+    'childrenDirty',
+    'childSubmitted',
+    'childrenSubmitted',
+    'childrenErrors',
+    ...AbstractControl.PUBLIC_PROPERTIES,
+  ] as const;
 }
 
 export interface AbstractControlContainer<
@@ -176,91 +191,71 @@ export interface AbstractControlContainer<
   /** Only returns values for `enabled` child controls. */
   readonly value: ControlsValue<Controls>;
 
-  /** Will return true if `containerValid` and `childrenValid` */
+  /** Will return true if `selfValid` and `childrenValid` */
   readonly valid: boolean;
-  /** Will return true if the `ControlContainer` has no errors. */
-  readonly containerValid: boolean;
   /** Will return true if *any* `enabled` direct child control is `valid` */
   readonly childValid: boolean;
   /** Will return true if *all* `enabled` direct child control's are `valid` */
   readonly childrenValid: boolean;
 
-  /** Will return true if `containerInvalid` or `childInvalid` */
+  /** Will return true if `selfInvalid` or `childInvalid` */
   readonly invalid: boolean;
-  /** Will return true if the `ControlContainer` has any errors. */
-  readonly containerInvalid: boolean;
   /** Will return true if *any* `enabled` direct child control is `invalid` */
   readonly childInvalid: boolean;
   /** Will return true if *all* `enabled` direct child control's are `invalid` */
   readonly childrenInvalid: boolean;
 
-  /** Will return true if `containerEnabled` and `childEnabled` */
+  /** Will return true if `selfEnabled` and `childEnabled` */
   readonly enabled: boolean;
-  /** Will return true if the `ControlContainer` is `enabled`. */
-  readonly containerEnabled: boolean;
   /** Will return true if *any* direct child control is `enabled` */
   readonly childEnabled: boolean;
   /** Will return true if *all* direct child control's are `enabled` */
   readonly childrenEnabled: boolean;
 
-  /** Will return true if `containerDisabled` or `childrenDisabled` */
+  /** Will return true if `selfDisabled` or `childrenDisabled` */
   readonly disabled: boolean;
-  /** Will return true if the `ControlContainer` is `disabled`. */
-  readonly containerDisabled: boolean;
   /** Will return true if *any* direct child control is `disabled` */
   readonly childDisabled: boolean;
   /** Will return true if *all* direct child control's are `disabled` */
   readonly childrenDisabled: boolean;
 
-  /** Will return true if `containerReadonly` or `childrenReadonly` */
+  /** Will return true if `selfReadonly` or `childrenReadonly` */
   readonly readonly: boolean;
-  /** Will return true if the `ControlContainer` is `readonly`. */
-  readonly containerReadonly: boolean;
   /** Will return true if *any* `enabled` direct child control is `readonly` */
   readonly childReadonly: boolean;
   /** Will return true if *all* `enabled` direct child control's are `readonly` */
   readonly childrenReadonly: boolean;
 
-  /** Will return true if `containerPending` or `childPending` */
+  /** Will return true if `selfPending` or `childPending` */
   readonly pending: boolean;
-  /** Will return true if the `ControlContainer` is `pending`. */
-  readonly containerPending: boolean;
   /** Will return true if *any* `enabled` direct child control is `pending` */
   readonly childPending: boolean;
   /** Will return true if *all* `enabled` direct child control's are `pending` */
   readonly childrenPending: boolean;
 
-  /** Will return true if `containerTouched` or `childTouched` */
+  /** Will return true if `selfTouched` or `childTouched` */
   readonly touched: boolean;
-  /** Will return true if the `ControlContainer` is `touched`. */
-  readonly containerTouched: boolean;
   /** Will return true if *any* `enabled` direct child control is `touched` */
   readonly childTouched: boolean;
   /** Will return true if *all* `enabled` direct child control's are `touched` */
   readonly childrenTouched: boolean;
 
-  /** Will return true if `containerDirty` or `childDirty` */
+  /** Will return true if `selfDirty` or `childDirty` */
   readonly dirty: boolean;
-  /** Will return true if the `ControlContainer` is `dirty`. */
-  readonly containerDirty: boolean;
   /** Will return true if *any* `enabled` direct child control is `dirty` */
   readonly childDirty: boolean;
   /** Will return true if *all* `enabled` direct child control's are `dirty` */
   readonly childrenDirty: boolean;
 
-  /** Will return true if `containerSubmitted` or `childrenSubmitted` */
+  /** Will return true if `selfSubmitted` or `childrenSubmitted` */
   readonly submitted: boolean;
-  /** Will return true if the `ControlContainer` is `submitted`. */
-  readonly containerSubmitted: boolean;
   /** Will return true if *any* `enabled` direct child control is `submitted` */
   readonly childSubmitted: boolean;
   /** Will return true if *all* `enabled` direct child control's are `submitted` */
   readonly childrenSubmitted: boolean;
 
-  /** Contains `{ ...childrenErrors, ...containerErrors }` or `null` if there are none */
+  /** Contains `{ ...childrenErrors, ...selfErrors }` or `null` if there are none */
   readonly errors: ValidationErrors | null;
-  /** Contains this AbstractControlContainer's errors or `null` if there are none */
-  readonly containerErrors: ValidationErrors | null;
   /** Contains *all* `enabled` child control errors or `null` if there are none */
   readonly childrenErrors: ValidationErrors | null;
 
@@ -323,9 +318,9 @@ export interface AbstractControlContainer<
   >[E];
   get<A extends AbstractControl = AbstractControl>(...args: any[]): A | null;
 
-  patchValue(value: unknown, options?: IControlEventOptions): void;
+  patchValue(value: unknown, options?: IControlEventOptions): string[];
 
-  setControls(controls: Controls, options?: IControlEventOptions): void;
+  setControls(controls: Controls, options?: IControlEventOptions): string[];
   // setControl<N extends ControlsKey<Controls>>(
   //   name: N,
   //   control: Controls[N] | null,
@@ -345,46 +340,46 @@ export interface AbstractControlContainer<
     name: unknown,
     control: unknown,
     options?: IControlEventOptions
-  ): void;
+  ): string[];
   addControl(
     name: unknown,
     control: unknown,
     options?: IControlEventOptions
-  ): void;
-  removeControl(name: unknown, options?: IControlEventOptions): void;
+  ): string[];
+  removeControl(name: unknown, options?: IControlEventOptions): string[];
 
   markChildrenDisabled(
     value: boolean,
     options?: IControlEventOptions & { deep?: boolean }
-  ): void;
+  ): string[];
 
   markChildrenTouched(
     value: boolean,
     options?: IControlEventOptions & { deep?: boolean }
-  ): void;
+  ): string[];
 
   markChildrenDirty(
     value: boolean,
     options?: IControlEventOptions & { deep?: boolean }
-  ): void;
+  ): string[];
 
   markChildrenReadonly(
     value: boolean,
     options?: IControlEventOptions & { deep?: boolean }
-  ): void;
+  ): string[];
 
   markChildrenSubmitted(
     value: boolean,
     options?: IControlEventOptions & { deep?: boolean }
-  ): void;
+  ): string[];
 
   markChildrenPending(
     value: boolean,
     options?: IControlEventOptions & { deep?: boolean }
-  ): void;
+  ): string[];
 
   replayState(
-    options?: Omit<IControlEventOptions, 'idOfOriginatingEvent'> & {
+    options?: IControlEventOptions & {
       /**
        * By default, the controls will be cloned so that
        * mutations to them do not affect the replayState snapshot.
@@ -417,14 +412,14 @@ export interface PrivateAbstractControlContainer<
     name: N,
     control: Controls[N] | null,
     options?: IControlEventOptions
-  ): void;
+  ): string[];
   addControl<N extends ControlsKey<Controls>>(
     name: N,
     control: Controls[N],
     options?: IControlEventOptions
-  ): void;
+  ): string[];
   removeControl(
     name: ControlsKey<Controls>,
     options?: IControlEventOptions
-  ): void;
+  ): string[];
 }

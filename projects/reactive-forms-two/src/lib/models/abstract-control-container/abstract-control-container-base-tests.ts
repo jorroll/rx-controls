@@ -1,21 +1,25 @@
-import { toArray } from 'rxjs/operators';
+import { takeUntil, toArray } from 'rxjs/operators';
 import {
   AbstractControl,
   ControlId,
-  IControlSelfStateChangeEvent,
+  IControlStateChangeEvent,
   ValidatorFn,
 } from '../abstract-control/abstract-control';
-import {
-  AbstractControlContainer,
-  IChildControlStateChangeEvent,
-} from './abstract-control-container';
+import { AbstractControlContainer } from './abstract-control-container';
 import { IAbstractControlContainerBaseArgs } from './abstract-control-container-base';
 import {
   getControlEventsUntilEnd,
   testAllAbstractControlDefaultsExcept,
   testAllAbstractControlContainerDefaultsExcept,
   wait,
+  subscribeToControlEventsUntilEnd,
 } from '../test-util';
+import { Subject } from 'rxjs';
+import {
+  AbstractControlBase,
+  CONTROL_SELF_ID,
+} from '../abstract-control/abstract-control-base';
+import { inspect } from 'util';
 
 function testAllDefaultsExcept(
   c: AbstractControlContainer,
@@ -33,10 +37,14 @@ export default function runAbstractControlContainerBaseTestSuite<
   name: string,
   createControlContainer: (args?: {
     children?: number;
-    options?: IAbstractControlContainerBaseArgs<T['data']>;
+    options?: IAbstractControlContainerBaseArgs<
+      T['data'],
+      T['rawValue'],
+      T['value']
+    >;
   }) => T
 ) {
-  describe(name, () => {
+  describe(`AbstractControlContainerBase`, () => {
     let a: AbstractControlContainer;
 
     beforeEach(() => {
@@ -69,18 +77,18 @@ export default function runAbstractControlContainerBaseTestSuite<
 
             expect(a).toImplementObject({
               enabled: false,
-              containerEnabled: false,
+              selfEnabled: false,
               disabled: true,
-              containerDisabled: true,
+              selfDisabled: true,
               status: 'DISABLED',
             });
 
             testAllDefaultsExcept(
               a,
               'enabled',
-              'containerEnabled',
+              'selfEnabled',
               'disabled',
-              'containerDisabled',
+              'selfDisabled',
               'status'
             );
           });
@@ -100,10 +108,10 @@ export default function runAbstractControlContainerBaseTestSuite<
 
           expect(a).toImplementObject({
             dirty: true,
-            containerDirty: true,
+            selfDirty: true,
           });
 
-          testAllDefaultsExcept(a, 'dirty', 'containerDirty');
+          testAllDefaultsExcept(a, 'dirty', 'selfDirty');
 
           a = createControlContainer({ options: { dirty: false } });
 
@@ -116,10 +124,10 @@ export default function runAbstractControlContainerBaseTestSuite<
 
             expect(a).toImplementObject({
               readonly: true,
-              containerReadonly: true,
+              selfReadonly: true,
             });
 
-            testAllDefaultsExcept(a, 'readonly', 'containerReadonly');
+            testAllDefaultsExcept(a, 'readonly', 'selfReadonly');
           });
 
           it('false', () => {
@@ -135,10 +143,10 @@ export default function runAbstractControlContainerBaseTestSuite<
 
             expect(a).toImplementObject({
               submitted: true,
-              containerSubmitted: true,
+              selfSubmitted: true,
             });
 
-            testAllDefaultsExcept(a, 'submitted', 'containerSubmitted');
+            testAllDefaultsExcept(a, 'submitted', 'selfSubmitted');
           });
 
           it('false', () => {
@@ -155,13 +163,13 @@ export default function runAbstractControlContainerBaseTestSuite<
             });
 
             expect(a).toImplementObject({
-              errorsStore: new Map([[a.id, { anError: true }]]),
+              errorsStore: new Map([[CONTROL_SELF_ID, { anError: true }]]),
               errors: { anError: true },
-              containerErrors: { anError: true },
+              selfErrors: { anError: true },
               valid: false,
-              containerValid: false,
+              selfValid: false,
               invalid: true,
-              containerInvalid: true,
+              selfInvalid: true,
               status: 'INVALID',
             });
 
@@ -169,11 +177,11 @@ export default function runAbstractControlContainerBaseTestSuite<
               a,
               'errorsStore',
               'errors',
-              'containerErrors',
+              'selfErrors',
               'valid',
-              'containerValid',
+              'selfValid',
               'invalid',
-              'containerInvalid',
+              'selfInvalid',
               'status'
             );
           });
@@ -186,11 +194,11 @@ export default function runAbstractControlContainerBaseTestSuite<
             expect(a).toImplementObject({
               errorsStore,
               errors: { secondError: true },
-              containerErrors: { secondError: true },
+              selfErrors: { secondError: true },
               valid: false,
-              containerValid: false,
+              selfValid: false,
               invalid: true,
-              containerInvalid: true,
+              selfInvalid: true,
               status: 'INVALID',
             });
 
@@ -198,11 +206,11 @@ export default function runAbstractControlContainerBaseTestSuite<
               a,
               'errorsStore',
               'errors',
-              'containerErrors',
+              'selfErrors',
               'valid',
-              'containerValid',
+              'selfValid',
               'invalid',
-              'containerInvalid',
+              'selfInvalid',
               'status'
             );
           });
@@ -233,7 +241,9 @@ export default function runAbstractControlContainerBaseTestSuite<
 
             expect(a).toImplementObject({
               validator: expect.any(Function),
-              validatorStore: new Map([[a.id, expect.any(Function)]]),
+              validatorStore: new Map([
+                [CONTROL_SELF_ID, expect.any(Function)],
+              ]),
             });
 
             testAllDefaultsExcept(a, 'validator', 'validatorStore');
@@ -245,27 +255,29 @@ export default function runAbstractControlContainerBaseTestSuite<
             a = createControlContainer({ options: { validators } });
 
             expect(a).toImplementObject({
-              errorsStore: new Map([[a.id, { anError: true }]]),
+              errorsStore: new Map([[CONTROL_SELF_ID, { anError: true }]]),
               errors: { anError: true },
-              containerErrors: { anError: true },
+              selfErrors: { anError: true },
               valid: false,
-              containerValid: false,
+              selfValid: false,
               invalid: true,
-              containerInvalid: true,
+              selfInvalid: true,
               status: 'INVALID',
               validator: expect.any(Function),
-              validatorStore: new Map([[a.id, expect.any(Function)]]),
+              validatorStore: new Map([
+                [CONTROL_SELF_ID, expect.any(Function)],
+              ]),
             });
 
             testAllDefaultsExcept(
               a,
               'errorsStore',
               'errors',
-              'containerErrors',
+              'selfErrors',
               'valid',
-              'containerValid',
+              'selfValid',
               'invalid',
-              'containerInvalid',
+              'selfInvalid',
               'status',
               'validator',
               'validatorStore'
@@ -284,13 +296,13 @@ export default function runAbstractControlContainerBaseTestSuite<
             a = createControlContainer({ options: { validators } });
 
             expect(a).toImplementObject({
-              errorsStore: new Map([[a.id, { anError: true }]]),
+              errorsStore: new Map([[CONTROL_SELF_ID, { anError: true }]]),
               errors: { anError: true },
-              containerErrors: { anError: true },
+              selfErrors: { anError: true },
               valid: false,
-              containerValid: false,
+              selfValid: false,
               invalid: true,
-              containerInvalid: true,
+              selfInvalid: true,
               status: 'INVALID',
               validator: expect.any(Function),
               validatorStore: validators,
@@ -300,11 +312,11 @@ export default function runAbstractControlContainerBaseTestSuite<
               a,
               'errorsStore',
               'errors',
-              'containerErrors',
+              'selfErrors',
               'valid',
-              'containerValid',
+              'selfValid',
               'invalid',
-              'containerInvalid',
+              'selfInvalid',
               'status',
               'validator',
               'validatorStore'
@@ -324,8 +336,8 @@ export default function runAbstractControlContainerBaseTestSuite<
 
             expect(a).toImplementObject({
               pending: true,
-              containerPending: true,
-              pendingStore: new Set([a.id]),
+              selfPending: true,
+              pendingStore: new Set([CONTROL_SELF_ID]),
               status: 'PENDING',
             });
 
@@ -333,7 +345,7 @@ export default function runAbstractControlContainerBaseTestSuite<
               a,
               'status',
               'pending',
-              'containerPending',
+              'selfPending',
               'pendingStore'
             );
           });
@@ -345,7 +357,7 @@ export default function runAbstractControlContainerBaseTestSuite<
 
             expect(a).toImplementObject({
               pending: true,
-              containerPending: true,
+              selfPending: true,
               pendingStore: new Set(['one']),
               status: 'PENDING',
             });
@@ -354,7 +366,7 @@ export default function runAbstractControlContainerBaseTestSuite<
               a,
               'status',
               'pending',
-              'containerPending',
+              'selfPending',
               'pendingStore'
             );
           });
@@ -376,122 +388,68 @@ export default function runAbstractControlContainerBaseTestSuite<
       });
 
       it('', async () => {
-        const state = a.replayState();
+        const event1 = await a.replayState().toPromise();
 
-        function buildStateChangeBase(change: {
-          change: any;
-          changedProps: readonly string[];
-        }) {
-          return {
-            type: 'StateChange',
-            subtype: 'Self',
-            eventId: expect.any(Number),
-            idOfOriginatingEvent: expect.any(Number),
-            source: a.id,
-            ...change,
-            meta: {},
-          };
-        }
-
-        const [
-          resetValidatorStoreEvent,
-          controlsStoreEvent,
-          valueEvent,
-          disabledEvent,
-          touchedEvent,
-          dirtyEvent,
-          readonlyEvent,
-          submittedEvent,
-          dataEvent,
-          validatorStoreEvent,
-          pendingStoreEvent,
-          errorsStoreEvent,
-        ] = await state.pipe(toArray()).toPromise();
-
-        [
-          [
-            resetValidatorStoreEvent,
-            {
-              change: { validatorStore: expect.any(Function) },
-              changedProps: ['validatorStore'],
-            },
-          ] as const,
-          [
-            controlsStoreEvent,
-            {
-              change: { controlsStore: expect.any(Function) },
-              changedProps: ['controlsStore', 'rawValue', 'value'],
-            },
-          ] as const,
-          [
-            valueEvent,
-            {
-              change: { rawValue: expect.any(Function) },
-              changedProps: ['value', 'rawValue'],
-            },
-          ] as const,
-          [
-            disabledEvent,
-            {
-              change: { disabled: expect.any(Function) },
-              changedProps: ['disabled', 'enabled'],
-            },
-          ] as const,
-          [
-            touchedEvent,
-            {
-              change: { touched: expect.any(Function) },
-              changedProps: ['touched'],
-            },
-          ] as const,
-          [
-            dirtyEvent,
-            {
-              change: { dirty: expect.any(Function) },
-              changedProps: ['dirty'],
-            },
-          ] as const,
-          [
-            readonlyEvent,
-            {
-              change: { readonly: expect.any(Function) },
-              changedProps: ['readonly'],
-            },
-          ] as const,
-          [
-            submittedEvent,
-            {
-              change: { submitted: expect.any(Function) },
-              changedProps: ['submitted'],
-            },
-          ] as const,
-          [
-            dataEvent,
-            { change: { data: expect.any(Function) }, changedProps: ['data'] },
-          ] as const,
-          [
-            validatorStoreEvent,
-            {
-              change: { validatorStore: expect.any(Function) },
-              changedProps: ['validatorStore'],
-            },
-          ] as const,
-          [
-            pendingStoreEvent,
-            {
-              change: { pendingStore: expect.any(Function) },
-              changedProps: ['pendingStore'],
-            },
-          ] as const,
-          [
-            errorsStoreEvent,
-            {
-              change: { errorsStore: expect.any(Function) },
-              changedProps: ['errorsStore'],
-            },
-          ] as const,
-        ].forEach(([event, change]) => {
-          expect(event).toEqual(buildStateChangeBase(change));
+        expect(event1).toEqual<IControlStateChangeEvent>({
+          type: 'StateChange',
+          source: a.id,
+          meta: {},
+          trigger: {
+            label: expect.any(String),
+            source: expect.any(Symbol),
+          },
+          changes: new Map<string, any>([
+            ['controls', expect.any(Object)],
+            ['size', 0],
+            ['controlsStore', new Map()],
+            ['childValid', true],
+            ['childrenValid', true],
+            ['childInvalid', false],
+            ['childrenInvalid', false],
+            ['childEnabled', true],
+            ['childrenEnabled', true],
+            ['childDisabled', false],
+            ['childrenDisabled', false],
+            ['childReadonly', false],
+            ['childrenReadonly', false],
+            ['childPending', false],
+            ['childrenPending', false],
+            ['childTouched', false],
+            ['childrenTouched', false],
+            ['childDirty', false],
+            ['childrenDirty', false],
+            ['childSubmitted', false],
+            ['childrenSubmitted', false],
+            ['childrenErrors', null],
+            ['enabled', true],
+            ['selfEnabled', true],
+            ['disabled', false],
+            ['selfDisabled', false],
+            ['touched', false],
+            ['selfTouched', false],
+            ['dirty', false],
+            ['selfDirty', false],
+            ['readonly', false],
+            ['selfReadonly', false],
+            ['submitted', false],
+            ['selfSubmitted', false],
+            ['data', undefined],
+            ['value', expect.any(Object)],
+            ['rawValue', expect.any(Object)],
+            ['validator', null],
+            ['validatorStore', new Map()],
+            ['pending', false],
+            ['selfPending', false],
+            ['pendingStore', new Set()],
+            ['valid', true],
+            ['selfValid', true],
+            ['invalid', false],
+            ['selfInvalid', false],
+            ['status', 'VALID'],
+            ['errors', null],
+            ['selfErrors', null],
+            ['errorsStore', new Map()],
+          ]),
         });
       });
 
@@ -500,7 +458,7 @@ export default function runAbstractControlContainerBaseTestSuite<
 
         expect(b.errors).toEqual(null);
 
-        state.subscribe(b.source);
+        state.subscribe((e) => b.processEvent(e));
 
         expect(b.errors).toEqual(a.errors);
 
@@ -514,7 +472,7 @@ export default function runAbstractControlContainerBaseTestSuite<
         expect(b.errors).not.toEqual(a.errors);
         expect(b.errors).toEqual({ threvinty: true });
 
-        state.subscribe(b.source);
+        state.subscribe((e) => b.processEvent(e));
 
         expect(b.errors).toEqual(a.errors);
       });
@@ -529,9 +487,99 @@ export default function runAbstractControlContainerBaseTestSuite<
         child1 = b.get(0);
       });
 
+      describe(`replayState`, () => {
+        it('', async () => {
+          const event1 = await b.replayState().toPromise();
+
+          expect(event1).toEqual<IControlStateChangeEvent>({
+            type: 'StateChange',
+            source: b.id,
+            meta: {},
+            trigger: { label: expect.any(String), source: expect.any(Symbol) },
+            changes: new Map<string, any>([
+              ['controls', expect.any(Object)],
+              ['size', 1],
+              [
+                'controlsStore',
+                new Map([[expect.anything(), expect.any(AbstractControlBase)]]),
+              ],
+              ['childValid', true],
+              ['childrenValid', true],
+              ['childInvalid', false],
+              ['childrenInvalid', false],
+              ['childEnabled', true],
+              ['childrenEnabled', true],
+              ['childDisabled', false],
+              ['childrenDisabled', false],
+              ['childReadonly', false],
+              ['childrenReadonly', false],
+              ['childPending', false],
+              ['childrenPending', false],
+              ['childTouched', false],
+              ['childrenTouched', false],
+              ['childDirty', false],
+              ['childrenDirty', false],
+              ['childSubmitted', false],
+              ['childrenSubmitted', false],
+              ['childrenErrors', null],
+              ['enabled', true],
+              ['selfEnabled', true],
+              ['disabled', false],
+              ['selfDisabled', false],
+              ['touched', false],
+              ['selfTouched', false],
+              ['dirty', false],
+              ['selfDirty', false],
+              ['readonly', false],
+              ['selfReadonly', false],
+              ['submitted', false],
+              ['selfSubmitted', false],
+              ['data', undefined],
+              ['value', expect.any(Object)],
+              ['rawValue', expect.any(Object)],
+              ['validator', null],
+              ['validatorStore', new Map()],
+              ['pending', false],
+              ['selfPending', false],
+              ['pendingStore', new Set()],
+              ['valid', true],
+              ['selfValid', true],
+              ['invalid', false],
+              ['selfInvalid', false],
+              ['status', 'VALID'],
+              ['errors', null],
+              ['selfErrors', null],
+              ['errorsStore', new Map()],
+            ]),
+          });
+        });
+
+        it('can be used to reset control when control is linked to another', async () => {
+          expect(a).not.toEqualControl(b, {
+            skip: ['parent'],
+          });
+
+          const [end] = subscribeToControlEventsUntilEnd(a, b);
+          subscribeToControlEventsUntilEnd(b, a, end);
+
+          b.replayState().subscribe((e) => a.processEvent(e));
+
+          expect(a).toEqualControl(b, {
+            skip: ['parent'],
+          });
+
+          end.next();
+          end.complete();
+
+          // this `wait(0)` is, for some reason, necessary to show a `Maximum call stack size` exception
+          await wait(0);
+        });
+      });
+
       ['Touched', 'Dirty', 'Readonly', 'Submitted'].forEach((prop) => {
         const METHOD_NAME = `mark${prop}` as keyof AbstractControl & string;
         const PROP_NAME = prop.toLowerCase();
+        const SELF_PROP_NAME = `self${prop}`;
         const CHILD_PROP_NAME = `child${prop}`;
         const CHILDREN_PROP_NAME = `children${prop}`;
 
@@ -560,32 +608,34 @@ export default function runAbstractControlContainerBaseTestSuite<
 
             const [event1, event2] = await promise1;
 
-            expect(event1).toEqual<IChildControlStateChangeEvent>({
+            expect(event1).toEqual<IControlStateChangeEvent>({
               type: 'StateChange',
-              subtype: 'Child',
-              eventId: expect.any(Number),
-              idOfOriginatingEvent: expect.any(Number),
-              source: b.id,
+              source: child1.id,
               meta: {},
+              trigger: {
+                label: expect.any(String),
+                source: expect.any(Symbol),
+              },
+              changes: new Map([
+                [CHILD_PROP_NAME, true],
+                [CHILDREN_PROP_NAME, true],
+                [PROP_NAME, true],
+              ]),
               childEvents: {
                 0: {
                   type: 'StateChange',
-                  subtype: 'Self',
-                  eventId: expect.any(Number),
-                  idOfOriginatingEvent: expect.any(Number),
                   source: child1.id,
                   meta: {},
-                  change: {
-                    [PROP_NAME]: expect.any(Function),
+                  trigger: {
+                    label: expect.any(String),
+                    source: expect.any(Symbol),
                   },
-                  changedProps: [PROP_NAME],
-                } as IControlSelfStateChangeEvent<unknown, unknown>,
+                  changes: new Map([
+                    [SELF_PROP_NAME, true],
+                    [PROP_NAME, true],
+                  ]),
+                },
               },
-              changedProps: expect.arrayContaining([
-                PROP_NAME,
-                CHILD_PROP_NAME,
-                CHILDREN_PROP_NAME,
-              ]),
             });
 
             expect(event2).toEqual(undefined);
@@ -625,28 +675,30 @@ export default function runAbstractControlContainerBaseTestSuite<
 
             const [event1, event2] = await promise1;
 
-            expect(event1).toEqual<IChildControlStateChangeEvent>({
+            expect(event1).toEqual<IControlStateChangeEvent>({
               type: 'StateChange',
-              subtype: 'Child',
-              eventId: expect.any(Number),
-              idOfOriginatingEvent: expect.any(Number),
-              source: b.id,
+              source: child1.id,
               meta: {},
+              trigger: {
+                label: expect.any(String),
+                source: expect.any(Symbol),
+              },
+              changes: new Map(),
               childEvents: {
                 0: {
                   type: 'StateChange',
-                  subtype: 'Self',
-                  eventId: expect.any(Number),
-                  idOfOriginatingEvent: expect.any(Number),
                   source: child1.id,
                   meta: {},
-                  change: {
-                    [PROP_NAME]: expect.any(Function),
+                  trigger: {
+                    label: expect.any(String),
+                    source: expect.any(Symbol),
                   },
-                  changedProps: [PROP_NAME],
-                } as IControlSelfStateChangeEvent<unknown, unknown>,
+                  changes: new Map([
+                    [SELF_PROP_NAME, true],
+                    [PROP_NAME, true],
+                  ]),
+                },
               },
-              changedProps: [],
             });
 
             expect(event2).toEqual(undefined);
@@ -685,71 +737,75 @@ export default function runAbstractControlContainerBaseTestSuite<
 
             const [event1, event2, event3] = await promise1;
 
-            expect(event1).toEqual<IChildControlStateChangeEvent>({
+            expect(event1).toEqual<IControlStateChangeEvent>({
               type: 'StateChange',
-              subtype: 'Child',
-              eventId: expect.any(Number),
-              idOfOriginatingEvent: expect.any(Number),
-              source: b.id,
+              source: child1.id,
               meta: {},
+              trigger: {
+                label: expect.any(String),
+                source: expect.any(Symbol),
+              },
+              changes: new Map([
+                [CHILD_PROP_NAME, true],
+                [CHILDREN_PROP_NAME, true],
+                [PROP_NAME, true],
+              ]),
               childEvents: {
                 0: {
                   type: 'StateChange',
-                  subtype: 'Self',
-                  eventId: expect.any(Number),
-                  idOfOriginatingEvent: expect.any(Number),
                   source: child1.id,
                   meta: {},
-                  change: {
-                    [PROP_NAME]: expect.any(Function),
+                  trigger: {
+                    label: expect.any(String),
+                    source: expect.any(Symbol),
                   },
-                  changedProps: [PROP_NAME],
-                } as IControlSelfStateChangeEvent<unknown, unknown>,
+                  changes: new Map([
+                    [SELF_PROP_NAME, true],
+                    [PROP_NAME, true],
+                  ]),
+                },
               },
-              changedProps: expect.arrayContaining([
-                PROP_NAME,
-                CHILD_PROP_NAME,
-                CHILDREN_PROP_NAME,
-              ]),
             });
 
-            expect(event2).toEqual<IChildControlStateChangeEvent>({
+            expect(event2).toEqual<IControlStateChangeEvent>({
               type: 'StateChange',
-              subtype: 'Child',
-              eventId: expect.any(Number),
-              idOfOriginatingEvent: expect.any(Number),
-              source: b.id,
+              source: child1.id,
               meta: {},
+              trigger: {
+                label: expect.any(String),
+                source: expect.any(Symbol),
+              },
+              changes: new Map<string, unknown>([
+                ['value', expect.any(Object)],
+                ['childDisabled', true],
+                ['childrenEnabled', false],
+                ['childrenDisabled', true],
+                ['childEnabled', false],
+                [CHILD_PROP_NAME, false],
+                [CHILDREN_PROP_NAME, false],
+                ['disabled', true],
+                ['enabled', false],
+                [PROP_NAME, false],
+                ['status', 'DISABLED'],
+              ]),
               childEvents: {
                 0: {
                   type: 'StateChange',
-                  subtype: 'Self',
-                  eventId: expect.any(Number),
-                  idOfOriginatingEvent: expect.any(Number),
                   source: child1.id,
                   meta: {},
-                  change: {
-                    disabled: expect.any(Function),
+                  trigger: {
+                    label: expect.any(String),
+                    source: expect.any(Symbol),
                   },
-                  changedProps: expect.arrayContaining([
-                    'disabled',
-                    'enabled',
-                    'status',
+                  changes: new Map<string, unknown>([
+                    ['selfDisabled', true],
+                    ['selfEnabled', false],
+                    ['disabled', true],
+                    ['enabled', false],
+                    ['status', 'DISABLED'],
                   ]),
-                } as IControlSelfStateChangeEvent<unknown, unknown>,
+                },
               },
-              changedProps: expect.arrayContaining([
-                'disabled',
-                'childDisabled',
-                'childrenDisabled',
-                'enabled',
-                'childEnabled',
-                'childrenEnabled',
-                'status',
-                PROP_NAME,
-                CHILD_PROP_NAME,
-                CHILDREN_PROP_NAME,
-              ]),
             });
 
             expect(event3).toEqual(undefined);
@@ -768,6 +824,7 @@ export default function runAbstractControlContainerBaseTestSuite<
 
           expect(b).toImplementObject({
             pending: true,
+            selfPending: false,
             childPending: true,
             childrenPending: true,
             status: 'PENDING',
@@ -776,6 +833,7 @@ export default function runAbstractControlContainerBaseTestSuite<
           testAllDefaultsExcept(
             b,
             'pending',
+            'selfPending',
             'childPending',
             'childrenPending',
             'parent',
@@ -784,37 +842,34 @@ export default function runAbstractControlContainerBaseTestSuite<
 
           const [event1, event2] = await promise1;
 
-          expect(event1).toEqual<IChildControlStateChangeEvent>({
+          expect(event1).toEqual<IControlStateChangeEvent>({
             type: 'StateChange',
-            subtype: 'Child',
-            eventId: expect.any(Number),
-            idOfOriginatingEvent: expect.any(Number),
-            source: b.id,
+            source: child1.id,
             meta: {},
+            trigger: { label: expect.any(String), source: expect.any(Symbol) },
+            changes: new Map<string, unknown>([
+              ['childPending', true],
+              ['childrenPending', true],
+              ['pending', true],
+              ['status', 'PENDING'],
+            ]),
             childEvents: {
               0: {
                 type: 'StateChange',
-                subtype: 'Self',
-                eventId: expect.any(Number),
-                idOfOriginatingEvent: expect.any(Number),
                 source: child1.id,
                 meta: {},
-                change: {
-                  pendingStore: expect.any(Function),
+                trigger: {
+                  label: expect.any(String),
+                  source: expect.any(Symbol),
                 },
-                changedProps: expect.arrayContaining([
-                  'pending',
-                  'pendingStore',
-                  'status',
+                changes: new Map<string, unknown>([
+                  ['pendingStore', new Set([CONTROL_SELF_ID])],
+                  ['selfPending', true],
+                  ['pending', true],
+                  ['status', 'PENDING'],
                 ]),
-              } as IControlSelfStateChangeEvent<unknown, unknown>,
+              },
             },
-            changedProps: expect.arrayContaining([
-              'pending',
-              'childPending',
-              'childrenPending',
-              'status',
-            ]),
           });
 
           expect(event2).toEqual(undefined);
@@ -832,9 +887,11 @@ export default function runAbstractControlContainerBaseTestSuite<
 
           expect(b).toImplementObject({
             disabled: true,
+            selfDisabled: false,
             childDisabled: true,
             childrenDisabled: true,
             enabled: false,
+            selfEnabled: true,
             childEnabled: false,
             childrenEnabled: false,
             status: 'DISABLED',
@@ -854,31 +911,28 @@ export default function runAbstractControlContainerBaseTestSuite<
 
           const [event1, event2] = await promise1;
 
-          expect(event1).toEqual<IChildControlStateChangeEvent>({
+          expect(event1).toEqual<IControlStateChangeEvent>({
             type: 'StateChange',
-            subtype: 'Child',
-            eventId: expect.any(Number),
-            idOfOriginatingEvent: expect.any(Number),
-            source: b.id,
+            source: child1.id,
             meta: {},
+            trigger: { label: expect.any(String), source: expect.any(Symbol) },
+            changes: new Map<string, unknown>(),
             childEvents: {
               0: {
                 type: 'StateChange',
-                subtype: 'Self',
-                eventId: expect.any(Number),
-                idOfOriginatingEvent: expect.any(Number),
                 source: child1.id,
                 meta: {},
-                change: {
-                  pendingStore: expect.any(Function),
+                trigger: {
+                  label: expect.any(String),
+                  source: expect.any(Symbol),
                 },
-                changedProps: expect.arrayContaining([
-                  'pending',
-                  'pendingStore',
+                changes: new Map<string, unknown>([
+                  ['pendingStore', new Set([CONTROL_SELF_ID])],
+                  ['selfPending', true],
+                  ['pending', true],
                 ]),
-              } as IControlSelfStateChangeEvent<unknown, unknown>,
+              },
             },
-            changedProps: [],
           });
 
           expect(event2).toEqual(undefined);
@@ -917,76 +971,72 @@ export default function runAbstractControlContainerBaseTestSuite<
 
           const [event1, event2, event3] = await promise1;
 
-          expect(event1).toEqual<IChildControlStateChangeEvent>({
+          expect(event1).toEqual<IControlStateChangeEvent>({
             type: 'StateChange',
-            subtype: 'Child',
-            eventId: expect.any(Number),
-            idOfOriginatingEvent: expect.any(Number),
-            source: b.id,
+            source: child1.id,
             meta: {},
+            trigger: { label: expect.any(String), source: expect.any(Symbol) },
+            changes: new Map<string, unknown>([
+              ['childPending', true],
+              ['childrenPending', true],
+              ['pending', true],
+              ['status', 'PENDING'],
+            ]),
             childEvents: {
               0: {
                 type: 'StateChange',
-                subtype: 'Self',
-                eventId: expect.any(Number),
-                idOfOriginatingEvent: expect.any(Number),
                 source: child1.id,
                 meta: {},
-                change: {
-                  pendingStore: expect.any(Function),
+                trigger: {
+                  label: expect.any(String),
+                  source: expect.any(Symbol),
                 },
-                changedProps: expect.arrayContaining([
-                  'pending',
-                  'pendingStore',
-                  'status',
+                changes: new Map<string, unknown>([
+                  ['pendingStore', new Set([CONTROL_SELF_ID])],
+                  ['selfPending', true],
+                  ['pending', true],
+                  ['status', 'PENDING'],
                 ]),
-              } as IControlSelfStateChangeEvent<unknown, unknown>,
+              },
             },
-            changedProps: expect.arrayContaining([
-              'pending',
-              'childPending',
-              'childrenPending',
-              'status',
-            ]),
           });
 
-          expect(event2).toEqual<IChildControlStateChangeEvent>({
+          expect(event2).toEqual<IControlStateChangeEvent>({
             type: 'StateChange',
-            subtype: 'Child',
-            eventId: expect.any(Number),
-            idOfOriginatingEvent: expect.any(Number),
-            source: b.id,
+            source: child1.id,
             meta: {},
+            trigger: { label: expect.any(String), source: expect.any(Symbol) },
+            changes: new Map<string, unknown>([
+              ['value', expect.any(Object)],
+              ['childDisabled', true],
+              ['childrenEnabled', false],
+              ['childrenDisabled', true],
+              ['childEnabled', false],
+              ['childPending', false],
+              ['childrenPending', false],
+              ['disabled', true],
+              ['enabled', false],
+              ['pending', false],
+              ['status', 'DISABLED'],
+            ]),
             childEvents: {
               0: {
                 type: 'StateChange',
-                subtype: 'Self',
-                eventId: expect.any(Number),
-                idOfOriginatingEvent: expect.any(Number),
                 source: child1.id,
                 meta: {},
-                change: {
-                  disabled: expect.any(Function),
+                trigger: {
+                  label: expect.any(String),
+                  source: expect.any(Symbol),
                 },
-                changedProps: expect.arrayContaining([
-                  'disabled',
-                  'enabled',
-                  'status',
+                changes: new Map<string, unknown>([
+                  ['selfDisabled', true],
+                  ['selfEnabled', false],
+                  ['disabled', true],
+                  ['enabled', false],
+                  ['status', 'DISABLED'],
                 ]),
-              } as IControlSelfStateChangeEvent<unknown, unknown>,
+              },
             },
-            changedProps: expect.arrayContaining([
-              'disabled',
-              'childDisabled',
-              'childrenDisabled',
-              'enabled',
-              'childEnabled',
-              'childrenEnabled',
-              'status',
-              'pending',
-              'childPending',
-              'childrenPending',
-            ]),
           });
 
           expect(event3).toEqual(undefined);
@@ -1026,40 +1076,39 @@ export default function runAbstractControlContainerBaseTestSuite<
 
           const [event1, event2] = await promise1;
 
-          expect(event1).toEqual<IChildControlStateChangeEvent>({
+          expect(event1).toEqual<IControlStateChangeEvent>({
             type: 'StateChange',
-            subtype: 'Child',
-            eventId: expect.any(Number),
-            idOfOriginatingEvent: expect.any(Number),
-            source: b.id,
+            source: child1.id,
             meta: {},
+            trigger: { label: expect.any(String), source: expect.any(Symbol) },
+            changes: new Map<string, unknown>([
+              ['value', expect.any(Object)],
+              ['childDisabled', true],
+              ['childrenEnabled', false],
+              ['childrenDisabled', true],
+              ['childEnabled', false],
+              ['disabled', true],
+              ['enabled', false],
+              ['status', 'DISABLED'],
+            ]),
             childEvents: {
               0: {
                 type: 'StateChange',
-                subtype: 'Self',
-                eventId: expect.any(Number),
-                idOfOriginatingEvent: expect.any(Number),
                 source: child1.id,
                 meta: {},
-                change: {
-                  disabled: expect.any(Function),
+                trigger: {
+                  label: expect.any(String),
+                  source: expect.any(Symbol),
                 },
-                changedProps: expect.arrayContaining([
-                  'disabled',
-                  'enabled',
-                  'status',
+                changes: new Map<string, unknown>([
+                  ['selfDisabled', true],
+                  ['selfEnabled', false],
+                  ['disabled', true],
+                  ['enabled', false],
+                  ['status', 'DISABLED'],
                 ]),
-              } as IControlSelfStateChangeEvent<unknown, unknown>,
+              },
             },
-            changedProps: expect.arrayContaining([
-              'disabled',
-              'childDisabled',
-              'childrenDisabled',
-              'enabled',
-              'childEnabled',
-              'childrenEnabled',
-              'status',
-            ]),
           });
 
           expect(event2).toEqual(undefined);
@@ -1088,40 +1137,39 @@ export default function runAbstractControlContainerBaseTestSuite<
 
           const [event1, event2] = await promise1;
 
-          expect(event1).toEqual<IChildControlStateChangeEvent>({
+          expect(event1).toEqual<IControlStateChangeEvent>({
             type: 'StateChange',
-            subtype: 'Child',
-            eventId: expect.any(Number),
-            idOfOriginatingEvent: expect.any(Number),
-            source: b.id,
+            source: child1.id,
             meta: {},
+            trigger: { label: expect.any(String), source: expect.any(Symbol) },
+            changes: new Map<string, unknown>([
+              ['value', expect.any(Object)],
+              ['childDisabled', false],
+              ['childrenEnabled', true],
+              ['childrenDisabled', false],
+              ['childEnabled', true],
+              ['disabled', false],
+              ['enabled', true],
+              ['status', 'VALID'],
+            ]),
             childEvents: {
               0: {
                 type: 'StateChange',
-                subtype: 'Self',
-                eventId: expect.any(Number),
-                idOfOriginatingEvent: expect.any(Number),
                 source: child1.id,
                 meta: {},
-                change: {
-                  disabled: expect.any(Function),
+                trigger: {
+                  label: expect.any(String),
+                  source: expect.any(Symbol),
                 },
-                changedProps: expect.arrayContaining([
-                  'disabled',
-                  'enabled',
-                  'status',
+                changes: new Map<string, unknown>([
+                  ['selfDisabled', false],
+                  ['selfEnabled', true],
+                  ['disabled', false],
+                  ['enabled', true],
+                  ['status', 'VALID'],
                 ]),
-              } as IControlSelfStateChangeEvent<unknown, unknown>,
+              },
             },
-            changedProps: expect.arrayContaining([
-              'disabled',
-              'childDisabled',
-              'childrenDisabled',
-              'enabled',
-              'childEnabled',
-              'childrenEnabled',
-              'status',
-            ]),
           });
 
           expect(event2).toEqual(undefined);
@@ -1147,6 +1195,7 @@ export default function runAbstractControlContainerBaseTestSuite<
         ['Touched', 'Dirty', 'Readonly', 'Submitted'].forEach((prop) => {
           const METHOD_NAME = `mark${prop}` as keyof AbstractControl & string;
           const PROP_NAME = prop.toLowerCase();
+          const SELF_PROP_NAME = `self${prop}`;
           const CHILD_PROP_NAME = `child${prop}`;
           const CHILDREN_PROP_NAME = `children${prop}`;
 
@@ -1175,47 +1224,50 @@ export default function runAbstractControlContainerBaseTestSuite<
 
               const [event1, event2] = await promise1;
 
-              expect(event1).toEqual<IChildControlStateChangeEvent>({
+              expect(event1).toEqual<IControlStateChangeEvent>({
                 type: 'StateChange',
-                subtype: 'Child',
-                eventId: expect.any(Number),
-                idOfOriginatingEvent: expect.any(Number),
-                source: b.id,
+                source: child1.id,
                 meta: {},
+                trigger: {
+                  label: expect.any(String),
+                  source: expect.any(Symbol),
+                },
+                changes: new Map([
+                  [CHILD_PROP_NAME, true],
+                  [CHILDREN_PROP_NAME, true],
+                  [PROP_NAME, true],
+                ]),
                 childEvents: {
                   0: {
                     type: 'StateChange',
-                    subtype: 'Child',
-                    eventId: expect.any(Number),
-                    idOfOriginatingEvent: expect.any(Number),
-                    source: b2.id,
+                    source: child1.id,
                     meta: {},
+                    trigger: {
+                      label: expect.any(String),
+                      source: expect.any(Symbol),
+                    },
+                    changes: new Map([
+                      [CHILD_PROP_NAME, true],
+                      [CHILDREN_PROP_NAME, true],
+                      [PROP_NAME, true],
+                    ]),
                     childEvents: {
                       0: {
                         type: 'StateChange',
-                        subtype: 'Self',
-                        eventId: expect.any(Number),
-                        idOfOriginatingEvent: expect.any(Number),
                         source: child1.id,
                         meta: {},
-                        change: {
-                          [PROP_NAME]: expect.any(Function),
+                        trigger: {
+                          label: expect.any(String),
+                          source: expect.any(Symbol),
                         },
-                        changedProps: [PROP_NAME],
-                      } as IControlSelfStateChangeEvent<unknown, unknown>,
+                        changes: new Map([
+                          [SELF_PROP_NAME, true],
+                          [PROP_NAME, true],
+                        ]),
+                      },
                     },
-                    changedProps: expect.arrayContaining([
-                      PROP_NAME,
-                      CHILD_PROP_NAME,
-                      CHILDREN_PROP_NAME,
-                    ]),
-                  } as IChildControlStateChangeEvent,
+                  },
                 },
-                changedProps: expect.arrayContaining([
-                  PROP_NAME,
-                  CHILD_PROP_NAME,
-                  CHILDREN_PROP_NAME,
-                ]),
               });
 
               expect(event2).toEqual(undefined);
@@ -1255,39 +1307,42 @@ export default function runAbstractControlContainerBaseTestSuite<
 
               const [event1, event2] = await promise1;
 
-              expect(event1).toEqual<IChildControlStateChangeEvent>({
+              expect(event1).toEqual<IControlStateChangeEvent>({
                 type: 'StateChange',
-                subtype: 'Child',
-                eventId: expect.any(Number),
-                idOfOriginatingEvent: expect.any(Number),
-                source: b.id,
+                source: child1.id,
                 meta: {},
+                trigger: {
+                  label: expect.any(String),
+                  source: expect.any(Symbol),
+                },
+                changes: new Map(),
                 childEvents: {
                   0: {
                     type: 'StateChange',
-                    subtype: 'Child',
-                    eventId: expect.any(Number),
-                    idOfOriginatingEvent: expect.any(Number),
-                    source: b2.id,
+                    source: child1.id,
                     meta: {},
+                    trigger: {
+                      label: expect.any(String),
+                      source: expect.any(Symbol),
+                    },
+                    changes: new Map(),
                     childEvents: {
                       0: {
                         type: 'StateChange',
-                        subtype: 'Self',
-                        eventId: expect.any(Number),
-                        idOfOriginatingEvent: expect.any(Number),
                         source: child1.id,
                         meta: {},
-                        change: {
-                          [PROP_NAME]: expect.any(Function),
+                        trigger: {
+                          label: expect.any(String),
+                          source: expect.any(Symbol),
                         },
-                        changedProps: [PROP_NAME],
-                      } as IControlSelfStateChangeEvent<unknown, unknown>,
+                        changes: new Map([
+                          [SELF_PROP_NAME, true],
+                          [PROP_NAME, true],
+                        ]),
+                      },
                     },
-                    changedProps: [],
-                  } as IChildControlStateChangeEvent,
+                  },
                 },
-                changedProps: [],
               });
 
               expect(event2).toEqual(undefined);
@@ -1326,111 +1381,273 @@ export default function runAbstractControlContainerBaseTestSuite<
 
               const [event1, event2, event3] = await promise1;
 
-              expect(event1).toEqual<IChildControlStateChangeEvent>({
+              expect(event1).toEqual<IControlStateChangeEvent>({
                 type: 'StateChange',
-                subtype: 'Child',
-                eventId: expect.any(Number),
-                idOfOriginatingEvent: expect.any(Number),
-                source: b.id,
+                source: child1.id,
                 meta: {},
+                trigger: {
+                  label: expect.any(String),
+                  source: expect.any(Symbol),
+                },
+                changes: new Map([
+                  [CHILD_PROP_NAME, true],
+                  [CHILDREN_PROP_NAME, true],
+                  [PROP_NAME, true],
+                ]),
                 childEvents: {
                   0: {
                     type: 'StateChange',
-                    subtype: 'Child',
-                    eventId: expect.any(Number),
-                    idOfOriginatingEvent: expect.any(Number),
-                    source: b2.id,
+                    source: child1.id,
                     meta: {},
+                    trigger: {
+                      label: expect.any(String),
+                      source: expect.any(Symbol),
+                    },
+                    changes: new Map([
+                      [CHILD_PROP_NAME, true],
+                      [CHILDREN_PROP_NAME, true],
+                      [PROP_NAME, true],
+                    ]),
                     childEvents: {
                       0: {
                         type: 'StateChange',
-                        subtype: 'Self',
-                        eventId: expect.any(Number),
-                        idOfOriginatingEvent: expect.any(Number),
                         source: child1.id,
                         meta: {},
-                        change: {
-                          [PROP_NAME]: expect.any(Function),
+                        trigger: {
+                          label: expect.any(String),
+                          source: expect.any(Symbol),
                         },
-                        changedProps: [PROP_NAME],
-                      } as IControlSelfStateChangeEvent<unknown, unknown>,
+                        changes: new Map([
+                          [SELF_PROP_NAME, true],
+                          [PROP_NAME, true],
+                        ]),
+                      },
                     },
-                    changedProps: expect.arrayContaining([
-                      PROP_NAME,
-                      CHILD_PROP_NAME,
-                      CHILDREN_PROP_NAME,
-                    ]),
-                  } as IChildControlStateChangeEvent,
+                  },
                 },
-                changedProps: expect.arrayContaining([
-                  PROP_NAME,
-                  CHILD_PROP_NAME,
-                  CHILDREN_PROP_NAME,
-                ]),
               });
 
-              expect(event2).toEqual<IChildControlStateChangeEvent>({
+              expect(event2).toEqual<IControlStateChangeEvent>({
                 type: 'StateChange',
-                subtype: 'Child',
-                eventId: expect.any(Number),
-                idOfOriginatingEvent: expect.any(Number),
-                source: b.id,
+                source: child1.id,
                 meta: {},
+                trigger: {
+                  label: expect.any(String),
+                  source: expect.any(Symbol),
+                },
+                changes: new Map<string, unknown>([
+                  ['value', expect.any(Object)],
+                  ['childDisabled', true],
+                  ['childrenEnabled', false],
+                  ['childrenDisabled', true],
+                  ['childEnabled', false],
+                  [CHILD_PROP_NAME, false],
+                  [CHILDREN_PROP_NAME, false],
+                  ['disabled', true],
+                  ['enabled', false],
+                  [PROP_NAME, false],
+                  ['status', 'DISABLED'],
+                ]),
                 childEvents: {
                   0: {
                     type: 'StateChange',
-                    subtype: 'Child',
-                    eventId: expect.any(Number),
-                    idOfOriginatingEvent: expect.any(Number),
-                    source: b2.id,
+                    source: child1.id,
                     meta: {},
+                    trigger: {
+                      label: expect.any(String),
+                      source: expect.any(Symbol),
+                    },
+                    changes: new Map<string, unknown>([
+                      ['value', expect.any(Object)],
+                      ['childDisabled', true],
+                      ['childrenEnabled', false],
+                      ['childrenDisabled', true],
+                      ['childEnabled', false],
+                      [CHILD_PROP_NAME, false],
+                      [CHILDREN_PROP_NAME, false],
+                      ['disabled', true],
+                      ['enabled', false],
+                      [PROP_NAME, false],
+                      ['status', 'DISABLED'],
+                    ]),
                     childEvents: {
                       0: {
                         type: 'StateChange',
-                        subtype: 'Self',
-                        eventId: expect.any(Number),
-                        idOfOriginatingEvent: expect.any(Number),
                         source: child1.id,
                         meta: {},
-                        change: {
-                          disabled: expect.any(Function),
+                        trigger: {
+                          label: expect.any(String),
+                          source: expect.any(Symbol),
                         },
-                        changedProps: expect.arrayContaining([
-                          'disabled',
-                          'enabled',
-                          'status',
+                        changes: new Map<string, unknown>([
+                          ['selfDisabled', true],
+                          ['selfEnabled', false],
+                          ['disabled', true],
+                          ['enabled', false],
+                          ['status', 'DISABLED'],
                         ]),
-                      } as IControlSelfStateChangeEvent<unknown, unknown>,
+                      },
                     },
-                    changedProps: expect.arrayContaining([
-                      'disabled',
-                      'childDisabled',
-                      'childrenDisabled',
-                      'enabled',
-                      'childEnabled',
-                      'childrenEnabled',
-                      'status',
-                      PROP_NAME,
-                      CHILD_PROP_NAME,
-                      CHILDREN_PROP_NAME,
-                    ]),
-                  } as IChildControlStateChangeEvent,
+                  },
                 },
-                changedProps: expect.arrayContaining([
-                  'disabled',
-                  'childDisabled',
-                  'childrenDisabled',
-                  'enabled',
-                  'childEnabled',
-                  'childrenEnabled',
-                  'status',
-                  PROP_NAME,
-                  CHILD_PROP_NAME,
-                  CHILDREN_PROP_NAME,
-                ]),
               });
 
               expect(event3).toEqual(undefined);
+            });
+          });
+        });
+
+        // markChildrenX
+        ['Touched', 'Dirty', 'Readonly', 'Submitted'].forEach((prop) => {
+          const METHOD_NAME = `markChildren${prop}` as keyof AbstractControl &
+            string;
+          const PROP_NAME = prop.toLowerCase();
+          const SELF_PROP_NAME = `self${prop}`;
+          const CHILD_PROP_NAME = `child${prop}`;
+          const CHILDREN_PROP_NAME = `children${prop}`;
+
+          describe(METHOD_NAME, () => {
+            it('deep = false', async () => {
+              const [promise1, end] = getControlEventsUntilEnd(b);
+
+              b[METHOD_NAME](true);
+
+              end.next();
+              end.complete();
+
+              expect(b).toImplementObject({
+                [PROP_NAME]: true,
+                [CHILD_PROP_NAME]: true,
+                [CHILDREN_PROP_NAME]: true,
+              });
+
+              testAllDefaultsExcept(
+                b,
+                PROP_NAME,
+                CHILD_PROP_NAME,
+                CHILDREN_PROP_NAME,
+                'parent'
+              );
+
+              const [event1, event2] = await promise1;
+
+              expect(event1).toEqual<IControlStateChangeEvent>({
+                type: 'StateChange',
+                source: b.id,
+                meta: {},
+                trigger: {
+                  label: expect.any(String),
+                  source: expect.any(Symbol),
+                },
+                changes: new Map([
+                  [CHILD_PROP_NAME, true],
+                  [CHILDREN_PROP_NAME, true],
+                  [PROP_NAME, true],
+                ]),
+                childEvents: {
+                  0: {
+                    type: 'StateChange',
+                    source: b.id,
+                    meta: {},
+                    trigger: {
+                      label: expect.any(String),
+                      source: expect.any(Symbol),
+                    },
+                    changes: new Map([
+                      [PROP_NAME, true],
+                      [SELF_PROP_NAME, true],
+                    ]),
+                  },
+                },
+              });
+
+              expect(event2).toEqual(undefined);
+            });
+
+            it('deep = true', async () => {
+              const [promise1, end] = getControlEventsUntilEnd(b);
+
+              b[METHOD_NAME](true, { deep: true });
+
+              end.next();
+              end.complete();
+
+              expect(b).toImplementObject({
+                [PROP_NAME]: true,
+                [CHILD_PROP_NAME]: true,
+                [CHILDREN_PROP_NAME]: true,
+              });
+
+              expect(b.get('0')).toImplementObject({
+                [PROP_NAME]: true,
+                [SELF_PROP_NAME]: true,
+                [CHILD_PROP_NAME]: true,
+                [CHILDREN_PROP_NAME]: true,
+              });
+
+              expect(b.get('0', '0')).toImplementObject({
+                [PROP_NAME]: true,
+                [SELF_PROP_NAME]: true,
+              });
+
+              testAllDefaultsExcept(
+                b,
+                PROP_NAME,
+                CHILD_PROP_NAME,
+                CHILDREN_PROP_NAME,
+                'parent'
+              );
+
+              const [event1, event2] = await promise1;
+
+              expect(event1).toEqual<IControlStateChangeEvent>({
+                type: 'StateChange',
+                source: b.id,
+                meta: {},
+                trigger: {
+                  label: expect.any(String),
+                  source: expect.any(Symbol),
+                },
+                changes: new Map([
+                  [CHILD_PROP_NAME, true],
+                  [CHILDREN_PROP_NAME, true],
+                  [PROP_NAME, true],
+                ]),
+                childEvents: {
+                  0: {
+                    type: 'StateChange',
+                    source: b.id,
+                    meta: {},
+                    trigger: {
+                      label: expect.any(String),
+                      source: expect.any(Symbol),
+                    },
+                    changes: new Map([
+                      [CHILD_PROP_NAME, true],
+                      [CHILDREN_PROP_NAME, true],
+                      [SELF_PROP_NAME, true],
+                      [PROP_NAME, true],
+                    ]),
+                    childEvents: {
+                      0: {
+                        type: 'StateChange',
+                        source: b.id,
+                        meta: {},
+                        trigger: {
+                          label: expect.any(String),
+                          source: expect.any(Symbol),
+                        },
+                        changes: new Map([
+                          [PROP_NAME, true],
+                          [SELF_PROP_NAME, true],
+                        ]),
+                      },
+                    },
+                  },
+                },
+              });
+
+              expect(event2).toEqual(undefined);
             });
           });
         });
@@ -1451,6 +1668,7 @@ export default function runAbstractControlContainerBaseTestSuite<
       ['Touched', 'Dirty'].forEach((prop) => {
         const METHOD_NAME = `mark${prop}` as keyof AbstractControl & string;
         const PROP_NAME = prop.toLowerCase();
+        const SELF_PROP_NAME = `self${prop}`;
         const CHILD_PROP_NAME = `child${prop}`;
         const CHILDREN_PROP_NAME = `children${prop}`;
 
@@ -1469,34 +1687,38 @@ export default function runAbstractControlContainerBaseTestSuite<
               [CHILDREN_PROP_NAME]: false,
             });
 
-            const [event1] = await promise1;
+            const [event1, event2] = await promise1;
 
-            expect(event1).toEqual<IChildControlStateChangeEvent>({
+            expect(event1).toEqual<IControlStateChangeEvent>({
               type: 'StateChange',
-              subtype: 'Child',
-              eventId: expect.any(Number),
-              idOfOriginatingEvent: expect.any(Number),
-              source: b.id,
+              source: child1.id,
               meta: {},
+              trigger: {
+                label: expect.any(String),
+                source: expect.any(Symbol),
+              },
+              changes: new Map([
+                [CHILD_PROP_NAME, true],
+                [PROP_NAME, true],
+              ]),
               childEvents: {
                 0: {
                   type: 'StateChange',
-                  subtype: 'Self',
-                  eventId: expect.any(Number),
-                  idOfOriginatingEvent: expect.any(Number),
                   source: child1.id,
                   meta: {},
-                  change: {
-                    [PROP_NAME]: expect.any(Function),
+                  trigger: {
+                    label: expect.any(String),
+                    source: expect.any(Symbol),
                   },
-                  changedProps: [PROP_NAME],
-                } as IControlSelfStateChangeEvent<unknown, unknown>,
+                  changes: new Map([
+                    [SELF_PROP_NAME, true],
+                    [PROP_NAME, true],
+                  ]),
+                },
               },
-              changedProps: expect.arrayContaining([
-                PROP_NAME,
-                CHILD_PROP_NAME,
-              ]),
             });
+
+            expect(event2).toEqual(undefined);
           });
 
           it('on disabled child', async () => {
@@ -1533,28 +1755,30 @@ export default function runAbstractControlContainerBaseTestSuite<
 
             const [event1, event2] = await promise1;
 
-            expect(event1).toEqual<IChildControlStateChangeEvent>({
+            expect(event1).toEqual<IControlStateChangeEvent>({
               type: 'StateChange',
-              subtype: 'Child',
-              eventId: expect.any(Number),
-              idOfOriginatingEvent: expect.any(Number),
-              source: b.id,
+              source: child1.id,
               meta: {},
+              trigger: {
+                label: expect.any(String),
+                source: expect.any(Symbol),
+              },
+              changes: new Map(),
               childEvents: {
                 0: {
                   type: 'StateChange',
-                  subtype: 'Self',
-                  eventId: expect.any(Number),
-                  idOfOriginatingEvent: expect.any(Number),
                   source: child1.id,
                   meta: {},
-                  change: {
-                    [PROP_NAME]: expect.any(Function),
+                  trigger: {
+                    label: expect.any(String),
+                    source: expect.any(Symbol),
                   },
-                  changedProps: [PROP_NAME],
-                } as IControlSelfStateChangeEvent<unknown, unknown>,
+                  changes: new Map([
+                    [SELF_PROP_NAME, true],
+                    [PROP_NAME, true],
+                  ]),
+                },
               },
-              changedProps: [],
             });
 
             expect(event2).toEqual(undefined);
@@ -1593,64 +1817,68 @@ export default function runAbstractControlContainerBaseTestSuite<
 
             const [event1, event2, event3] = await promise1;
 
-            expect(event1).toEqual<IChildControlStateChangeEvent>({
+            expect(event1).toEqual<IControlStateChangeEvent>({
               type: 'StateChange',
-              subtype: 'Child',
-              eventId: expect.any(Number),
-              idOfOriginatingEvent: expect.any(Number),
-              source: b.id,
+              source: child1.id,
               meta: {},
+              trigger: {
+                label: expect.any(String),
+                source: expect.any(Symbol),
+              },
+              changes: new Map([
+                [CHILD_PROP_NAME, true],
+                [PROP_NAME, true],
+              ]),
               childEvents: {
                 0: {
                   type: 'StateChange',
-                  subtype: 'Self',
-                  eventId: expect.any(Number),
-                  idOfOriginatingEvent: expect.any(Number),
                   source: child1.id,
                   meta: {},
-                  change: {
-                    [PROP_NAME]: expect.any(Function),
+                  trigger: {
+                    label: expect.any(String),
+                    source: expect.any(Symbol),
                   },
-                  changedProps: [PROP_NAME],
-                } as IControlSelfStateChangeEvent<unknown, unknown>,
+                  changes: new Map([
+                    [SELF_PROP_NAME, true],
+                    [PROP_NAME, true],
+                  ]),
+                },
               },
-              changedProps: expect.arrayContaining([
-                PROP_NAME,
-                CHILD_PROP_NAME,
-              ]),
             });
 
-            expect(event2).toEqual<IChildControlStateChangeEvent>({
+            expect(event2).toEqual<IControlStateChangeEvent>({
               type: 'StateChange',
-              subtype: 'Child',
-              eventId: expect.any(Number),
-              idOfOriginatingEvent: expect.any(Number),
-              source: b.id,
+              source: child1.id,
               meta: {},
+              trigger: {
+                label: expect.any(String),
+                source: expect.any(Symbol),
+              },
+              changes: new Map<string, unknown>([
+                ['value', expect.any(Object)],
+                ['childDisabled', true],
+                ['childrenEnabled', false],
+                [CHILD_PROP_NAME, false],
+                [PROP_NAME, false],
+              ]),
               childEvents: {
                 0: {
                   type: 'StateChange',
-                  subtype: 'Self',
-                  eventId: expect.any(Number),
-                  idOfOriginatingEvent: expect.any(Number),
                   source: child1.id,
                   meta: {},
-                  change: {
-                    disabled: expect.any(Function),
+                  trigger: {
+                    label: expect.any(String),
+                    source: expect.any(Symbol),
                   },
-                  changedProps: expect.arrayContaining([
-                    'disabled',
-                    'enabled',
-                    'status',
+                  changes: new Map<string, unknown>([
+                    ['selfDisabled', true],
+                    ['selfEnabled', false],
+                    ['disabled', true],
+                    ['enabled', false],
+                    ['status', 'DISABLED'],
                   ]),
-                } as IControlSelfStateChangeEvent<unknown, unknown>,
+                },
               },
-              changedProps: expect.arrayContaining([
-                'childDisabled',
-                'childrenEnabled',
-                PROP_NAME,
-                CHILD_PROP_NAME,
-              ]),
             });
 
             expect(event3).toEqual(undefined);
@@ -1661,6 +1889,7 @@ export default function runAbstractControlContainerBaseTestSuite<
       ['Readonly', 'Submitted'].forEach((prop) => {
         const METHOD_NAME = `mark${prop}` as keyof AbstractControl & string;
         const PROP_NAME = prop.toLowerCase();
+        const SELF_PROP_NAME = `self${prop}`;
         const CHILD_PROP_NAME = `child${prop}`;
         const CHILDREN_PROP_NAME = `children${prop}`;
 
@@ -1679,31 +1908,35 @@ export default function runAbstractControlContainerBaseTestSuite<
               [CHILDREN_PROP_NAME]: false,
             });
 
-            const [event1] = await promise1;
+            const [event1, event2] = await promise1;
 
-            expect(event1).toEqual<IChildControlStateChangeEvent>({
+            expect(event1).toEqual<IControlStateChangeEvent>({
               type: 'StateChange',
-              subtype: 'Child',
-              eventId: expect.any(Number),
-              idOfOriginatingEvent: expect.any(Number),
-              source: b.id,
+              source: child1.id,
               meta: {},
+              trigger: {
+                label: expect.any(String),
+                source: expect.any(Symbol),
+              },
+              changes: new Map([[CHILD_PROP_NAME, true]]),
               childEvents: {
                 0: {
                   type: 'StateChange',
-                  subtype: 'Self',
-                  eventId: expect.any(Number),
-                  idOfOriginatingEvent: expect.any(Number),
                   source: child1.id,
                   meta: {},
-                  change: {
-                    [PROP_NAME]: expect.any(Function),
+                  trigger: {
+                    label: expect.any(String),
+                    source: expect.any(Symbol),
                   },
-                  changedProps: [PROP_NAME],
-                } as IControlSelfStateChangeEvent<unknown, unknown>,
+                  changes: new Map([
+                    [SELF_PROP_NAME, true],
+                    [PROP_NAME, true],
+                  ]),
+                },
               },
-              changedProps: expect.arrayContaining([CHILD_PROP_NAME]),
             });
+
+            expect(event2).toEqual(undefined);
           });
 
           it('on disabled child', async () => {
@@ -1740,28 +1973,30 @@ export default function runAbstractControlContainerBaseTestSuite<
 
             const [event1, event2] = await promise1;
 
-            expect(event1).toEqual<IChildControlStateChangeEvent>({
+            expect(event1).toEqual<IControlStateChangeEvent>({
               type: 'StateChange',
-              subtype: 'Child',
-              eventId: expect.any(Number),
-              idOfOriginatingEvent: expect.any(Number),
-              source: b.id,
+              source: child1.id,
               meta: {},
+              trigger: {
+                label: expect.any(String),
+                source: expect.any(Symbol),
+              },
+              changes: new Map(),
               childEvents: {
                 0: {
                   type: 'StateChange',
-                  subtype: 'Self',
-                  eventId: expect.any(Number),
-                  idOfOriginatingEvent: expect.any(Number),
                   source: child1.id,
                   meta: {},
-                  change: {
-                    [PROP_NAME]: expect.any(Function),
+                  trigger: {
+                    label: expect.any(String),
+                    source: expect.any(Symbol),
                   },
-                  changedProps: [PROP_NAME],
-                } as IControlSelfStateChangeEvent<unknown, unknown>,
+                  changes: new Map([
+                    [SELF_PROP_NAME, true],
+                    [PROP_NAME, true],
+                  ]),
+                },
               },
-              changedProps: [],
             });
 
             expect(event2).toEqual(undefined);
@@ -1800,63 +2035,227 @@ export default function runAbstractControlContainerBaseTestSuite<
 
             const [event1, event2, event3] = await promise1;
 
-            expect(event1).toEqual<IChildControlStateChangeEvent>({
+            expect(event1).toEqual<IControlStateChangeEvent>({
               type: 'StateChange',
-              subtype: 'Child',
-              eventId: expect.any(Number),
-              idOfOriginatingEvent: expect.any(Number),
-              source: b.id,
+              source: child1.id,
               meta: {},
+              trigger: {
+                label: expect.any(String),
+                source: expect.any(Symbol),
+              },
+              changes: new Map([[CHILD_PROP_NAME, true]]),
               childEvents: {
                 0: {
                   type: 'StateChange',
-                  subtype: 'Self',
-                  eventId: expect.any(Number),
-                  idOfOriginatingEvent: expect.any(Number),
                   source: child1.id,
                   meta: {},
-                  change: {
-                    [PROP_NAME]: expect.any(Function),
+                  trigger: {
+                    label: expect.any(String),
+                    source: expect.any(Symbol),
                   },
-                  changedProps: [PROP_NAME],
-                } as IControlSelfStateChangeEvent<unknown, unknown>,
+                  changes: new Map([
+                    [SELF_PROP_NAME, true],
+                    [PROP_NAME, true],
+                  ]),
+                },
               },
-              changedProps: expect.arrayContaining([CHILD_PROP_NAME]),
             });
 
-            expect(event2).toEqual<IChildControlStateChangeEvent>({
+            expect(event2).toEqual<IControlStateChangeEvent>({
               type: 'StateChange',
-              subtype: 'Child',
-              eventId: expect.any(Number),
-              idOfOriginatingEvent: expect.any(Number),
-              source: b.id,
+              source: child1.id,
               meta: {},
+              trigger: {
+                label: expect.any(String),
+                source: expect.any(Symbol),
+              },
+              changes: new Map<string, unknown>([
+                ['value', expect.any(Object)],
+                ['childDisabled', true],
+                ['childrenEnabled', false],
+                [CHILD_PROP_NAME, false],
+              ]),
               childEvents: {
                 0: {
                   type: 'StateChange',
-                  subtype: 'Self',
-                  eventId: expect.any(Number),
-                  idOfOriginatingEvent: expect.any(Number),
                   source: child1.id,
                   meta: {},
-                  change: {
-                    disabled: expect.any(Function),
+                  trigger: {
+                    label: expect.any(String),
+                    source: expect.any(Symbol),
                   },
-                  changedProps: expect.arrayContaining([
-                    'disabled',
-                    'enabled',
-                    'status',
+                  changes: new Map<string, unknown>([
+                    ['selfDisabled', true],
+                    ['selfEnabled', false],
+                    ['disabled', true],
+                    ['enabled', false],
+                    ['status', 'DISABLED'],
                   ]),
-                } as IControlSelfStateChangeEvent<unknown, unknown>,
+                },
               },
-              changedProps: expect.arrayContaining([
-                'childDisabled',
-                'childrenEnabled',
-                CHILD_PROP_NAME,
-              ]),
             });
 
             expect(event3).toEqual(undefined);
+          });
+        });
+      });
+
+      // markChildrenX
+      ['Touched', 'Dirty', 'Readonly', 'Submitted'].forEach((prop) => {
+        const METHOD_NAME = `markChildren${prop}` as keyof AbstractControl &
+          string;
+        const PROP_NAME = prop.toLowerCase();
+        const SELF_PROP_NAME = `self${prop}`;
+        const CHILD_PROP_NAME = `child${prop}`;
+        const CHILDREN_PROP_NAME = `children${prop}`;
+
+        describe(METHOD_NAME, () => {
+          it('with enabled children', async () => {
+            const [promise1, end] = getControlEventsUntilEnd(b);
+
+            b[METHOD_NAME](true);
+
+            end.next();
+            end.complete();
+
+            expect(b).toImplementObject({
+              [PROP_NAME]: true,
+              [CHILD_PROP_NAME]: true,
+              [CHILDREN_PROP_NAME]: true,
+            });
+
+            const [event1, event2] = await promise1;
+
+            expect(event1).toEqual<IControlStateChangeEvent>({
+              type: 'StateChange',
+              source: b.id,
+              meta: {},
+              trigger: {
+                label: expect.any(String),
+                source: expect.any(Symbol),
+              },
+              changes: new Map([
+                [CHILDREN_PROP_NAME, true],
+                [CHILD_PROP_NAME, true],
+                [PROP_NAME, true],
+              ]),
+              childEvents: {
+                0: {
+                  type: 'StateChange',
+                  source: b.id,
+                  meta: {},
+                  trigger: {
+                    label: expect.any(String),
+                    source: expect.any(Symbol),
+                  },
+                  changes: new Map([
+                    [SELF_PROP_NAME, true],
+                    [PROP_NAME, true],
+                  ]),
+                },
+                1: {
+                  type: 'StateChange',
+                  source: b.id,
+                  meta: {},
+                  trigger: {
+                    label: expect.any(String),
+                    source: expect.any(Symbol),
+                  },
+                  changes: new Map([
+                    [SELF_PROP_NAME, true],
+                    [PROP_NAME, true],
+                  ]),
+                },
+              },
+            });
+
+            expect(event2).toEqual(undefined);
+          });
+
+          it('with disabled child', async () => {
+            child1.markDisabled(true);
+
+            const [promise1, end] = getControlEventsUntilEnd(b);
+
+            b[METHOD_NAME](true);
+
+            end.next();
+            end.complete();
+
+            expect(b).toImplementObject({
+              disabled: false,
+              childDisabled: true,
+              childrenDisabled: false,
+              enabled: true,
+              childEnabled: true,
+              childrenEnabled: false,
+              [PROP_NAME]: true,
+              [CHILDREN_PROP_NAME]: true,
+              [CHILD_PROP_NAME]: true,
+              status: 'VALID',
+            });
+
+            testAllDefaultsExcept(
+              b,
+              'parent',
+              'disabled',
+              'childDisabled',
+              'childrenDisabled',
+              'enabled',
+              'childEnabled',
+              'childrenEnabled',
+              PROP_NAME,
+              CHILDREN_PROP_NAME,
+              CHILD_PROP_NAME,
+              'status'
+            );
+
+            const [event1, event2] = await promise1;
+
+            expect(event1).toEqual<IControlStateChangeEvent>({
+              type: 'StateChange',
+              source: b.id,
+              meta: {},
+              trigger: {
+                label: expect.any(String),
+                source: expect.any(Symbol),
+              },
+              changes: new Map([
+                [CHILDREN_PROP_NAME, true],
+                [CHILD_PROP_NAME, true],
+                [PROP_NAME, true],
+              ]),
+              childEvents: {
+                0: {
+                  type: 'StateChange',
+                  source: b.id,
+                  meta: {},
+                  trigger: {
+                    label: expect.any(String),
+                    source: expect.any(Symbol),
+                  },
+                  changes: new Map([
+                    [SELF_PROP_NAME, true],
+                    [PROP_NAME, true],
+                  ]),
+                },
+                1: {
+                  type: 'StateChange',
+                  source: b.id,
+                  meta: {},
+                  trigger: {
+                    label: expect.any(String),
+                    source: expect.any(Symbol),
+                  },
+                  changes: new Map([
+                    [SELF_PROP_NAME, true],
+                    [PROP_NAME, true],
+                  ]),
+                },
+              },
+            });
+
+            expect(event2).toEqual(undefined);
           });
         });
       });

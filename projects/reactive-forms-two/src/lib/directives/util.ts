@@ -10,13 +10,7 @@ import {
   selectControlContainerAccessor,
 } from '../accessors/util';
 import { IControlEvent } from '../models';
-import { IChildControlStateChangeEvent } from '../models/abstract-control-container/abstract-control-container';
-import {
-  AbstractControl,
-  IStateChange,
-  IControlStateChangeEvent,
-  IControlSelfStateChangeEvent,
-} from '../models/abstract-control/abstract-control';
+import { IControlStateChangeEvent } from '../models/abstract-control/abstract-control';
 import { SW_CONTROL_DIRECTIVE } from './interface';
 
 export function resolveControlAccessor<T extends ControlAccessor>(
@@ -76,11 +70,11 @@ export function resolveControlContainerAccessor<T extends ControlAccessor>(
 //   return sub;
 // }
 
-export function isSelfStateChange(
-  e: IControlEvent
-): e is IControlSelfStateChangeEvent<any, any> {
-  return (
-    e.type === 'StateChange' &&
-    (e as IControlStateChangeEvent).subtype === 'Self'
-  );
-}
+// export function isSelfStateChange(
+//   e: IControlEvent
+// ): e is IControlStateChangeEvent {
+//   return (
+//     e.type === 'StateChange' &&
+//     (e as IControlStateChangeEvent).subtype === 'Self'
+//   );
+// }

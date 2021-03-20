@@ -9,17 +9,15 @@ export class CompatFormControl extends OldFormControl {
     super();
 
     this.swControl.events.pipe(filter(isStateChange)).subscribe((event) => {
-      event.changedProps.forEach((prop) => {
+      event.changes.forEach((value, prop) => {
         switch (prop) {
           case 'rawValue':
           case 'value': {
-            this.setValue(this.swControl.rawValue, {
-              [FROM_SWCONTROL]: true,
-            });
+            this.setValue(value, { [FROM_SWCONTROL]: true });
             break;
           }
           case 'touched': {
-            if (this.swControl.touched) {
+            if (value) {
               this.markAsTouched({ [FROM_SWCONTROL]: true });
             } else {
               this.markAsUntouched({ [FROM_SWCONTROL]: true });
@@ -27,7 +25,7 @@ export class CompatFormControl extends OldFormControl {
             break;
           }
           case 'dirty': {
-            if (this.swControl.dirty) {
+            if (value) {
               this.markAsDirty({ [FROM_SWCONTROL]: true });
             } else {
               this.markAsPristine({ [FROM_SWCONTROL]: true });
@@ -36,7 +34,7 @@ export class CompatFormControl extends OldFormControl {
           }
           // this is handled in the ControlDirective
           // case 'disabled': {
-          //   if (this.swControl.disabled) {
+          //   if (value) {
           //     this.disable({ [FROM_SWCONTROL]: true });
           //   } else {
           //     this.enable({ [FROM_SWCONTROL]: true });
@@ -44,7 +42,7 @@ export class CompatFormControl extends OldFormControl {
           //   break;
           // }
           case 'pending': {
-            if (this.swControl.pending) {
+            if (value) {
               this.markAsPending({ [FROM_SWCONTROL]: true });
             } else {
               this.updateValueAndValidity({ [FROM_SWCONTROL]: true });
@@ -52,9 +50,7 @@ export class CompatFormControl extends OldFormControl {
             break;
           }
           case 'errors': {
-            this.setErrors(this.swControl.errors, {
-              [FROM_SWCONTROL]: true,
-            });
+            this.setErrors(value, { [FROM_SWCONTROL]: true });
             break;
           }
         }

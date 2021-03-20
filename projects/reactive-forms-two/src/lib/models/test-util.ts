@@ -28,8 +28,16 @@ export function testAllAbstractControlDefaultsExcept<C extends AbstractControl>(
     expect(c.valid).toEqual(true);
   }
 
+  if (!skipTests.includes('selfValid')) {
+    expect(c.selfValid).toEqual(true);
+  }
+
   if (!skipTests.includes('invalid')) {
     expect(c.invalid).toEqual(false);
+  }
+
+  if (!skipTests.includes('selfInvalid')) {
+    expect(c.selfInvalid).toEqual(false);
   }
 
   if (!skipTests.includes('status')) {
@@ -40,24 +48,56 @@ export function testAllAbstractControlDefaultsExcept<C extends AbstractControl>(
     expect(c.enabled).toEqual(true);
   }
 
+  if (!skipTests.includes('selfEnabled')) {
+    expect(c.selfEnabled).toEqual(true);
+  }
+
   if (!skipTests.includes('disabled')) {
     expect(c.disabled).toEqual(false);
+  }
+
+  if (!skipTests.includes('selfDisabled')) {
+    expect(c.selfDisabled).toEqual(false);
+  }
+
+  if (!skipTests.includes('touched')) {
+    expect(c.touched).toEqual(false);
+  }
+
+  if (!skipTests.includes('selfTouched')) {
+    expect(c.selfTouched).toEqual(false);
   }
 
   if (!skipTests.includes('dirty')) {
     expect(c.dirty).toEqual(false);
   }
 
+  if (!skipTests.includes('selfDirty')) {
+    expect(c.selfDirty).toEqual(false);
+  }
+
   if (!skipTests.includes('readonly')) {
     expect(c.readonly).toEqual(false);
+  }
+
+  if (!skipTests.includes('selfReadonly')) {
+    expect(c.selfReadonly).toEqual(false);
   }
 
   if (!skipTests.includes('submitted')) {
     expect(c.submitted).toEqual(false);
   }
 
+  if (!skipTests.includes('selfSubmitted')) {
+    expect(c.selfSubmitted).toEqual(false);
+  }
+
   if (!skipTests.includes('errors')) {
     expect(c.errors).toEqual(null);
+  }
+
+  if (!skipTests.includes('selfErrors')) {
+    expect(c.selfErrors).toEqual(null);
   }
 
   if (!skipTests.includes('errorsStore')) {
@@ -74,6 +114,10 @@ export function testAllAbstractControlDefaultsExcept<C extends AbstractControl>(
 
   if (!skipTests.includes('pending')) {
     expect(c.pending).toEqual(false);
+  }
+
+  if (!skipTests.includes('selfPending')) {
+    expect(c.selfPending).toEqual(false);
   }
 
   if (!skipTests.includes('pendingStore')) {
@@ -169,46 +213,6 @@ export function testAllAbstractControlContainerDefaultsExcept<
     expect(c.childrenValid).toEqual(true);
   }
 
-  if (!skipTests.includes('containerEnabled')) {
-    expect(c.containerEnabled).toEqual(true);
-  }
-
-  if (!skipTests.includes('containerDirty')) {
-    expect(c.containerDirty).toEqual(false);
-  }
-
-  if (!skipTests.includes('containerDisabled')) {
-    expect(c.containerDisabled).toEqual(false);
-  }
-
-  if (!skipTests.includes('containerErrors')) {
-    expect(c.containerErrors).toEqual(null);
-  }
-
-  if (!skipTests.includes('containerInvalid')) {
-    expect(c.containerInvalid).toEqual(false);
-  }
-
-  if (!skipTests.includes('containerPending')) {
-    expect(c.containerPending).toEqual(false);
-  }
-
-  if (!skipTests.includes('containerReadonly')) {
-    expect(c.containerReadonly).toEqual(false);
-  }
-
-  if (!skipTests.includes('containerSubmitted')) {
-    expect(c.containerSubmitted).toEqual(false);
-  }
-
-  if (!skipTests.includes('containerTouched')) {
-    expect(c.containerTouched).toEqual(false);
-  }
-
-  if (!skipTests.includes('containerValid')) {
-    expect(c.containerValid).toEqual(true);
-  }
-
   // jest bugs out of this test happens to fail
   // it seems like this is because jest attempts to fully iterate
   // and print (to console) the `controlsStore` object which is,
@@ -241,16 +245,23 @@ export function subscribeToControlEventsUntilEnd(
     end = new Subject();
   }
 
-  original.events.pipe(takeUntil(end)).subscribe(subscriber.source);
+  original.events
+    .pipe(takeUntil(end))
+    .subscribe((e) => subscriber.processEvent(e));
 
   return [end] as const;
 }
 
-export function toControlMatcherEntries(controls: {
-  [key: string]: AbstractControl;
-}) {
+export function toControlMatcherEntries(
+  controls: {
+    [key: string]: AbstractControl;
+  },
+  options?: {
+    skip?: string[];
+  }
+) {
   return Object.entries(controls).map(
-    ([k, v]) => [k, expect.toEqualControl(v)] as const
+    ([k, v]) => [k, expect.toEqualControl(v, options)] as const
   );
 }
 
@@ -262,11 +273,11 @@ export function setExistingErrors(
   const c = control as any;
 
   c._errorsStore = errorsStore;
-  c._errors = errors;
+  c._selfErrors = errors;
   c._status = errors ? 'INVALID' : 'VALID';
 
   if (AbstractControlContainer.isControlContainer(control)) {
-    c._combinedErrors = errors;
+    c._errors = errors;
   }
 }
 
@@ -282,4 +293,8 @@ export function mapControlsToId(
       return [`${k}`, v.id.toString()];
     })
   );
+}
+
+export namespace TestSingletons {
+  export let log = false;
 }

@@ -33,10 +33,10 @@ function subscribeToRelevantChanges(
       filter(
         (e) =>
           isStateChange(e) &&
-          (e.changedProps.includes('value') || e.changedProps.includes('dirty'))
+          (e.changes.has('rawValue') || e.changes.has('dirty'))
       )
     )
-    .subscribe(subscribee.control.source);
+    .subscribe((e) => subscribee.control.processEvent(e));
 }
 
 /**

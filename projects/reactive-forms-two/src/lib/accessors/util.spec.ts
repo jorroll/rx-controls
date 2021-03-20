@@ -23,7 +23,7 @@ describe('isAncestorControlPropTruthy$', () => {
     });
 
     const [promise1, end] = subscribeUntilEnd(
-      isAncestorControlPropTruthy$(two, 'containerDisabled')
+      isAncestorControlPropTruthy$(two, 'selfDisabled')
     );
 
     a.markDisabled(true);
@@ -32,7 +32,7 @@ describe('isAncestorControlPropTruthy$', () => {
     end.complete();
 
     expect(two.parent?.parent?.disabled).toBe(true);
-    expect((two.parent?.parent as any)?.containerDisabled).toBe(true);
+    expect((two.parent?.parent as any)?.selfDisabled).toBe(true);
 
     const [event1, event2, event3] = await promise1;
 

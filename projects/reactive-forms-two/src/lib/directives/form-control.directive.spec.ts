@@ -108,7 +108,7 @@ export class ReplayStateTestComponent {
   replay = this.control.replayState();
 
   toggle() {
-    this.replay.subscribe(this.control.source);
+    this.replay.subscribe((e) => this.control.processEvent(e));
   }
 }
 
@@ -125,7 +125,7 @@ describe('ReplayStateTestComponent', () => {
     expect(o.input.value).toEqual(o.component.control.rawValue);
   });
 
-  it.only('toggle', () => {
+  it('toggle', () => {
     const { control } = o.component;
     const newValue = 'hi';
 

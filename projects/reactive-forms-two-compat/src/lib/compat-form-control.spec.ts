@@ -8,6 +8,8 @@ import { combineLatest, Subscription } from 'rxjs';
 import { CompatFormControl, FROM_SWCONTROL } from './compat-form-control';
 import { testAllCompatControlDefaultsExcept } from './test-utils';
 
+const CONTROL_SELF_ID = '__CONTROL_SELF_ID';
+
 describe('CompatFormControl', () => {
   let compat: CompatFormControl;
   let control: FormControl;
@@ -22,7 +24,7 @@ describe('CompatFormControl', () => {
     compat = new CompatFormControl(control);
     subscription = combineLatest([
       control.observe('disabled'),
-      isAncestorControlPropTruthy$(control, 'containerDisabled'),
+      isAncestorControlPropTruthy$(control, 'selfDisabled'),
     ]).subscribe(([a, b]) => {
       if (a || b) {
         compat.disable({ [FROM_SWCONTROL]: true });
@@ -41,7 +43,9 @@ describe('CompatFormControl', () => {
   describe('disabled', () => {
     function theTest() {
       expect(control.disabled).toEqual(true);
+      expect(control.selfDisabled).toEqual(true);
       expect(control.enabled).toEqual(false);
+      expect(control.selfEnabled).toEqual(false);
       expect(control.status).toEqual('DISABLED');
       expect(compat.disabled).toEqual(true);
       expect(compat.enabled).toEqual(false);
@@ -58,7 +62,9 @@ describe('CompatFormControl', () => {
       testAllAbstractControlDefaultsExcept(
         control,
         'disabled',
+        'selfDisabled',
         'enabled',
+        'selfEnabled',
         'status'
       );
 
@@ -105,10 +111,11 @@ describe('CompatFormControl', () => {
   describe('touched', () => {
     function theTest() {
       expect(control.touched).toEqual(true);
+      expect(control.selfTouched).toEqual(true);
       expect(compat.touched).toEqual(true);
       expect(compat.untouched).toEqual(false);
 
-      testAllAbstractControlDefaultsExcept(control, 'touched');
+      testAllAbstractControlDefaultsExcept(control, 'touched', 'selfTouched');
       testAllCompatControlDefaultsExcept(compat, 'touched');
     }
 
@@ -145,10 +152,11 @@ describe('CompatFormControl', () => {
   describe('dirty', () => {
     function theTest() {
       expect(control.dirty).toEqual(true);
+      expect(control.selfDirty).toEqual(true);
       expect(compat.dirty).toEqual(true);
       expect(compat.pristine).toEqual(false);
 
-      testAllAbstractControlDefaultsExcept(control, 'dirty');
+      testAllAbstractControlDefaultsExcept(control, 'dirty', 'selfDirty');
       testAllCompatControlDefaultsExcept(compat, 'dirty');
     }
 
@@ -185,7 +193,8 @@ describe('CompatFormControl', () => {
   describe('pending', () => {
     function theTest() {
       expect(control.pending).toEqual(true);
-      expect(control.pendingStore).toEqual(new Set([control.id]));
+      expect(control.selfPending).toEqual(true);
+      expect(control.pendingStore).toEqual(new Set([CONTROL_SELF_ID]));
       expect(control.status).toEqual('PENDING');
       expect(compat.pending).toEqual(true);
       expect(compat.status).toEqual('PENDING');
@@ -200,6 +209,7 @@ describe('CompatFormControl', () => {
       testAllAbstractControlDefaultsExcept(
         control,
         'pending',
+        'selfPending',
         'pendingStore',
         'status'
       );
@@ -242,9 +252,12 @@ describe('CompatFormControl', () => {
 
     function theTest() {
       expect(control.errors).toEqual(errors);
-      expect(control.errorsStore).toEqual(new Map([[control.id, errors]]));
+      expect(control.selfErrors).toEqual(errors);
+      expect(control.errorsStore).toEqual(new Map([[CONTROL_SELF_ID, errors]]));
       expect(control.valid).toEqual(false);
+      expect(control.selfValid).toEqual(false);
       expect(control.invalid).toEqual(true);
+      expect(control.selfInvalid).toEqual(true);
       expect(control.status).toEqual('INVALID');
 
       expect(compat.errors).toEqual(errors);
@@ -255,9 +268,12 @@ describe('CompatFormControl', () => {
       testAllAbstractControlDefaultsExcept(
         control,
         'errors',
+        'selfErrors',
         'errorsStore',
         'valid',
+        'selfValid',
         'invalid',
+        'selfInvalid',
         'status'
       );
 
@@ -307,8 +323,9 @@ describe('CompatFormControl', () => {
 
     function theTest() {
       expect(control.rawValue).toEqual(value);
+      expect(control.value).toEqual(value);
       expect(compat.value).toEqual(value);
-      testAllAbstractControlDefaultsExcept(control, 'value');
+      testAllAbstractControlDefaultsExcept(control, 'rawValue', 'value');
       testAllCompatControlDefaultsExcept(compat, 'value');
     }
 
@@ -371,7 +388,7 @@ describe('CompatFormControl', () => {
         control.setValidators(validator);
         expect(control.validator).toEqual(expect.any(Function));
         expect(control.validatorStore).toEqual(
-          new Map([[control.id, expect.any(Function)]])
+          new Map([[CONTROL_SELF_ID, expect.any(Function)]])
         );
         expect(compat.validator).toEqual(null);
         theTest();
@@ -389,12 +406,16 @@ describe('CompatFormControl', () => {
     describe('invalid value initially', () => {
       function theTest() {
         expect(control.rawValue).toEqual('hi');
+        expect(control.value).toEqual('hi');
         expect(control.valid).toEqual(false);
+        expect(control.selfValid).toEqual(false);
         expect(control.invalid).toEqual(true);
+        expect(control.selfInvalid).toEqual(true);
         expect(control.status).toEqual('INVALID');
         expect(control.errors).toEqual({ invalidValue: true });
+        expect(control.selfErrors).toEqual({ invalidValue: true });
         expect(control.errorsStore).toEqual(
-          new Map([[control.id, { invalidValue: true }]])
+          new Map([[CONTROL_SELF_ID, { invalidValue: true }]])
         );
 
         expect(compat.value).toEqual('hi');
@@ -406,11 +427,15 @@ describe('CompatFormControl', () => {
           control,
           'validator',
           'validatorStore',
+          'rawValue',
           'value',
           'valid',
+          'selfValid',
           'errors',
+          'selfErrors',
           'errorsStore',
           'invalid',
+          'selfInvalid',
           'status'
         );
 
@@ -430,7 +455,7 @@ describe('CompatFormControl', () => {
         control.setValidators(validator);
         expect(control.validator).toEqual(expect.any(Function));
         expect(control.validatorStore).toEqual(
-          new Map([[control.id, expect.any(Function)]])
+          new Map([[CONTROL_SELF_ID, expect.any(Function)]])
         );
         expect(compat.validator).toEqual(null);
         theTest();
@@ -464,7 +489,7 @@ describe('CompatFormControl', () => {
         control.setValue(null);
         expect(control.validator).toEqual(expect.any(Function));
         expect(control.validatorStore).toEqual(
-          new Map([[control.id, expect.any(Function)]])
+          new Map([[CONTROL_SELF_ID, expect.any(Function)]])
         );
         expect(compat.validator).toEqual(null);
         theTest();
@@ -484,12 +509,16 @@ describe('CompatFormControl', () => {
     describe('valid to invalid', () => {
       function theTest() {
         expect(control.rawValue).toEqual('hi');
+        expect(control.value).toEqual('hi');
         expect(control.valid).toEqual(false);
+        expect(control.selfValid).toEqual(false);
         expect(control.invalid).toEqual(true);
+        expect(control.selfInvalid).toEqual(true);
         expect(control.status).toEqual('INVALID');
         expect(control.errors).toEqual({ invalidValue: true });
+        expect(control.selfErrors).toEqual({ invalidValue: true });
         expect(control.errorsStore).toEqual(
-          new Map([[control.id, { invalidValue: true }]])
+          new Map([[CONTROL_SELF_ID, { invalidValue: true }]])
         );
 
         expect(compat.value).toEqual('hi');
@@ -501,11 +530,15 @@ describe('CompatFormControl', () => {
           control,
           'validator',
           'validatorStore',
+          'rawValue',
           'value',
           'valid',
+          'selfValid',
           'errors',
+          'selfErrors',
           'errorsStore',
           'invalid',
+          'selfInvalid',
           'status'
         );
 
@@ -525,7 +558,7 @@ describe('CompatFormControl', () => {
         control.setValue('hi');
         expect(control.validator).toEqual(expect.any(Function));
         expect(control.validatorStore).toEqual(
-          new Map([[control.id, expect.any(Function)]])
+          new Map([[CONTROL_SELF_ID, expect.any(Function)]])
         );
         expect(compat.validator).toEqual(null);
         theTest();
