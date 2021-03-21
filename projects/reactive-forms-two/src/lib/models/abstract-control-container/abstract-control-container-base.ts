@@ -30,12 +30,7 @@ import {
   INormControlEventOptions,
 } from '../abstract-control/abstract-control-base';
 
-import {
-  getSimpleChildStateChangeEventArgs,
-  getSimpleStateChangeEventArgs,
-  isStateChange,
-  pluckOptions,
-} from '../util';
+import { getSimpleChildStateChangeEventArgs, isStateChange } from '../util';
 
 export type DeepPartial<T> = {
   [P in keyof T]?: T[P] extends object ? DeepPartial<T[P]> : T[P];
@@ -283,7 +278,7 @@ export abstract class AbstractControlContainerBase<
   ) {
     super(controlId);
 
-    const o = { trigger: { label: 'constructor', source: controlId } };
+    const o = { debugPath: 'constructor' };
     this.data = options.data!;
     this.setControls(controls, o);
     if (options.disabled) this.markDisabled(options.disabled, o);
@@ -635,6 +630,7 @@ export abstract class AbstractControlContainerBase<
     const event: IControlStateChangeEvent = {
       type: 'StateChange',
       source: this.id,
+      controlId: this.id,
       meta: {},
       ...this._normalizeOptions('replayState', options),
       // the order of these changes matters
@@ -754,8 +750,7 @@ export abstract class AbstractControlContainerBase<
         .pipe(
           filter(isFocusEvent),
           filter(
-            (e) =>
-              e.trigger.source === ((control as unknown) as AbstractControl).id
+            (e) => e.source === ((control as unknown) as AbstractControl).id
           )
         )
         .subscribe((e) => {
@@ -788,7 +783,7 @@ export abstract class AbstractControlContainerBase<
       )
       .subscribe((childEvent) => {
         const normOptions = this._normalizeOptions(
-          childEvent.trigger.label,
+          '_registerControl#subscription',
           childEvent
         );
 
@@ -867,10 +862,13 @@ export abstract class AbstractControlContainerBase<
   protected _processEvent_ExternalChildStateChange<
     T extends IControlStateChangeEvent
   >(event: T, options?: IControlEventOptions): IProcessedEvent<T> {
-    const normOptions = this._normalizeOptions(event.trigger.label, {
-      ...event,
-      options,
-    });
+    const normOptions = this._normalizeOptions(
+      '_processEvent_ExternalChildStateChange',
+      {
+        ...event,
+        options,
+      }
+    );
 
     const childOptions = this._normalizeChildOptions(normOptions);
 

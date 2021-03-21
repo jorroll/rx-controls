@@ -668,7 +668,8 @@ export default function runSharedTestSuite(
           type: 'StateChange',
           source: a.id,
           meta: {},
-          trigger: { label: expect.any(String), source: expect.any(Symbol) },
+          controlId: expect.any(Symbol),
+          debugPath: expect.any(String),
           changes: new Map([
             ['selfTouched', true],
             ['touched', true],
@@ -715,7 +716,8 @@ export default function runSharedTestSuite(
           type: 'StateChange',
           source: a.id,
           meta: {},
-          trigger: { label: expect.any(String), source: expect.any(Symbol) },
+          controlId: expect.any(Symbol),
+          debugPath: expect.any(String),
           changes: new Map([
             ['selfDirty', true],
             ['dirty', true],
@@ -762,7 +764,8 @@ export default function runSharedTestSuite(
           type: 'StateChange',
           source: a.id,
           meta: {},
-          trigger: { label: expect.any(String), source: expect.any(Symbol) },
+          controlId: expect.any(Symbol),
+          debugPath: expect.any(String),
           changes: new Map([
             ['selfReadonly', true],
             ['readonly', true],
@@ -812,7 +815,8 @@ export default function runSharedTestSuite(
           type: 'StateChange',
           source: a.id,
           meta: {},
-          trigger: { label: expect.any(String), source: expect.any(Symbol) },
+          controlId: expect.any(Symbol),
+          debugPath: expect.any(String),
           changes: new Map<string, any>([
             ['selfDisabled', true],
             ['disabled', true],
@@ -865,7 +869,8 @@ export default function runSharedTestSuite(
           type: 'StateChange',
           source: a.id,
           meta: {},
-          trigger: { label: expect.any(String), source: expect.any(Symbol) },
+          controlId: expect.any(Symbol),
+          debugPath: expect.any(String),
           changes: new Map<string, any>([
             ['selfSubmitted', true],
             ['submitted', true],
@@ -915,7 +920,8 @@ export default function runSharedTestSuite(
             type: 'StateChange',
             source: a.id,
             meta: {},
-            trigger: { label: expect.any(String), source: expect.any(Symbol) },
+            controlId: expect.any(Symbol),
+            debugPath: expect.any(String),
             changes: new Map<string, any>([
               ['pendingStore', new Set([CONTROL_SELF_ID])],
               ['selfPending', true],
@@ -970,7 +976,8 @@ export default function runSharedTestSuite(
             type: 'StateChange',
             source: a.id,
             meta: {},
-            trigger: { label: expect.any(String), source: expect.any(Symbol) },
+            controlId: expect.any(Symbol),
+            debugPath: expect.any(String),
             changes: new Map<string, any>([
               ['selfPending', true],
               ['pending', true],
@@ -1001,7 +1008,8 @@ export default function runSharedTestSuite(
           type: 'StateChange',
           source: a.id,
           meta: {},
-          trigger: { label: expect.any(String), source: expect.any(Symbol) },
+          controlId: expect.any(Symbol),
+          debugPath: expect.any(String),
           changes: new Map([['parent', a]]),
         });
       });
@@ -1028,7 +1036,8 @@ export default function runSharedTestSuite(
           type: 'StateChange',
           source: a.id,
           meta: {},
-          trigger: { label: expect.any(String), source: expect.any(Symbol) },
+          controlId: expect.any(Symbol),
+          debugPath: expect.any(String),
           changes: new Map([['data', data]]),
         });
       });
@@ -1078,7 +1087,8 @@ export default function runSharedTestSuite(
             type: 'StateChange',
             source: a.id,
             meta: {},
-            trigger: { label: expect.any(String), source: expect.any(Symbol) },
+            controlId: expect.any(Symbol),
+            debugPath: expect.any(String),
             changes: new Map<string, any>([
               ['errorsStore', errorsStore],
               ['selfErrors', error],
@@ -1144,7 +1154,8 @@ export default function runSharedTestSuite(
             type: 'StateChange',
             source: a.id,
             meta: {},
-            trigger: { label: expect.any(String), source: expect.any(Symbol) },
+            controlId: expect.any(Symbol),
+            debugPath: expect.any(String),
             changes: new Map<string, any>([
               ['errorsStore', newErrorsStore],
               ['selfErrors', errors],
@@ -1202,7 +1213,8 @@ export default function runSharedTestSuite(
             type: 'StateChange',
             source: a.id,
             meta: {},
-            trigger: { label: expect.any(String), source: expect.any(Symbol) },
+            controlId: expect.any(Symbol),
+            debugPath: expect.any(String),
             changes: new Map<string, any>([
               ['errorsStore', newErrorsStore],
               ['selfErrors', newError],
@@ -1244,7 +1256,8 @@ export default function runSharedTestSuite(
             type: 'StateChange',
             source: a.id,
             meta: {},
-            trigger: { label: expect.any(String), source: expect.any(Symbol) },
+            controlId: expect.any(Symbol),
+            debugPath: expect.any(String),
             changes: new Map<string, any>([
               ['errorsStore', new Map()],
               ['selfErrors', null],
@@ -1294,7 +1307,8 @@ export default function runSharedTestSuite(
             type: 'StateChange',
             source: a.id,
             meta: {},
-            trigger: { label: expect.any(String), source: expect.any(Symbol) },
+            controlId: expect.any(Symbol),
+            debugPath: expect.any(String),
             changes: new Map<string, any>([
               ['errorsStore', errorsStore],
               ['selfErrors', errors],
@@ -1366,7 +1380,8 @@ export default function runSharedTestSuite(
             type: 'StateChange',
             source: a.id,
             meta: {},
-            trigger: { label: expect.any(String), source: expect.any(Symbol) },
+            controlId: expect.any(Symbol),
+            debugPath: expect.any(String),
             changes: new Map<string, any>([
               ['errorsStore', new Map()],
               ['selfErrors', null],
@@ -1471,7 +1486,8 @@ export default function runSharedTestSuite(
             type: 'StateChange',
             source: a.id,
             meta: {},
-            trigger: { label: expect.any(String), source: expect.any(Symbol) },
+            controlId: expect.any(Symbol),
+            debugPath: expect.any(String),
             changes: new Map<string, any>([
               ['errorsStore', new Map([[CONTROL_SELF_ID, error]])],
               ['errors', error],
@@ -1532,7 +1548,8 @@ export default function runSharedTestSuite(
             type: 'StateChange',
             source: a.id,
             meta: {},
-            trigger: { label: expect.any(String), source: expect.any(Symbol) },
+            controlId: expect.any(Symbol),
+            debugPath: expect.any(String),
             changes: new Map<string, any>([
               ['errorsStore', preexistingErrorsStore],
               ['selfErrors', errors],
@@ -1573,7 +1590,8 @@ export default function runSharedTestSuite(
             type: 'StateChange',
             source: a.id,
             meta: {},
-            trigger: { label: expect.any(String), source: expect.any(Symbol) },
+            controlId: expect.any(Symbol),
+            debugPath: expect.any(String),
             changes: new Map<string, any>([
               ['errorsStore', new Map()],
               ['selfErrors', null],
@@ -1674,7 +1692,8 @@ export default function runSharedTestSuite(
             type: 'StateChange',
             source: a.id,
             meta: {},
-            trigger: { label: expect.any(String), source: expect.any(Symbol) },
+            controlId: expect.any(Symbol),
+            debugPath: expect.any(String),
             changes: new Map<string, any>([
               ['errorsStore', errorsStore],
               ['selfErrors', errorsStore.get(a.id)],
@@ -1743,7 +1762,8 @@ export default function runSharedTestSuite(
             type: 'StateChange',
             source: a.id,
             meta: {},
-            trigger: { label: expect.any(String), source: expect.any(Symbol) },
+            controlId: expect.any(Symbol),
+            debugPath: expect.any(String),
             changes: new Map<string, any>([
               ['errorsStore', errorsStore],
               ['selfErrors', errors],
@@ -1795,7 +1815,8 @@ export default function runSharedTestSuite(
             type: 'StateChange',
             source: a.id,
             meta: {},
-            trigger: { label: expect.any(String), source: expect.any(Symbol) },
+            controlId: expect.any(Symbol),
+            debugPath: expect.any(String),
             changes: new Map<string, any>([
               ['errorsStore', errorsStore],
               ['selfErrors', { required: null }],
@@ -1852,7 +1873,8 @@ export default function runSharedTestSuite(
             type: 'StateChange',
             source: a.id,
             meta: {},
-            trigger: { label: expect.any(String), source: expect.any(Symbol) },
+            controlId: expect.any(Symbol),
+            debugPath: expect.any(String),
             changes: new Map<string, any>([
               [
                 'errorsStore',

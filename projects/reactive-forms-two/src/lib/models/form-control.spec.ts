@@ -192,7 +192,8 @@ describe('FormControl', () => {
         rawValue: 'newValue',
         value: 'newValue',
         meta: {},
-        trigger: { label: expect.any(String), source: expect.any(Symbol) },
+        controlId: expect.any(Symbol),
+        debugPath: expect.any(String),
       });
 
       expect(event2).toEqual<IControlValidationEvent<unknown, unknown>>({
@@ -201,14 +202,16 @@ describe('FormControl', () => {
         rawValue: 'newValue',
         value: 'newValue',
         meta: {},
-        trigger: { label: expect.any(String), source: expect.any(Symbol) },
+        controlId: expect.any(Symbol),
+        debugPath: expect.any(String),
       });
 
       expect(event3).toEqual<IControlStateChangeEvent>({
         type: 'StateChange',
         source: c.id,
         meta: {},
-        trigger: { label: expect.any(String), source: expect.any(Symbol) },
+        controlId: expect.any(Symbol),
+        debugPath: expect.any(String),
         changes: new Map([
           ['rawValue', 'newValue'],
           ['value', 'newValue'],
@@ -282,7 +285,8 @@ describe('FormControl', () => {
         type: 'ValidationStart',
         source: c.id,
         meta: {},
-        trigger: { label: expect.any(String), source: expect.any(Symbol) },
+        controlId: expect.any(Symbol),
+        debugPath: expect.any(String),
         rawValue: 'hi',
         value: 'hi',
       });
@@ -291,7 +295,8 @@ describe('FormControl', () => {
         type: 'AsyncValidationStart',
         source: c.id,
         meta: {},
-        trigger: { label: expect.any(String), source: expect.any(Symbol) },
+        controlId: expect.any(Symbol),
+        debugPath: expect.any(String),
         rawValue: 'hi',
         value: 'hi',
       });
@@ -299,7 +304,8 @@ describe('FormControl', () => {
       expect(event3).toEqual<IControlStateChangeEvent>({
         type: 'StateChange',
         source: c.id,
-        trigger: { label: expect.any(String), source: expect.any(Symbol) },
+        controlId: expect.any(Symbol),
+        debugPath: expect.any(String),
         changes: new Map<string, unknown>([
           ['rawValue', 'hi'],
           ['value', 'hi'],
@@ -369,14 +375,16 @@ describe('FormControl', () => {
         rawValue: 'invalidValue',
         value: 'invalidValue',
         meta: {},
-        trigger: { label: expect.any(String), source: expect.any(Symbol) },
+        controlId: expect.any(Symbol),
+        debugPath: expect.any(String),
       });
 
       expect(event2).toEqual<IControlStateChangeEvent>({
         type: 'StateChange',
         source: 'myValidationService',
         meta: {},
-        trigger: { label: expect.any(String), source: 'myValidationService' },
+        controlId: expect.any(Symbol),
+        debugPath: expect.any(String),
         changes: new Map<string, any>([
           [
             'errorsStore',
@@ -397,7 +405,8 @@ describe('FormControl', () => {
         source: c.id,
         rawValue: 'invalidValue',
         value: 'invalidValue',
-        trigger: { label: expect.any(String), source: expect.any(Symbol) },
+        controlId: expect.any(Symbol),
+        debugPath: expect.any(String),
         meta: {},
       });
 
@@ -405,7 +414,8 @@ describe('FormControl', () => {
         type: 'StateChange',
         source: c.id,
         meta: {},
-        trigger: { label: expect.any(String), source: expect.any(Symbol) },
+        controlId: expect.any(Symbol),
+        debugPath: expect.any(String),
         changes: new Map<string, any>([
           ['rawValue', 'invalidValue'],
           ['value', 'invalidValue'],
@@ -417,7 +427,8 @@ describe('FormControl', () => {
         source: c.id,
         rawValue: 'validValue',
         value: 'validValue',
-        trigger: { label: expect.any(String), source: expect.any(Symbol) },
+        controlId: expect.any(Symbol),
+        debugPath: expect.any(String),
         meta: {},
       });
 
@@ -425,7 +436,8 @@ describe('FormControl', () => {
         type: 'StateChange',
         source: 'myValidationService',
         meta: {},
-        trigger: { label: expect.any(String), source: 'myValidationService' },
+        controlId: expect.any(Symbol),
+        debugPath: expect.any(String),
         changes: new Map<string, any>([
           ['errorsStore', new Map()],
           ['selfErrors', null],
@@ -444,14 +456,16 @@ describe('FormControl', () => {
         rawValue: 'validValue',
         value: 'validValue',
         meta: {},
-        trigger: { label: expect.any(String), source: expect.any(Symbol) },
+        controlId: expect.any(Symbol),
+        debugPath: expect.any(String),
       });
 
       expect(event8).toEqual<IControlStateChangeEvent>({
         type: 'StateChange',
         source: c.id,
         meta: {},
-        trigger: { label: expect.any(String), source: expect.any(Symbol) },
+        controlId: expect.any(Symbol),
+        debugPath: expect.any(String),
         changes: new Map<string, any>([
           ['rawValue', 'validValue'],
           ['value', 'validValue'],
@@ -531,17 +545,16 @@ describe('FormControl', () => {
         rawValue: 'invalidValue',
         value: 'invalidValue',
         meta: {},
-        trigger: { label: expect.any(String), source: expect.any(Symbol) },
+        controlId: expect.any(Symbol),
+        debugPath: expect.any(String),
       });
 
       expect(event2).toEqual<IControlStateChangeEvent>({
         type: 'StateChange',
         source: 'lowercaseValidationService',
         meta: {},
-        trigger: {
-          label: expect.any(String),
-          source: 'lowercaseValidationService',
-        },
+        controlId: expect.any(Symbol),
+        debugPath: expect.any(String),
         changes: new Map<string, any>([
           [
             'errorsStore',
@@ -563,10 +576,8 @@ describe('FormControl', () => {
         type: 'StateChange',
         source: 'valueValidationService',
         meta: {},
-        trigger: {
-          label: expect.any(String),
-          source: 'valueValidationService',
-        },
+        controlId: expect.any(Symbol),
+        debugPath: expect.any(String),
         changes: new Map<string, any>([
           [
             'errorsStore',
@@ -585,7 +596,8 @@ describe('FormControl', () => {
         source: c.id,
         rawValue: 'invalidValue',
         value: 'invalidValue',
-        trigger: { label: expect.any(String), source: expect.any(Symbol) },
+        controlId: expect.any(Symbol),
+        debugPath: expect.any(String),
         meta: {},
       });
 
@@ -593,7 +605,8 @@ describe('FormControl', () => {
         type: 'StateChange',
         source: c.id,
         meta: {},
-        trigger: { label: expect.any(String), source: expect.any(Symbol) },
+        controlId: expect.any(Symbol),
+        debugPath: expect.any(String),
         changes: new Map<string, any>([
           ['rawValue', 'invalidValue'],
           ['value', 'invalidValue'],
@@ -605,7 +618,8 @@ describe('FormControl', () => {
         source: c.id,
         rawValue: 'validValue',
         value: 'validValue',
-        trigger: { label: expect.any(String), source: expect.any(Symbol) },
+        controlId: expect.any(Symbol),
+        debugPath: expect.any(String),
         meta: {},
       });
 
@@ -613,10 +627,8 @@ describe('FormControl', () => {
         type: 'StateChange',
         source: 'valueValidationService',
         meta: {},
-        trigger: {
-          label: expect.any(String),
-          source: 'valueValidationService',
-        },
+        controlId: expect.any(Symbol),
+        debugPath: expect.any(String),
         changes: new Map<string, any>([
           [
             'errorsStore',
@@ -634,7 +646,8 @@ describe('FormControl', () => {
         source: c.id,
         rawValue: 'validValue',
         value: 'validValue',
-        trigger: { label: expect.any(String), source: expect.any(Symbol) },
+        controlId: expect.any(Symbol),
+        debugPath: expect.any(String),
         meta: {},
       });
 
@@ -642,7 +655,8 @@ describe('FormControl', () => {
         type: 'StateChange',
         source: c.id,
         meta: {},
-        trigger: { label: expect.any(String), source: expect.any(Symbol) },
+        controlId: expect.any(Symbol),
+        debugPath: expect.any(String),
         changes: new Map<string, any>([
           ['rawValue', 'validValue'],
           ['value', 'validValue'],
@@ -654,7 +668,8 @@ describe('FormControl', () => {
         source: c.id,
         rawValue: 'validvalue',
         value: 'validvalue',
-        trigger: { label: expect.any(String), source: expect.any(Symbol) },
+        controlId: expect.any(Symbol),
+        debugPath: expect.any(String),
         meta: {},
       });
 
@@ -662,10 +677,8 @@ describe('FormControl', () => {
         type: 'StateChange',
         source: 'lowercaseValidationService',
         meta: {},
-        trigger: {
-          label: expect.any(String),
-          source: 'lowercaseValidationService',
-        },
+        controlId: expect.any(Symbol),
+        debugPath: expect.any(String),
         changes: new Map<string, any>([
           ['errorsStore', new Map()],
           ['selfErrors', null],
@@ -683,7 +696,8 @@ describe('FormControl', () => {
         source: c.id,
         rawValue: 'validvalue',
         value: 'validvalue',
-        trigger: { label: expect.any(String), source: expect.any(Symbol) },
+        controlId: expect.any(Symbol),
+        debugPath: expect.any(String),
         meta: {},
       });
 
@@ -691,7 +705,8 @@ describe('FormControl', () => {
         type: 'StateChange',
         source: c.id,
         meta: {},
-        trigger: { label: expect.any(String), source: expect.any(Symbol) },
+        controlId: expect.any(Symbol),
+        debugPath: expect.any(String),
         changes: new Map<string, any>([
           ['rawValue', 'validvalue'],
           ['value', 'validvalue'],
@@ -717,7 +732,8 @@ describe('FormControl', () => {
         type: 'StateChange',
         source: a.id,
         meta: {},
-        trigger: { label: expect.any(String), source: expect.any(Symbol) },
+        controlId: expect.any(Symbol),
+        debugPath: expect.any(String),
         changes: new Map<string, any>([
           ['enabled', true],
           ['selfEnabled', true],

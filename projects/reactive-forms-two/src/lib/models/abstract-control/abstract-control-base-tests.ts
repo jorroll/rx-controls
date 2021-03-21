@@ -327,7 +327,8 @@ export default function runAbstractControlBaseTestSuite(
             type: 'StateChange',
             source: 'one',
             meta: {},
-            trigger: { label: expect.any(String), source: expect.any(Symbol) },
+            debugPath: expect.any(String),
+            controlId: expect.any(Symbol),
             changes: new Map([['selfDisabled', true]]),
           };
 
@@ -355,7 +356,8 @@ export default function runAbstractControlBaseTestSuite(
             type: 'StateChange',
             source: 'one',
             meta: {},
-            trigger: { label: expect.any(String), source: expect.any(Symbol) },
+            controlId: expect.any(Symbol),
+            debugPath: expect.any(String),
             changes: new Map<string, any>([
               ['disabled', true],
               ['selfDisabled', true],
@@ -371,7 +373,8 @@ export default function runAbstractControlBaseTestSuite(
             type: 'StateChange',
             source: 'one',
             meta: {},
-            trigger: { label: expect.any(String), source: expect.any(Symbol) },
+            controlId: expect.any(Symbol),
+            debugPath: expect.any(String),
             changes: new Map([['selfTouched', true]]),
           };
 
@@ -389,7 +392,8 @@ export default function runAbstractControlBaseTestSuite(
             type: 'StateChange',
             source: 'one',
             meta: {},
-            trigger: { label: expect.any(String), source: expect.any(Symbol) },
+            controlId: expect.any(Symbol),
+            debugPath: expect.any(String),
             changes: new Map<string, any>([
               ['touched', true],
               ['selfTouched', true],
@@ -402,7 +406,8 @@ export default function runAbstractControlBaseTestSuite(
             type: 'StateChange',
             source: 'one',
             meta: {},
-            trigger: { label: expect.any(String), source: expect.any(Symbol) },
+            controlId: expect.any(Symbol),
+            debugPath: expect.any(String),
             changes: new Map([['selfDirty', true]]),
           };
 
@@ -420,7 +425,8 @@ export default function runAbstractControlBaseTestSuite(
             type: 'StateChange',
             source: 'one',
             meta: {},
-            trigger: { label: expect.any(String), source: expect.any(Symbol) },
+            controlId: expect.any(Symbol),
+            debugPath: expect.any(String),
             changes: new Map<string, any>([
               ['dirty', true],
               ['selfDirty', true],
@@ -433,7 +439,8 @@ export default function runAbstractControlBaseTestSuite(
             type: 'StateChange',
             source: 'one',
             meta: {},
-            trigger: { label: expect.any(String), source: expect.any(Symbol) },
+            controlId: expect.any(Symbol),
+            debugPath: expect.any(String),
             changes: new Map([['selfReadonly', true]]),
           };
 
@@ -451,7 +458,8 @@ export default function runAbstractControlBaseTestSuite(
             type: 'StateChange',
             source: 'one',
             meta: {},
-            trigger: { label: expect.any(String), source: expect.any(Symbol) },
+            controlId: expect.any(Symbol),
+            debugPath: expect.any(String),
             changes: new Map<string, any>([
               ['readonly', true],
               ['selfReadonly', true],
@@ -464,7 +472,8 @@ export default function runAbstractControlBaseTestSuite(
             type: 'StateChange',
             source: 'one',
             meta: {},
-            trigger: { label: expect.any(String), source: expect.any(Symbol) },
+            controlId: expect.any(Symbol),
+            debugPath: expect.any(String),
             changes: new Map([['selfSubmitted', true]]),
           };
 
@@ -482,7 +491,8 @@ export default function runAbstractControlBaseTestSuite(
             type: 'StateChange',
             source: 'one',
             meta: {},
-            trigger: { label: expect.any(String), source: expect.any(Symbol) },
+            controlId: expect.any(Symbol),
+            debugPath: expect.any(String),
             changes: new Map<string, any>([
               ['submitted', true],
               ['selfSubmitted', true],
@@ -495,7 +505,8 @@ export default function runAbstractControlBaseTestSuite(
             type: 'StateChange',
             source: 'one',
             meta: {},
-            trigger: { label: expect.any(String), source: expect.any(Symbol) },
+            controlId: expect.any(Symbol),
+            debugPath: expect.any(String),
             changes: new Map([['data', { one: true }]]),
           };
 
@@ -512,7 +523,8 @@ export default function runAbstractControlBaseTestSuite(
             type: 'StateChange',
             source: 'one',
             meta: {},
-            trigger: { label: expect.any(String), source: expect.any(Symbol) },
+            controlId: expect.any(Symbol),
+            debugPath: expect.any(String),
             changes: new Map<string, any>([['data', { one: true }]]),
           });
         });
@@ -524,7 +536,8 @@ export default function runAbstractControlBaseTestSuite(
             type: 'StateChange',
             source: 'one',
             meta: {},
-            trigger: { label: expect.any(String), source: expect.any(Symbol) },
+            controlId: expect.any(Symbol),
+            debugPath: expect.any(String),
             changes: new Map([['validatorStore', validatorStore]]),
           };
 
@@ -542,7 +555,8 @@ export default function runAbstractControlBaseTestSuite(
             type: 'StateChange',
             source: 'one',
             meta: {},
-            trigger: { label: expect.any(String), source: expect.any(Symbol) },
+            controlId: expect.any(Symbol),
+            debugPath: expect.any(String),
             changes: new Map<string, any>([
               ['validatorStore', new Map([['one', expect.any(Function)]])],
               ['validator', expect.any(Function)],
@@ -557,7 +571,8 @@ export default function runAbstractControlBaseTestSuite(
             type: 'StateChange',
             source: 'one',
             meta: {},
-            trigger: { label: expect.any(String), source: expect.any(Symbol) },
+            controlId: expect.any(Symbol),
+            debugPath: expect.any(String),
             changes: new Map([['pendingStore', pendingStore]]),
           };
 
@@ -583,7 +598,8 @@ export default function runAbstractControlBaseTestSuite(
             type: 'StateChange',
             source: 'one',
             meta: {},
-            trigger: { label: expect.any(String), source: expect.any(Symbol) },
+            controlId: expect.any(Symbol),
+            debugPath: expect.any(String),
             changes: new Map<string, any>([
               ['pendingStore', pendingStore],
               ['selfPending', true],
@@ -601,7 +617,8 @@ export default function runAbstractControlBaseTestSuite(
             type: 'StateChange',
             source: 'one',
             meta: {},
-            trigger: { label: expect.any(String), source: expect.any(Symbol) },
+            controlId: expect.any(Symbol),
+            debugPath: expect.any(String),
             changes: new Map([['errorsStore', errorsStore]]),
           };
 
@@ -635,7 +652,8 @@ export default function runAbstractControlBaseTestSuite(
             type: 'StateChange',
             source: 'one',
             meta: {},
-            trigger: { label: expect.any(String), source: expect.any(Symbol) },
+            controlId: expect.any(Symbol),
+            debugPath: expect.any(String),
             changes: new Map<string, any>([
               ['errorsStore', errorsStore],
               ['selfErrors', errors],

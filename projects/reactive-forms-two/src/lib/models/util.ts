@@ -59,23 +59,23 @@ export function isStateChange<
   return event.type === 'StateChange';
 }
 
-export function pluckOptions({
-  source,
-  meta,
-  noObserve: noEmit,
-  trigger,
-  [AbstractControl.NO_EVENT]: partial,
-}: IControlEventOptions = {}) {
-  const options = {} as IControlEventOptions;
+// export function pluckOptions({
+//   source,
+//   meta,
+//   noObserve: noEmit,
+//   trigger,
+//   [AbstractControl.NO_EVENT]: partial,
+// }: IControlEventOptions = {}) {
+//   const options = {} as IControlEventOptions;
 
-  if (source) options.source = source;
-  if (meta) options.meta = meta;
-  if (noEmit) options.noObserve = noEmit;
-  if (trigger) options.trigger = trigger;
-  if (partial) options[AbstractControl.NO_EVENT] = partial;
+//   if (source) options.source = source;
+//   if (meta) options.meta = meta;
+//   if (noEmit) options.noObserve = noEmit;
+//   if (trigger) options.trigger = trigger;
+//   if (partial) options[AbstractControl.NO_EVENT] = partial;
 
-  return options;
-}
+//   return options;
+// }
 
 // export function removeElFromArray<T>(el: T, array: T[]) {
 //   const i = array.indexOf(el);

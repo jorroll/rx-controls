@@ -24,8 +24,11 @@ import {
 
 export const CONTROL_SELF_ID = '__CONTROL_SELF_ID';
 
-export type INormControlEventOptions = IControlEventOptions & {
-  trigger: Exclude<IControlEventOptions['trigger'], undefined>;
+export type INormControlEventOptions = Omit<
+  IControlEventOptions,
+  'debugPath'
+> & {
+  debugPath: Exclude<IControlEventOptions['debugPath'], undefined>;
 };
 
 export interface IAbstractControlBaseArgs<
@@ -219,9 +222,10 @@ export abstract class AbstractControlBase<RawValue, Data, Value>
 
     if (AbstractControl.debugCallback) {
       AbstractControl.debugCallback.call(this, {
-        type: `DEBUG: constructor`,
-        trigger: { label: 'constructor', source: controlId },
+        type: `DEBUG`,
+        debugPath: 'constructor',
         source: controlId,
+        controlId,
         meta: {},
       });
     }
@@ -1089,6 +1093,7 @@ export abstract class AbstractControlBase<RawValue, Data, Value>
     const event: IControlStateChangeEvent = {
       type: 'StateChange',
       source: this.id,
+      controlId: this.id,
       meta: {},
       ...this._normalizeOptions('replayState', options),
       // the order of these changes matters
@@ -1103,10 +1108,9 @@ export abstract class AbstractControlBase<RawValue, Data, Value>
   clone(options?: IControlEventOptions): this {
     const control: this = new (this.constructor as any)();
 
-    this.replayState({
-      trigger: { label: 'clone', source: this.id },
-      ...options,
-    }).subscribe((e) => control.processEvent(e));
+    this.replayState(this._normalizeOptions('clone', options)).subscribe((e) =>
+      control.processEvent(e)
+    );
 
     return control;
   }
@@ -1116,7 +1120,7 @@ export abstract class AbstractControlBase<RawValue, Data, Value>
     options?: IControlEventOptions
   ): IProcessedEvent<T> {
     // const source = options?.source || event.source;
-    const _options = this._normalizeOptions(event.trigger.label, {
+    const _options = this._normalizeOptions('processEvent', {
       ...event,
       ...options,
     });
@@ -1209,8 +1213,10 @@ export abstract class AbstractControlBase<RawValue, Data, Value>
    * A convenience method for emitting an arbitrary control event.
    */
   protected _emitEvent<T extends IControlEvent>(
-    event: Partial<Pick<T, 'source' | 'noObserve' | 'meta' | 'trigger'>> &
-      Omit<T, 'source' | 'noObserve' | 'meta' | 'trigger'> & {
+    event: Partial<
+      Pick<T, 'source' | 'noObserve' | 'meta' | 'debugPath' | 'controlId'>
+    > &
+      Omit<T, 'source' | 'noObserve' | 'meta' | 'debugPath' | 'controlId'> & {
         type: string;
       },
     options: INormControlEventOptions
@@ -1224,7 +1230,7 @@ export abstract class AbstractControlBase<RawValue, Data, Value>
       meta: {},
       ...event,
       ...options,
-      // controlId: this.id,
+      controlId: this.id,
     };
 
     if (AbstractControl.debugCallback) {
@@ -1237,14 +1243,11 @@ export abstract class AbstractControlBase<RawValue, Data, Value>
   protected _normalizeOptions(
     triggerLabel: string,
     o?: IControlEventOptions
-    // other?: { include?: string[] }
   ): INormControlEventOptions {
     const options: INormControlEventOptions = {
-      trigger: o?.trigger ?? {
-        label: triggerLabel,
-        // controlId: this.id,
-        source: o?.source ?? this.id,
-      },
+      debugPath:
+        (o?.debugPath ? `${o.debugPath} > ` : '') +
+        `${this.id.toString()}.${triggerLabel}`,
     };
 
     if (!o) return options;
@@ -1254,14 +1257,6 @@ export abstract class AbstractControlBase<RawValue, Data, Value>
     if (o[AbstractControl.NO_EVENT]) {
       options[AbstractControl.NO_EVENT] = o[AbstractControl.NO_EVENT];
     }
-
-    // if (other?.include) {
-    //   other.include.forEach((prop) => {
-    //     if (!(prop in o)) return;
-
-    //     (options as any)[prop] = (o as any)[prop];
-    //   });
-    // }
 
     return options;
   }

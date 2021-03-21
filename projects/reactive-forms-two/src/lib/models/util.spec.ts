@@ -3,7 +3,7 @@ import {
   IControlEventOptions,
   IControlStateChangeEvent,
 } from './abstract-control/abstract-control';
-import { pluckOptions, transformRawValueStateChange } from './util';
+import { transformRawValueStateChange } from './util';
 
 // describe('isMapEqual', () => {
 //   test('true', () => {
@@ -23,43 +23,43 @@ import { pluckOptions, transformRawValueStateChange } from './util';
 //   });
 // });
 
-describe(`pluckOptions`, () => {
-  it('', () => {
-    const options: Partial<IControlEvent> = {
-      type: 'TestEvent',
-      meta: {
-        one: 1,
-      },
-      source: 'one',
-      noObserve: true,
-    };
+// describe(`pluckOptions`, () => {
+//   it('', () => {
+//     const options: Partial<IControlEvent> = {
+//       type: 'TestEvent',
+//       meta: {
+//         one: 1,
+//       },
+//       source: 'one',
+//       noObserve: true,
+//     };
 
-    const pluckedOptions: Partial<IControlEventOptions> = {
-      source: 'one',
-      meta: { one: 1 },
-      noObserve: true,
-    };
+//     const pluckedOptions: Partial<IControlEventOptions> = {
+//       source: 'one',
+//       meta: { one: 1 },
+//       noObserve: true,
+//     };
 
-    expect(pluckOptions(options)).toEqual(pluckedOptions);
+//     expect(pluckOptions(options)).toEqual(pluckedOptions);
 
-    expect(pluckOptions(options)).toEqual(pluckedOptions);
+//     expect(pluckOptions(options)).toEqual(pluckedOptions);
 
-    delete options.source;
-    delete pluckedOptions.source;
+//     delete options.source;
+//     delete pluckedOptions.source;
 
-    expect(pluckOptions(options)).toEqual(pluckedOptions);
+//     expect(pluckOptions(options)).toEqual(pluckedOptions);
 
-    delete options.meta;
-    delete pluckedOptions.meta;
+//     delete options.meta;
+//     delete pluckedOptions.meta;
 
-    expect(pluckOptions(options)).toEqual(pluckedOptions);
+//     expect(pluckOptions(options)).toEqual(pluckedOptions);
 
-    delete options.noObserve;
-    delete pluckedOptions.noObserve;
+//     delete options.noObserve;
+//     delete pluckedOptions.noObserve;
 
-    expect(pluckOptions(options)).toEqual(pluckedOptions);
-  });
-});
+//     expect(pluckOptions(options)).toEqual(pluckedOptions);
+//   });
+// });
 
 // describe(`removeElFromArray`, () => {
 //   it('', () => {
@@ -94,7 +94,8 @@ describe('transformRawValueStateChange', () => {
     const source = Symbol('one');
 
     const event: IControlStateChangeEvent = {
-      trigger: { label: 'test', source },
+      debugPath: 'test',
+      controlId: source,
       source,
       meta: {},
       type: 'StateChange',
@@ -104,7 +105,8 @@ describe('transformRawValueStateChange', () => {
       ]),
       childEvents: {
         two: {
-          trigger: { label: 'test', source },
+          debugPath: 'test',
+          controlId: source,
           source,
           meta: {},
           type: 'StateChange',
@@ -114,7 +116,8 @@ describe('transformRawValueStateChange', () => {
           ]),
           childEvents: {
             three: {
-              trigger: { label: 'test', source },
+              debugPath: 'test',
+              controlId: source,
               source,
               meta: {},
               type: 'StateChange',
@@ -141,7 +144,8 @@ describe('transformRawValueStateChange', () => {
     );
 
     expect(newEvent).toEqual<IControlStateChangeEvent>({
-      trigger: { label: 'test', source },
+      debugPath: 'test',
+      controlId: source,
       source,
       meta: {},
       type: 'StateChange',
@@ -151,7 +155,8 @@ describe('transformRawValueStateChange', () => {
       ]),
       childEvents: {
         two: {
-          trigger: { label: 'test', source },
+          debugPath: 'test',
+          controlId: source,
           source,
           meta: {},
           type: 'StateChange',
@@ -161,7 +166,8 @@ describe('transformRawValueStateChange', () => {
           ]),
           childEvents: {
             three: {
-              trigger: { label: 'test', source },
+              debugPath: 'test',
+              controlId: source,
               source,
               meta: {},
               type: 'StateChange',

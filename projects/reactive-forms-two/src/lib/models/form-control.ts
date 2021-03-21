@@ -25,7 +25,7 @@ export class FormControl<Value = any, Data = any> extends AbstractControlBase<
   ) {
     super(options.id || Symbol(`FormControl-${FormControl.id++}`));
 
-    const o = { trigger: { label: 'constructor', source: this.id } };
+    const o = { debugPath: 'constructor' };
     this.data = options.data!;
     this.setValue(value, o);
     if (options.disabled) this.markDisabled(options.disabled, o);

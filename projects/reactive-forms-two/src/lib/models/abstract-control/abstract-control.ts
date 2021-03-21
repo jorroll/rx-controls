@@ -25,31 +25,29 @@ export interface ValidationErrors {
 // ControlEvent interfaces
 // *****************************
 
-export interface IEventTrigger {
-  readonly label: string;
-  readonly source: ControlId;
-  // controlId: ControlId;
-}
-
 export interface IControlEvent {
-  readonly trigger: IEventTrigger;
-  // readonly path: string;
+  /** For debugging. Internal path this event took before being emitted. */
+  readonly debugPath: string;
+  /** The ControlId of the thing which originally created this event */
   readonly source: ControlId;
-  // readonly controlId: ControlId;
+  /** The ControlId of the control which emitted this specific event */
+  readonly controlId: ControlId;
+  /** The type of event */
   readonly type: string;
+  /** Custom metadata associated with this event */
   readonly meta: { [key: string]: unknown };
+  /**
+   * If `true`, this event will not cause `AbstractControl#observe()` and
+   * `AbstractControl#observeChanges()` to emit. `AbstractControl#events`
+   * will still emit regardless.
+   */
   readonly noObserve?: boolean;
 }
 
 export interface IControlEventOptions {
-  /**
-   * Contains information on what originally triggered this event. The
-   * `label` generally contains the name of the triggering method
-   * and the `source` contains the `ControlId` of the triggering
-   * AbstractControl.
-   */
-  trigger?: IEventTrigger;
-  /** The ControlId of the thing which emitted this event */
+  /** For debugging. Internal path this event took before being emitted. */
+  debugPath?: string;
+  /** The ControlId of the thing which created this event */
   source?: ControlId;
   /** Allows attaching arbitrary metadata to a ControlEvent */
   meta?: { [key: string]: unknown };

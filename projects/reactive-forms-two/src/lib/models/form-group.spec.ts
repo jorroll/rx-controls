@@ -559,7 +559,8 @@ describe('FormGroup', () => {
         meta: {},
         rawValue: newValue,
         value: newValue,
-        trigger: { label: expect.any(String), source: expect.any(Symbol) },
+        controlId: expect.any(Symbol),
+        debugPath: expect.any(String),
       });
 
       expect(event2).toEqual<IControlValidationEvent<unknown>>({
@@ -568,13 +569,15 @@ describe('FormGroup', () => {
         meta: {},
         rawValue: newValue,
         value: newValue,
-        trigger: { label: expect.any(String), source: expect.any(Symbol) },
+        controlId: expect.any(Symbol),
+        debugPath: expect.any(String),
       });
 
       expect(event3).toEqual<IControlStateChangeEvent>({
         type: 'StateChange',
         source: a.id,
-        trigger: { label: expect.any(String), source: expect.any(Symbol) },
+        controlId: expect.any(Symbol),
+        debugPath: expect.any(String),
         changes: new Map([
           ['rawValue', newValue],
           ['value', newValue],
@@ -583,7 +586,8 @@ describe('FormGroup', () => {
           one: {
             type: 'StateChange',
             source: a.id,
-            trigger: { label: expect.any(String), source: expect.any(Symbol) },
+            controlId: expect.any(Symbol),
+            debugPath: expect.any(String),
             changes: new Map([
               ['rawValue', newValue.one],
               ['value', newValue.one],
@@ -593,7 +597,8 @@ describe('FormGroup', () => {
           two: {
             type: 'StateChange',
             source: a.id,
-            trigger: { label: expect.any(String), source: expect.any(Symbol) },
+            controlId: expect.any(Symbol),
+            debugPath: expect.any(String),
             changes: new Map([
               ['rawValue', newValue.two],
               ['value', newValue.two],
@@ -612,7 +617,8 @@ describe('FormGroup', () => {
         meta: {},
         rawValue: bNewValue,
         value: bNewValue,
-        trigger: { label: expect.any(String), source: expect.any(Symbol) },
+        controlId: expect.any(Symbol),
+        debugPath: expect.any(String),
       });
 
       expect(event6).toEqual<IControlValidationEvent<unknown>>({
@@ -621,13 +627,15 @@ describe('FormGroup', () => {
         meta: {},
         rawValue: bNewValue,
         value: bNewValue,
-        trigger: { label: expect.any(String), source: expect.any(Symbol) },
+        controlId: expect.any(Symbol),
+        debugPath: expect.any(String),
       });
 
       expect(event7).toEqual<IControlStateChangeEvent>({
         type: 'StateChange',
         source: a.id,
-        trigger: { label: expect.any(String), source: expect.any(Symbol) },
+        controlId: expect.any(Symbol),
+        debugPath: expect.any(String),
         changes: new Map([
           ['rawValue', bNewValue],
           ['value', bNewValue],
@@ -636,7 +644,8 @@ describe('FormGroup', () => {
           four: {
             type: 'StateChange',
             source: a.id,
-            trigger: { label: expect.any(String), source: expect.any(Symbol) },
+            controlId: expect.any(Symbol),
+            debugPath: expect.any(String),
             changes: new Map([
               ['rawValue', newValue],
               ['value', newValue],
@@ -645,10 +654,8 @@ describe('FormGroup', () => {
               one: {
                 type: 'StateChange',
                 source: a.id,
-                trigger: {
-                  label: expect.any(String),
-                  source: expect.any(Symbol),
-                },
+                controlId: expect.any(Symbol),
+                debugPath: expect.any(String),
                 changes: new Map([
                   ['rawValue', newValue.one],
                   ['value', newValue.one],
@@ -658,10 +665,8 @@ describe('FormGroup', () => {
               two: {
                 type: 'StateChange',
                 source: a.id,
-                trigger: {
-                  label: expect.any(String),
-                  source: expect.any(Symbol),
-                },
+                controlId: expect.any(Symbol),
+                debugPath: expect.any(String),
                 changes: new Map([
                   ['rawValue', newValue.two],
                   ['value', newValue.two],
@@ -1095,7 +1100,8 @@ describe('FormGroup', () => {
           type: 'StateChange',
           source: 'mySource',
           meta: {},
-          trigger: { label: expect.any(String), source: expect.any(Symbol) },
+          controlId: expect.any(Symbol),
+          debugPath: expect.any(String),
           changes: new Map([
             [
               'controlsStore',
@@ -1136,11 +1142,12 @@ describe('FormGroup', () => {
         );
 
         expect(result.status).toEqual('PROCESSED');
-        expect(result.result).toEqual({
+        expect(result.result).toEqual<IControlStateChangeEvent>({
           type: 'StateChange',
           source: 'mySource',
           meta: {},
-          trigger: { label: expect.any(String), source: expect.any(Symbol) },
+          controlId: expect.any(Symbol),
+          debugPath: expect.any(String),
           changes: new Map<string, any>([
             ['controls', controls],
             ['controlsStore', controlsStore],
@@ -1304,10 +1311,8 @@ describe('FormGroup', () => {
         type: 'StateChange',
         source: group.id,
         meta: {},
-        trigger: {
-          label: 'replayState',
-          source: group.id,
-        },
+        controlId: expect.any(Symbol),
+        debugPath: expect.any(String),
         changes: new Map<string, any>([
           [
             'controls',
