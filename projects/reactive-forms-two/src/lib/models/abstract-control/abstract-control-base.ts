@@ -1161,8 +1161,9 @@ export abstract class AbstractControlBase<RawValue, Data, Value>
     return processedEvent as IProcessedEvent<T>;
   }
 
-  /** **INTERNAL USE ONLY** */
-  _validate(options: INormControlEventOptions): Array<keyof this & string> {
+  protected _validate(
+    options: INormControlEventOptions
+  ): Array<keyof this & string> {
     const changedProps: Array<keyof this & string> = [];
 
     if (this._validator) {
@@ -1187,26 +1188,30 @@ export abstract class AbstractControlBase<RawValue, Data, Value>
     }
 
     if (!options[AbstractControl?.NO_EVENT]) {
-      this._emitEvent<IControlValidationEvent<RawValue, Value>>(
-        {
-          type: 'ValidationStart',
-          rawValue: this.rawValue,
-          value: this.value,
-        },
-        options
-      );
-
-      this._emitEvent<IControlValidationEvent<RawValue, Value>>(
-        {
-          type: 'AsyncValidationStart',
-          rawValue: this.rawValue,
-          value: this.value,
-        },
-        options
-      );
+      this._emitValidationEvents(options);
     }
 
     return changedProps;
+  }
+
+  protected _emitValidationEvents(options: INormControlEventOptions) {
+    this._emitEvent<IControlValidationEvent<RawValue, Value>>(
+      {
+        type: 'ValidationStart',
+        rawValue: this.rawValue,
+        value: this.value,
+      },
+      options
+    );
+
+    this._emitEvent<IControlValidationEvent<RawValue, Value>>(
+      {
+        type: 'AsyncValidationStart',
+        rawValue: this.rawValue,
+        value: this.value,
+      },
+      options
+    );
   }
 
   /**
@@ -1263,7 +1268,7 @@ export abstract class AbstractControlBase<RawValue, Data, Value>
 
   protected _processEvent_StateChange(
     event: IControlStateChangeEvent,
-    options?: IControlEventOptions
+    options: INormControlEventOptions
   ): IProcessedEvent {
     const _options: IControlEventOptions = {
       ...event,
@@ -1290,6 +1295,13 @@ export abstract class AbstractControlBase<RawValue, Data, Value>
         changes: new Map(Array.from(new Set(changes)).map((p) => [p, this[p]])),
       },
     };
+
+    if (
+      !options[AbstractControl.NO_EVENT] &&
+      processedEvent.result!.changes.has('value')
+    ) {
+      this._emitValidationEvents(options);
+    }
 
     return processedEvent;
   }

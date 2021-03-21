@@ -3,6 +3,7 @@ import {
   AbstractControl,
   ControlId,
   IControlStateChangeEvent,
+  IControlValidationEvent,
   ValidatorFn,
 } from '../abstract-control/abstract-control';
 import { AbstractControlContainer } from './abstract-control-container';
@@ -726,13 +727,13 @@ export default function runAbstractControlContainerBaseTestSuite<
               'status'
             );
 
-            const [event1, event2, event3] = await promise1;
+            const [event1, event2, event3, event4, event5] = await promise1;
 
             expect(event1).toEqual<IControlStateChangeEvent>({
               type: 'StateChange',
               source: child1.id,
               meta: {},
-              controlId: expect.any(Symbol),
+              controlId: b.id,
               debugPath: expect.any(String),
               changes: new Map([
                 [CHILD_PROP_NAME, true],
@@ -744,7 +745,7 @@ export default function runAbstractControlContainerBaseTestSuite<
                   type: 'StateChange',
                   source: child1.id,
                   meta: {},
-                  controlId: expect.any(Symbol),
+                  controlId: child1.id,
                   debugPath: expect.any(String),
                   changes: new Map([
                     [SELF_PROP_NAME, true],
@@ -754,11 +755,31 @@ export default function runAbstractControlContainerBaseTestSuite<
               },
             });
 
-            expect(event2).toEqual<IControlStateChangeEvent>({
+            expect(event2).toEqual<IControlValidationEvent<unknown>>({
+              type: 'ValidationStart',
+              source: child1.id,
+              controlId: b.id,
+              debugPath: expect.any(String),
+              meta: {},
+              rawValue: expect.any(Object),
+              value: expect.any(Object),
+            });
+
+            expect(event3).toEqual<IControlValidationEvent<unknown>>({
+              type: 'AsyncValidationStart',
+              source: child1.id,
+              controlId: b.id,
+              debugPath: expect.any(String),
+              meta: {},
+              rawValue: expect.any(Object),
+              value: expect.any(Object),
+            });
+
+            expect(event4).toEqual<IControlStateChangeEvent>({
               type: 'StateChange',
               source: child1.id,
               meta: {},
-              controlId: expect.any(Symbol),
+              controlId: b.id,
               debugPath: expect.any(String),
               changes: new Map<string, unknown>([
                 ['value', expect.any(Object)],
@@ -778,7 +799,7 @@ export default function runAbstractControlContainerBaseTestSuite<
                   type: 'StateChange',
                   source: child1.id,
                   meta: {},
-                  controlId: expect.any(Symbol),
+                  controlId: child1.id,
                   debugPath: expect.any(String),
                   changes: new Map<string, unknown>([
                     ['selfDisabled', true],
@@ -791,7 +812,7 @@ export default function runAbstractControlContainerBaseTestSuite<
               },
             });
 
-            expect(event3).toEqual(undefined);
+            expect(event5).toEqual(undefined);
           });
         });
       });
@@ -950,13 +971,13 @@ export default function runAbstractControlContainerBaseTestSuite<
             'status'
           );
 
-          const [event1, event2, event3] = await promise1;
+          const [event1, event2, event3, event4, event5] = await promise1;
 
           expect(event1).toEqual<IControlStateChangeEvent>({
             type: 'StateChange',
             source: child1.id,
             meta: {},
-            controlId: expect.any(Symbol),
+            controlId: b.id,
             debugPath: expect.any(String),
             changes: new Map<string, unknown>([
               ['childPending', true],
@@ -969,7 +990,7 @@ export default function runAbstractControlContainerBaseTestSuite<
                 type: 'StateChange',
                 source: child1.id,
                 meta: {},
-                controlId: expect.any(Symbol),
+                controlId: child1.id,
                 debugPath: expect.any(String),
                 changes: new Map<string, unknown>([
                   ['pendingStore', new Set([CONTROL_SELF_ID])],
@@ -981,11 +1002,31 @@ export default function runAbstractControlContainerBaseTestSuite<
             },
           });
 
-          expect(event2).toEqual<IControlStateChangeEvent>({
+          expect(event2).toEqual<IControlValidationEvent<unknown>>({
+            type: 'ValidationStart',
+            source: child1.id,
+            controlId: b.id,
+            debugPath: expect.any(String),
+            meta: {},
+            rawValue: expect.any(Object),
+            value: expect.any(Object),
+          });
+
+          expect(event3).toEqual<IControlValidationEvent<unknown>>({
+            type: 'AsyncValidationStart',
+            source: child1.id,
+            controlId: b.id,
+            debugPath: expect.any(String),
+            meta: {},
+            rawValue: expect.any(Object),
+            value: expect.any(Object),
+          });
+
+          expect(event4).toEqual<IControlStateChangeEvent>({
             type: 'StateChange',
             source: child1.id,
             meta: {},
-            controlId: expect.any(Symbol),
+            controlId: b.id,
             debugPath: expect.any(String),
             changes: new Map<string, unknown>([
               ['value', expect.any(Object)],
@@ -1005,7 +1046,7 @@ export default function runAbstractControlContainerBaseTestSuite<
                 type: 'StateChange',
                 source: child1.id,
                 meta: {},
-                controlId: expect.any(Symbol),
+                controlId: child1.id,
                 debugPath: expect.any(String),
                 changes: new Map<string, unknown>([
                   ['selfDisabled', true],
@@ -1018,7 +1059,7 @@ export default function runAbstractControlContainerBaseTestSuite<
             },
           });
 
-          expect(event3).toEqual(undefined);
+          expect(event5).toEqual(undefined);
         });
       });
 
@@ -1053,13 +1094,33 @@ export default function runAbstractControlContainerBaseTestSuite<
             'status'
           );
 
-          const [event1, event2] = await promise1;
+          const [event1, event2, event3, event4] = await promise1;
 
-          expect(event1).toEqual<IControlStateChangeEvent>({
+          expect(event1).toEqual<IControlValidationEvent<unknown>>({
+            type: 'ValidationStart',
+            source: child1.id,
+            controlId: b.id,
+            debugPath: expect.any(String),
+            meta: {},
+            rawValue: expect.any(Object),
+            value: expect.any(Object),
+          });
+
+          expect(event2).toEqual<IControlValidationEvent<unknown>>({
+            type: 'AsyncValidationStart',
+            source: child1.id,
+            controlId: b.id,
+            debugPath: expect.any(String),
+            meta: {},
+            rawValue: expect.any(Object),
+            value: expect.any(Object),
+          });
+
+          expect(event3).toEqual<IControlStateChangeEvent>({
             type: 'StateChange',
             source: child1.id,
             meta: {},
-            controlId: expect.any(Symbol),
+            controlId: b.id,
             debugPath: expect.any(String),
             changes: new Map<string, unknown>([
               ['value', expect.any(Object)],
@@ -1076,7 +1137,7 @@ export default function runAbstractControlContainerBaseTestSuite<
                 type: 'StateChange',
                 source: child1.id,
                 meta: {},
-                controlId: expect.any(Symbol),
+                controlId: child1.id,
                 debugPath: expect.any(String),
                 changes: new Map<string, unknown>([
                   ['selfDisabled', true],
@@ -1089,7 +1150,7 @@ export default function runAbstractControlContainerBaseTestSuite<
             },
           });
 
-          expect(event2).toEqual(undefined);
+          expect(event4).toEqual(undefined);
         });
 
         it('on disabled child', async () => {
@@ -1113,13 +1174,33 @@ export default function runAbstractControlContainerBaseTestSuite<
 
           testAllDefaultsExcept(b, 'parent');
 
-          const [event1, event2] = await promise1;
+          const [event1, event2, event3, event4] = await promise1;
 
-          expect(event1).toEqual<IControlStateChangeEvent>({
+          expect(event1).toEqual<IControlValidationEvent<unknown>>({
+            type: 'ValidationStart',
+            source: child1.id,
+            controlId: b.id,
+            debugPath: expect.any(String),
+            meta: {},
+            rawValue: expect.any(Object),
+            value: expect.any(Object),
+          });
+
+          expect(event2).toEqual<IControlValidationEvent<unknown>>({
+            type: 'AsyncValidationStart',
+            source: child1.id,
+            controlId: b.id,
+            debugPath: expect.any(String),
+            meta: {},
+            rawValue: expect.any(Object),
+            value: expect.any(Object),
+          });
+
+          expect(event3).toEqual<IControlStateChangeEvent>({
             type: 'StateChange',
             source: child1.id,
             meta: {},
-            controlId: expect.any(Symbol),
+            controlId: b.id,
             debugPath: expect.any(String),
             changes: new Map<string, unknown>([
               ['value', expect.any(Object)],
@@ -1136,7 +1217,7 @@ export default function runAbstractControlContainerBaseTestSuite<
                 type: 'StateChange',
                 source: child1.id,
                 meta: {},
-                controlId: expect.any(Symbol),
+                controlId: child1.id,
                 debugPath: expect.any(String),
                 changes: new Map<string, unknown>([
                   ['selfDisabled', false],
@@ -1149,7 +1230,7 @@ export default function runAbstractControlContainerBaseTestSuite<
             },
           });
 
-          expect(event2).toEqual(undefined);
+          expect(event4).toEqual(undefined);
         });
       });
 
@@ -1344,7 +1425,7 @@ export default function runAbstractControlContainerBaseTestSuite<
                 'status'
               );
 
-              const [event1, event2, event3] = await promise1;
+              const [event1, event2, event3, event4, event5] = await promise1;
 
               expect(event1).toEqual<IControlStateChangeEvent>({
                 type: 'StateChange',
@@ -1386,7 +1467,27 @@ export default function runAbstractControlContainerBaseTestSuite<
                 },
               });
 
-              expect(event2).toEqual<IControlStateChangeEvent>({
+              expect(event2).toEqual<IControlValidationEvent<unknown>>({
+                type: 'ValidationStart',
+                source: child1.id,
+                controlId: b.id,
+                debugPath: expect.any(String),
+                meta: {},
+                rawValue: expect.any(Object),
+                value: expect.any(Object),
+              });
+
+              expect(event3).toEqual<IControlValidationEvent<unknown>>({
+                type: 'AsyncValidationStart',
+                source: child1.id,
+                controlId: b.id,
+                debugPath: expect.any(String),
+                meta: {},
+                rawValue: expect.any(Object),
+                value: expect.any(Object),
+              });
+
+              expect(event4).toEqual<IControlStateChangeEvent>({
                 type: 'StateChange',
                 source: child1.id,
                 meta: {},
@@ -1445,7 +1546,7 @@ export default function runAbstractControlContainerBaseTestSuite<
                 },
               });
 
-              expect(event3).toEqual(undefined);
+              expect(event5).toEqual(undefined);
             });
           });
         });
@@ -1750,13 +1851,13 @@ export default function runAbstractControlContainerBaseTestSuite<
               'status'
             );
 
-            const [event1, event2, event3] = await promise1;
+            const [event1, event2, event3, event4, event5] = await promise1;
 
             expect(event1).toEqual<IControlStateChangeEvent>({
               type: 'StateChange',
               source: child1.id,
               meta: {},
-              controlId: expect.any(Symbol),
+              controlId: b.id,
               debugPath: expect.any(String),
               changes: new Map([
                 [CHILD_PROP_NAME, true],
@@ -1767,7 +1868,7 @@ export default function runAbstractControlContainerBaseTestSuite<
                   type: 'StateChange',
                   source: child1.id,
                   meta: {},
-                  controlId: expect.any(Symbol),
+                  controlId: child1.id,
                   debugPath: expect.any(String),
                   changes: new Map([
                     [SELF_PROP_NAME, true],
@@ -1777,11 +1878,31 @@ export default function runAbstractControlContainerBaseTestSuite<
               },
             });
 
-            expect(event2).toEqual<IControlStateChangeEvent>({
+            expect(event2).toEqual<IControlValidationEvent<unknown>>({
+              type: 'ValidationStart',
+              source: child1.id,
+              controlId: b.id,
+              debugPath: expect.any(String),
+              meta: {},
+              rawValue: expect.any(Object),
+              value: expect.any(Object),
+            });
+
+            expect(event3).toEqual<IControlValidationEvent<unknown>>({
+              type: 'AsyncValidationStart',
+              source: child1.id,
+              controlId: b.id,
+              debugPath: expect.any(String),
+              meta: {},
+              rawValue: expect.any(Object),
+              value: expect.any(Object),
+            });
+
+            expect(event4).toEqual<IControlStateChangeEvent>({
               type: 'StateChange',
               source: child1.id,
               meta: {},
-              controlId: expect.any(Symbol),
+              controlId: b.id,
               debugPath: expect.any(String),
               changes: new Map<string, unknown>([
                 ['value', expect.any(Object)],
@@ -1795,7 +1916,7 @@ export default function runAbstractControlContainerBaseTestSuite<
                   type: 'StateChange',
                   source: child1.id,
                   meta: {},
-                  controlId: expect.any(Symbol),
+                  controlId: child1.id,
                   debugPath: expect.any(String),
                   changes: new Map<string, unknown>([
                     ['selfDisabled', true],
@@ -1808,7 +1929,7 @@ export default function runAbstractControlContainerBaseTestSuite<
               },
             });
 
-            expect(event3).toEqual(undefined);
+            expect(event5).toEqual(undefined);
           });
         });
       });
@@ -1952,13 +2073,13 @@ export default function runAbstractControlContainerBaseTestSuite<
               'status'
             );
 
-            const [event1, event2, event3] = await promise1;
+            const [event1, event2, event3, event4, event5] = await promise1;
 
             expect(event1).toEqual<IControlStateChangeEvent>({
               type: 'StateChange',
               source: child1.id,
               meta: {},
-              controlId: expect.any(Symbol),
+              controlId: b.id,
               debugPath: expect.any(String),
               changes: new Map([[CHILD_PROP_NAME, true]]),
               childEvents: {
@@ -1966,7 +2087,7 @@ export default function runAbstractControlContainerBaseTestSuite<
                   type: 'StateChange',
                   source: child1.id,
                   meta: {},
-                  controlId: expect.any(Symbol),
+                  controlId: child1.id,
                   debugPath: expect.any(String),
                   changes: new Map([
                     [SELF_PROP_NAME, true],
@@ -1976,11 +2097,31 @@ export default function runAbstractControlContainerBaseTestSuite<
               },
             });
 
-            expect(event2).toEqual<IControlStateChangeEvent>({
+            expect(event2).toEqual<IControlValidationEvent<unknown>>({
+              type: 'ValidationStart',
+              source: child1.id,
+              controlId: b.id,
+              debugPath: expect.any(String),
+              meta: {},
+              rawValue: expect.any(Object),
+              value: expect.any(Object),
+            });
+
+            expect(event3).toEqual<IControlValidationEvent<unknown>>({
+              type: 'AsyncValidationStart',
+              source: child1.id,
+              controlId: b.id,
+              debugPath: expect.any(String),
+              meta: {},
+              rawValue: expect.any(Object),
+              value: expect.any(Object),
+            });
+
+            expect(event4).toEqual<IControlStateChangeEvent>({
               type: 'StateChange',
               source: child1.id,
               meta: {},
-              controlId: expect.any(Symbol),
+              controlId: b.id,
               debugPath: expect.any(String),
               changes: new Map<string, unknown>([
                 ['value', expect.any(Object)],
@@ -1993,7 +2134,7 @@ export default function runAbstractControlContainerBaseTestSuite<
                   type: 'StateChange',
                   source: child1.id,
                   meta: {},
-                  controlId: expect.any(Symbol),
+                  controlId: child1.id,
                   debugPath: expect.any(String),
                   changes: new Map<string, unknown>([
                     ['selfDisabled', true],
@@ -2006,7 +2147,7 @@ export default function runAbstractControlContainerBaseTestSuite<
               },
             });
 
-            expect(event3).toEqual(undefined);
+            expect(event5).toEqual(undefined);
           });
         });
       });

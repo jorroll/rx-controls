@@ -704,7 +704,10 @@ export abstract class AbstractControlContainerBase<
     options?: IControlEventOptions
   ): IProcessedEvent<T> {
     if (isChildStateChangeEvent(event)) {
-      return this._processEvent_ExternalChildStateChange(event, options);
+      return (this._processEvent_ExternalChildStateChange(
+        event,
+        options
+      ) as unknown) as IProcessedEvent<T>;
     }
 
     return super.processEvent(event, options);
@@ -859,14 +862,15 @@ export abstract class AbstractControlContainerBase<
     return changedProps;
   }
 
-  protected _processEvent_ExternalChildStateChange<
-    T extends IControlStateChangeEvent
-  >(event: T, options?: IControlEventOptions): IProcessedEvent<T> {
+  protected _processEvent_ExternalChildStateChange(
+    event: IControlStateChangeEvent,
+    options?: IControlEventOptions
+  ): IProcessedEvent<IControlStateChangeEvent> {
     const normOptions = this._normalizeOptions(
       '_processEvent_ExternalChildStateChange',
       {
         ...event,
-        options,
+        ...options,
       }
     );
 
@@ -912,7 +916,7 @@ export abstract class AbstractControlContainerBase<
 
     if (changedProps.length === 0) return { status: 'PROCESSED' };
 
-    const processedEvent: IProcessedEvent<T> = {
+    const processedEvent: IProcessedEvent<IControlStateChangeEvent> = {
       status: 'PROCESSED',
       result: {
         ...event,
@@ -926,6 +930,10 @@ export abstract class AbstractControlContainerBase<
     };
 
     if (processedEvent.result && !normOptions[AbstractControl.NO_EVENT]) {
+      if (processedEvent.result.changes.has('value')) {
+        this._emitValidationEvents(normOptions);
+      }
+
       this._emitEvent(processedEvent.result, normOptions);
     }
 
@@ -987,7 +995,7 @@ export abstract class AbstractControlContainerBase<
       changedProps.push(...this._calculateChildrenErrors());
     }
 
-    if (changedProps.includes('rawValue')) {
+    if (changedProps.includes('value')) {
       changedProps.push(...this._validate(options));
     }
 
@@ -1393,12 +1401,12 @@ function isFocusEvent<T extends IControlEvent>(
   return event.type === 'Focus';
 }
 
-function isChildStateChangeEvent<T extends IControlEvent>(
-  event: T
-): event is T & IControlStateChangeEvent {
+function isChildStateChangeEvent(
+  event: IControlEvent
+): event is IControlStateChangeEvent {
   return (
     event.type === 'StateChange' &&
-    !!(event as T & IControlStateChangeEvent).childEvents
+    !!(event as IControlStateChangeEvent).childEvents
   );
 }
 

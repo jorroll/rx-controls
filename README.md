@@ -23,6 +23,3 @@
      two have different semantic meanings.
 
 ## TODO
-
-1. Still need to fix `runValidation` so that validation events for partial changes are bundled together and emit once. At the moment, validation is ignored entirely for partial events.
-2. Improve debugging. Also, at the moment, I think `IControlEvent#source` and `IControlEvent#trigger.source` are identical.
