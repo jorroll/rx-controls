@@ -37,8 +37,6 @@ import {
   pluckOptions,
 } from '../util';
 
-import { isEqual } from '../../util';
-
 export type DeepPartial<T> = {
   [P in keyof T]?: T[P] extends object ? DeepPartial<T[P]> : T[P];
 };
@@ -373,7 +371,7 @@ export abstract class AbstractControlContainerBase<
     rawValue: ControlsRawValue<Controls>,
     options?: IControlEventOptions
   ): Array<keyof this & string> {
-    if (isEqual(this._rawValue, rawValue)) return [];
+    if (AbstractControl._isEqual(this._rawValue, rawValue)) return [];
 
     const entries = Object.entries(rawValue);
 
@@ -1287,17 +1285,17 @@ export abstract class AbstractControlContainerBase<
 
     // changedProps.push(...updateInvalidProp(this));
 
-    if (!isEqual(this._childrenErrors, prevChildrenErrors)) {
+    if (!AbstractControl._isEqual(this._childrenErrors, prevChildrenErrors)) {
       changedProps.push('childrenErrors');
     }
 
-    if (!isEqual(this._errors, prevCombinedErrors)) {
+    if (!AbstractControl._isEqual(this._errors, prevCombinedErrors)) {
       changedProps.push('errors');
 
       const oldStatus = this.status;
       this._status = this._getControlStatus();
 
-      if (!isEqual(oldStatus, this._status)) {
+      if (!AbstractControl._isEqual(oldStatus, this._status)) {
         changedProps.push('status');
       }
     }

@@ -16,7 +16,6 @@ import {
   ControlsKey,
 } from './abstract-control-container/abstract-control-container';
 import { getSimpleStateChangeEventArgs, Mutable } from './util';
-import { isEqual } from '../util';
 
 export type IFormGroupArgs<
   Data = any,
@@ -71,7 +70,7 @@ export class FormGroup<
             >
           );
 
-    if (isEqual(this._controlsStore, controlsStore)) return [];
+    if (AbstractControl._isEqual(this._controlsStore, controlsStore)) return [];
 
     const normOptions = this._normalizeOptions('setControls', options);
     const controls = (Object.fromEntries(controlsStore) as unknown) as Controls;
@@ -83,7 +82,7 @@ export class FormGroup<
       if (
         controlsStore.get(key) === control ||
         (normOptions[AbstractControl.NO_EVENT] &&
-          isEqual(controlsStore.get(key), control))
+          AbstractControl._isEqual(controlsStore.get(key), control))
       ) {
         continue;
       }
@@ -100,7 +99,7 @@ export class FormGroup<
       if (
         this._controlsStore.get(key) === control ||
         (normOptions[AbstractControl.NO_EVENT] &&
-          isEqual(this._controlsStore.get(key), control))
+          AbstractControl._isEqual(this._controlsStore.get(key), control))
       ) {
         continue;
       }
@@ -125,12 +124,12 @@ export class FormGroup<
       'controlsStore',
     ];
 
-    if (!isEqual(newRawValue, this._rawValue)) {
+    if (!AbstractControl._isEqual(newRawValue, this._rawValue)) {
       this._rawValue = newRawValue as this['rawValue'];
       changedProps.push('rawValue');
     }
 
-    if (!isEqual(newValue, this._value)) {
+    if (!AbstractControl._isEqual(newValue, this._value)) {
       this._value = newValue as this['value'];
       changedProps.push('value');
     }

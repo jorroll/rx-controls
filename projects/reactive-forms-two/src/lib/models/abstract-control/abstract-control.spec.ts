@@ -1,15 +1,15 @@
 import { AbstractControl } from './abstract-control';
 
 describe('AbstractControl', () => {
-  it('eventId', () => {
-    expect(AbstractControl.eventId()).toBe(1);
-    expect(AbstractControl.eventId()).toBe(2);
-    expect(AbstractControl.eventId()).toBe(3);
+  // it('eventId', () => {
+  //   expect(AbstractControl.eventId()).toBe(1);
+  //   expect(AbstractControl.eventId()).toBe(2);
+  //   expect(AbstractControl.eventId()).toBe(3);
 
-    expect(AbstractControl.eventId(1)).toBe(1);
-    expect(AbstractControl.eventId()).toBe(2);
-    expect(AbstractControl.eventId(2)).toBe(2);
-  });
+  //   expect(AbstractControl.eventId(1)).toBe(1);
+  //   expect(AbstractControl.eventId()).toBe(2);
+  //   expect(AbstractControl.eventId(2)).toBe(2);
+  // });
 
   it('isAbstractControl', () => {
     expect(AbstractControl.isControl(0)).toBe(false);

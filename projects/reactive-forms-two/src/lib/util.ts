@@ -1,6 +1,6 @@
 // import * as _isEqual from 'fast-deep-equal/es6';
 
-export { isEqual } from './models/abstract-control/abstract-control';
+// export { isEqual } from './models/abstract-control/abstract-control';
 
 // // export const isEqual: {
 // //   <T>(a: T, b: T): boolean;

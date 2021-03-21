@@ -13,7 +13,6 @@ import {
   ControlsKey,
 } from './abstract-control-container/abstract-control-container';
 import { getSimpleStateChangeEventArgs } from './util';
-import { isEqual } from '../util';
 
 export type IFormArrayArgs<
   Data = any,
@@ -99,7 +98,7 @@ export class FormArray<
             )
           );
 
-    if (isEqual(this._controlsStore, controlsStore)) return [];
+    if (AbstractControl._isEqual(this._controlsStore, controlsStore)) return [];
 
     const normOptions = this._normalizeOptions('setControls', options);
 
@@ -144,12 +143,12 @@ export class FormArray<
       'controlsStore',
     ];
 
-    if (!isEqual(newRawValue, this._rawValue)) {
+    if (!AbstractControl._isEqual(newRawValue, this._rawValue)) {
       this._rawValue = newRawValue as this['rawValue'];
       changedProps.push('rawValue');
     }
 
-    if (!isEqual(newValue, this._value)) {
+    if (!AbstractControl._isEqual(newValue, this._value)) {
       this._value = newValue as this['value'];
       changedProps.push('value');
     }

@@ -26,7 +26,7 @@ export default function runAbstractControlBaseTestSuite(
     let a: AbstractControlBase<any, any, any>;
 
     beforeEach(() => {
-      AbstractControl.eventId(0);
+      // AbstractControl.eventId(0);
     });
 
     describe('initialization', () => {

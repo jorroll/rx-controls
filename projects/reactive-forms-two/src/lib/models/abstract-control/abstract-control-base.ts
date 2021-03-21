@@ -11,7 +11,7 @@ import {
   IProcessedEvent,
 } from './abstract-control';
 import { Observable, of, queueScheduler, Subject } from 'rxjs';
-import { pluckOptions, getSimpleStateChangeEventArgs } from '../util';
+import { getSimpleStateChangeEventArgs } from '../util';
 import {
   map,
   filter,
@@ -21,7 +21,6 @@ import {
   shareReplay,
   observeOn,
 } from 'rxjs/operators';
-import { isEqual } from '../../util';
 
 export const CONTROL_SELF_ID = '__CONTROL_SELF_ID';
 
@@ -658,7 +657,7 @@ export abstract class AbstractControlBase<RawValue, Data, Value>
     rawValue: RawValue,
     options?: IControlEventOptions
   ): Array<keyof this & string> {
-    if (isEqual(this._rawValue, rawValue)) return [];
+    if (AbstractControl._isEqual(this._rawValue, rawValue)) return [];
 
     const normOptions = this._normalizeOptions('setValue', options);
 
@@ -696,7 +695,7 @@ export abstract class AbstractControlBase<RawValue, Data, Value>
       newValue = new Map(this._errorsStore).set(source, value);
     }
 
-    if (isEqual(this._errorsStore, newValue)) return [];
+    if (AbstractControl._isEqual(this._errorsStore, newValue)) return [];
 
     this._errorsStore = newValue;
 
@@ -766,7 +765,7 @@ export abstract class AbstractControlBase<RawValue, Data, Value>
       }
     }
 
-    if (isEqual(this._errorsStore, newValue)) return [];
+    if (AbstractControl._isEqual(this._errorsStore, newValue)) return [];
 
     this._errorsStore = newValue;
 
@@ -789,14 +788,14 @@ export abstract class AbstractControlBase<RawValue, Data, Value>
     value: boolean,
     options?: IControlEventOptions
   ): Array<keyof this & string> {
-    if (isEqual(this._selfTouched, value)) return [];
+    if (AbstractControl._isEqual(this._selfTouched, value)) return [];
 
     const oldTouched = this.touched;
     const changedProps: Array<keyof this & string> = ['selfTouched'];
 
     this._selfTouched = value;
 
-    if (!isEqual(oldTouched, this.touched)) {
+    if (!AbstractControl._isEqual(oldTouched, this.touched)) {
       changedProps.push('touched');
     }
 
@@ -814,14 +813,14 @@ export abstract class AbstractControlBase<RawValue, Data, Value>
     value: boolean,
     options?: IControlEventOptions
   ): Array<keyof this & string> {
-    if (isEqual(this._selfDirty, value)) return [];
+    if (AbstractControl._isEqual(this._selfDirty, value)) return [];
 
     const oldDirty = this.dirty;
     const changedProps: Array<keyof this & string> = ['selfDirty'];
 
     this._selfDirty = value;
 
-    if (!isEqual(oldDirty, this.dirty)) {
+    if (!AbstractControl._isEqual(oldDirty, this.dirty)) {
       changedProps.push('dirty');
     }
 
@@ -839,14 +838,14 @@ export abstract class AbstractControlBase<RawValue, Data, Value>
     value: boolean,
     options?: IControlEventOptions
   ): Array<keyof this & string> {
-    if (isEqual(this._selfReadonly, value)) return [];
+    if (AbstractControl._isEqual(this._selfReadonly, value)) return [];
 
     const oldReadonly = this.readonly;
     const changedProps: Array<keyof this & string> = ['selfReadonly'];
 
     this._selfReadonly = value;
 
-    if (!isEqual(oldReadonly, this.readonly)) {
+    if (!AbstractControl._isEqual(oldReadonly, this.readonly)) {
       changedProps.push('readonly');
     }
 
@@ -864,7 +863,7 @@ export abstract class AbstractControlBase<RawValue, Data, Value>
     value: boolean,
     options?: IControlEventOptions
   ): Array<keyof this & string> {
-    if (isEqual(this._selfDisabled, value)) return [];
+    if (AbstractControl._isEqual(this._selfDisabled, value)) return [];
 
     const oldDisabled = this.disabled;
     const oldStatus = this.status;
@@ -875,13 +874,13 @@ export abstract class AbstractControlBase<RawValue, Data, Value>
 
     this._selfDisabled = value;
 
-    if (!isEqual(oldDisabled, this.disabled)) {
+    if (!AbstractControl._isEqual(oldDisabled, this.disabled)) {
       changedProps.push('disabled', 'enabled');
     }
 
     this._status = this._getControlStatus();
 
-    if (!isEqual(oldStatus, this.status)) {
+    if (!AbstractControl._isEqual(oldStatus, this.status)) {
       changedProps.push('status');
     }
 
@@ -899,14 +898,14 @@ export abstract class AbstractControlBase<RawValue, Data, Value>
     value: boolean,
     options?: IControlEventOptions
   ): Array<keyof this & string> {
-    if (isEqual(this._selfSubmitted, value)) return [];
+    if (AbstractControl._isEqual(this._selfSubmitted, value)) return [];
 
     const oldSubmitted = this.submitted;
     const changedProps: Array<keyof this & string> = ['selfSubmitted'];
 
     this._selfSubmitted = value;
 
-    if (!isEqual(oldSubmitted, this.submitted)) {
+    if (!AbstractControl._isEqual(oldSubmitted, this.submitted)) {
       changedProps.push('submitted');
     }
 
@@ -937,7 +936,7 @@ export abstract class AbstractControlBase<RawValue, Data, Value>
       newValue.delete(source);
     }
 
-    if (isEqual(this._pendingStore, newValue)) return [];
+    if (AbstractControl._isEqual(this._pendingStore, newValue)) return [];
 
     const oldPending = this.pending;
     const oldSelfPending = this._selfPending;
@@ -948,15 +947,15 @@ export abstract class AbstractControlBase<RawValue, Data, Value>
     this._selfPending = newValue.size > 0;
     this._status = this._getControlStatus();
 
-    if (!isEqual(oldSelfPending, this._selfPending)) {
+    if (!AbstractControl._isEqual(oldSelfPending, this._selfPending)) {
       changedProps.push('selfPending');
     }
 
-    if (!isEqual(oldPending, this.pending)) {
+    if (!AbstractControl._isEqual(oldPending, this.pending)) {
       changedProps.push('pending');
     }
 
-    if (!isEqual(oldStatus, this._status)) {
+    if (!AbstractControl._isEqual(oldStatus, this._status)) {
       changedProps.push('status');
     }
 
@@ -998,7 +997,7 @@ export abstract class AbstractControlBase<RawValue, Data, Value>
       }
     }
 
-    if (isEqual(this._validatorStore, newValue)) return [];
+    if (AbstractControl._isEqual(this._validatorStore, newValue)) return [];
 
     this._validatorStore = newValue;
     const oldErrorsStore = this._errorsStore;
@@ -1038,7 +1037,7 @@ export abstract class AbstractControlBase<RawValue, Data, Value>
       this._errorsStore = errorsStore;
     }
 
-    if (!isEqual(this._errorsStore, oldErrorsStore)) {
+    if (!AbstractControl._isEqual(this._errorsStore, oldErrorsStore)) {
       changedProps.push('errorsStore');
       changedProps.push(...this._calculateErrors());
     }
@@ -1177,7 +1176,7 @@ export abstract class AbstractControlBase<RawValue, Data, Value>
         this._errorsStore = errorsStore;
       }
 
-      if (!isEqual(oldErrorsStore, this._errorsStore)) {
+      if (!AbstractControl._isEqual(oldErrorsStore, this._errorsStore)) {
         changedProps.push('errorsStore');
         changedProps.push(...this._calculateErrors());
       }

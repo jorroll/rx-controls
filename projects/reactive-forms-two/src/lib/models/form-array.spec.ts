@@ -61,7 +61,7 @@ function testAllDefaultsExcept(
 
 describe('FormArray', () => {
   beforeEach(() => {
-    AbstractControl.eventId(0);
+    // AbstractControl.eventId(0);
   });
 
   describe('initialization', () => {

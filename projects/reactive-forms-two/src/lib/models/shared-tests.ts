@@ -26,7 +26,7 @@ export default function runSharedTestSuite(
     let a: AbstractControlBase<any, any, any>;
 
     beforeEach(() => {
-      AbstractControl.eventId(0);
+      // AbstractControl.eventId(0);
       a = createControlBase();
     });
 
@@ -1039,7 +1039,7 @@ export default function runSharedTestSuite(
     let a: AbstractControlBase<unknown, unknown, unknown>;
 
     beforeEach(() => {
-      AbstractControl.eventId(0);
+      // AbstractControl.eventId(0);
       a = createControlBase();
     });
 

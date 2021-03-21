@@ -1,6 +1,5 @@
 import { Subject } from 'rxjs';
 import { filter, skip, take, takeUntil, toArray } from 'rxjs/operators';
-import { isEqual } from '../util';
 import {
   AbstractControl,
   ControlId,
@@ -46,7 +45,7 @@ function testAllDefaultsExcept(
 
 describe('FormControl', () => {
   beforeEach(() => {
-    AbstractControl.eventId(0);
+    // AbstractControl.eventId(0);
   });
 
   describe('initialization', () => {
@@ -753,7 +752,7 @@ describe('FormControl', () => {
     });
 
     it('can be subscribed to multiple times', () => {
-      AbstractControl.eventId(0);
+      // AbstractControl.eventId(0);
 
       const state = a.replayState();
 

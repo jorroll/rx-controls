@@ -33,8 +33,9 @@ export interface IEventTrigger {
 
 export interface IControlEvent {
   readonly trigger: IEventTrigger;
-  // controlId: ControlId;
+  // readonly path: string;
   readonly source: ControlId;
+  // readonly controlId: ControlId;
   readonly type: string;
   readonly meta: { [key: string]: unknown };
   readonly noObserve?: boolean;
@@ -94,16 +95,16 @@ export interface IProcessedEvent<T extends IControlEvent = IControlEvent> {
 export namespace AbstractControl {
   export const INTERFACE = Symbol('@@AbstractControlInterface');
 
-  let _eventId = 0;
-  export function eventId(
-    /**
-     * A passed value will reset the "current" eventId number.
-     * Only intended for use in tests.
-     */
-    reset?: number
-  ) {
-    return (_eventId = reset ?? _eventId + 1);
-  }
+  // let _eventId = 0;
+  // export function eventId(
+  //   /**
+  //    * A passed value will reset the "current" eventId number.
+  //    * Only intended for use in tests.
+  //    */
+  //   reset?: number
+  // ) {
+  //   return (_eventId = reset ?? _eventId + 1);
+  // }
 
   export function isControl(object?: unknown): object is AbstractControl {
     return (
@@ -121,8 +122,6 @@ export namespace AbstractControl {
   export let debugCallback:
     | undefined
     | ((this: AbstractControl, event: IControlEvent) => void);
-
-  export let throwInfiniteLoopErrorAfterEventCount = 500;
 
   export const NO_EVENT = Symbol('NO_EVENT');
 
@@ -159,6 +158,104 @@ export namespace AbstractControl {
     'selfErrors',
     'errorsStore',
   ] as const;
+
+  /**
+   * **INTERNAL USE ONLY**
+   *
+   * Contains the names of AbstractControl props which are
+   * ignored by the `_isEqual` function when comparing two
+   * AbstractControls.
+   */
+  // tslint:disable-next-line: variable-name
+  export let _isEqual_AbstractControlPropExclusions = [
+    'events',
+    '_source',
+    'id',
+    '_parent',
+    '_validator',
+  ];
+
+  /**
+   * **INTERNAL USE ONLY**
+   *
+   * This `isEqual` implementation returns `true` if two objects are deeply equal.
+   * You should not rely upon this implementation in your own applications or
+   * libraries. In the future, this function may be removed or it's implementation
+   * changed.
+   */
+  // this `isEqual` implementation is adapted from the `fast-deep-equal` library
+  export function _isEqual<T>(a: T, b: T): boolean;
+  export function _isEqual(a: unknown, b: unknown): boolean;
+  export function _isEqual(a: any, b: any) {
+    if (a === b) return true;
+
+    if (a && b && typeof a == 'object' && typeof b == 'object') {
+      if (a.constructor !== b.constructor) return false;
+
+      let length, i, keys;
+      if (Array.isArray(a)) {
+        length = a.length;
+        if (length != b.length) return false;
+        for (i = length; i-- !== 0; ) if (!_isEqual(a[i], b[i])) return false;
+        return true;
+      }
+
+      if (a instanceof Map && b instanceof Map) {
+        if (a.size !== b.size) return false;
+        for (i of a.entries()) if (!b.has(i[0])) return false;
+        for (i of a.entries()) if (!_isEqual(i[1], b.get(i[0]))) return false;
+        return true;
+      }
+
+      if (a instanceof Set && b instanceof Set) {
+        if (a.size !== b.size) return false;
+        for (i of a.entries()) if (!b.has(i[0])) return false;
+        return true;
+      }
+
+      if (ArrayBuffer.isView(a) && ArrayBuffer.isView(b)) {
+        length = (a as any).length;
+        if (length != (b as any).length) return false;
+        for (i = length; i-- !== 0; )
+          if ((a as any)[i] !== (b as any)[i]) return false;
+        return true;
+      }
+
+      if (a.constructor === RegExp)
+        return a.source === b.source && a.flags === b.flags;
+      if (a.valueOf !== Object.prototype.valueOf)
+        return a.valueOf() === b.valueOf();
+      if (a.toString !== Object.prototype.toString)
+        return a.toString() === b.toString();
+
+      keys = Object.keys(a);
+      length = keys.length;
+      if (length !== Object.keys(b).length) return false;
+
+      for (i = length; i-- !== 0; )
+        if (!Object.prototype.hasOwnProperty.call(b, keys[i])) return false;
+
+      const isControl = AbstractControl.isControl(a);
+
+      for (i = length; i-- !== 0; ) {
+        var key = keys[i];
+
+        if (
+          !(
+            isControl && _isEqual_AbstractControlPropExclusions.includes(key)
+          ) &&
+          !_isEqual(a[key], b[key])
+        ) {
+          return false;
+        }
+      }
+
+      return true;
+    }
+
+    // true if both NaN, false otherwise
+    return a !== a && b !== b;
+  }
 }
 
 export interface AbstractControl<RawValue = any, Data = any, Value = RawValue> {
@@ -727,83 +824,4 @@ export interface AbstractControl<RawValue = any, Data = any, Value = RawValue> {
   //     },
   //   options?: IControlEventOptions
   // ): void;
-}
-
-// this `isEqual` implementation is adapted from the `fast-deep-equal` library
-export function isEqual<T>(a: T, b: T): boolean;
-export function isEqual(a: unknown, b: unknown): boolean;
-export function isEqual(a: any, b: any) {
-  if (a === b) return true;
-
-  if (a && b && typeof a == 'object' && typeof b == 'object') {
-    if (a.constructor !== b.constructor) return false;
-
-    let length, i, keys;
-    if (Array.isArray(a)) {
-      length = a.length;
-      if (length != b.length) return false;
-      for (i = length; i-- !== 0; ) if (!isEqual(a[i], b[i])) return false;
-      return true;
-    }
-
-    if (a instanceof Map && b instanceof Map) {
-      if (a.size !== b.size) return false;
-      for (i of a.entries()) if (!b.has(i[0])) return false;
-      for (i of a.entries()) if (!isEqual(i[1], b.get(i[0]))) return false;
-      return true;
-    }
-
-    if (a instanceof Set && b instanceof Set) {
-      if (a.size !== b.size) return false;
-      for (i of a.entries()) if (!b.has(i[0])) return false;
-      return true;
-    }
-
-    if (ArrayBuffer.isView(a) && ArrayBuffer.isView(b)) {
-      length = (a as any).length;
-      if (length != (b as any).length) return false;
-      for (i = length; i-- !== 0; )
-        if ((a as any)[i] !== (b as any)[i]) return false;
-      return true;
-    }
-
-    if (a.constructor === RegExp)
-      return a.source === b.source && a.flags === b.flags;
-    if (a.valueOf !== Object.prototype.valueOf)
-      return a.valueOf() === b.valueOf();
-    if (a.toString !== Object.prototype.toString)
-      return a.toString() === b.toString();
-
-    keys = Object.keys(a);
-    length = keys.length;
-    if (length !== Object.keys(b).length) return false;
-
-    for (i = length; i-- !== 0; )
-      if (!Object.prototype.hasOwnProperty.call(b, keys[i])) return false;
-
-    const isControl = AbstractControl.isControl(a);
-    const omit = isControl && [
-      'events',
-      '_source',
-      'id',
-      '_parent',
-      '_validator',
-    ];
-
-    for (i = length; i-- !== 0; ) {
-      var key = keys[i];
-
-      if (
-        !(isControl && (omit as string[]).includes(key)) &&
-        !isEqual(a[key], b[key])
-      ) {
-        return false;
-      }
-    }
-
-    return true;
-  }
-
-  // true if both NaN, false otherwise
-  return a !== a && b !== b;
 }
