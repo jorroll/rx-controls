@@ -41,8 +41,6 @@ export class FormArrayNameDirective<T extends FormArray = FormArray>
   extends ControlNameDirective<T>
   implements ControlContainerAccessor<T>, OnChanges, OnDestroy {
   @Input('swFormArrayName') controlName!: string;
-  // @Input('swFormArrayValueMapper')
-  // valueMapper: IControlValueMapper | undefined;
 
   readonly control: T;
 
@@ -74,11 +72,6 @@ export class FormArrayNameDirective<T extends FormArray = FormArray>
         `SwFormArrayNameDirective must be passed a ngFormArrayName`
       );
     }
-
-    // this.assertValidValueMapper(
-    //   'SwFormArrayNameDirective#ngFormControlValueMapper',
-    //   this.valueMapper
-    // );
 
     super.ngOnChanges(_);
   }

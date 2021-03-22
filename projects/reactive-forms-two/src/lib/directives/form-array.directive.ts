@@ -39,8 +39,6 @@ export class FormArrayDirective<T extends AbstractControlContainer = FormArray>
   extends ControlDirective<T>
   implements ControlContainerAccessor<T>, OnChanges {
   @Input('swFormArray') providedControl!: T;
-  // @Input('swFormArrayValueMapper')
-  // valueMapper: IControlValueMapper | undefined;
 
   readonly control: T;
 
@@ -66,11 +64,6 @@ export class FormArrayDirective<T extends AbstractControlContainer = FormArray>
     if (!this.providedControl) {
       throw new Error(`SwFormArrayDirective must be passed a swFormArray`);
     }
-
-    // this.assertValidValueMapper(
-    //   'SwFormArrayDirective#swFormArrayValueMapper',
-    //   this.valueMapper
-    // );
 
     super.ngOnChanges(_);
   }

@@ -40,8 +40,6 @@ export class FormGroupDirective<T extends AbstractControlContainer = FormGroup>
   extends ControlDirective<T>
   implements ControlContainerAccessor<T>, OnChanges {
   @Input('swFormGroup') providedControl!: T;
-  // @Input('swFormGroupValueMapper')
-  // valueMapper: IControlValueMapper | undefined;
 
   readonly control: T;
 
@@ -67,11 +65,6 @@ export class FormGroupDirective<T extends AbstractControlContainer = FormGroup>
     if (!this.providedControl) {
       throw new Error(`SwFormGroupDirective must be passed a swFormGroup`);
     }
-
-    // this.assertValidValueMapper(
-    //   'SwFormGroupDirective#swFormGroupValueMapper',
-    //   this.valueMapper
-    // );
 
     super.ngOnChanges(_);
   }

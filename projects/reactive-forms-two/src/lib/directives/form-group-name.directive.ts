@@ -41,8 +41,6 @@ export class FormGroupNameDirective<T extends FormGroup = FormGroup>
   extends ControlNameDirective<T>
   implements ControlContainerAccessor<T>, OnChanges, OnDestroy {
   @Input('swFormGroupName') controlName!: string;
-  // @Input('swFormGroupValueMapper')
-  // valueMapper: IControlValueMapper | undefined;
 
   readonly control: T;
 
@@ -74,11 +72,6 @@ export class FormGroupNameDirective<T extends FormGroup = FormGroup>
         `SwFormGroupNameDirective must be passed a swFormControlName`
       );
     }
-
-    // this.assertValidValueMapper(
-    //   'SwFormGroupNameDirective#swFormControlValueMapper',
-    //   this.valueMapper
-    // );
 
     super.ngOnChanges(_);
   }

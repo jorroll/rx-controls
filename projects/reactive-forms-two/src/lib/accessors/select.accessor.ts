@@ -10,7 +10,6 @@ import {
   Optional,
   Renderer2,
 } from '@angular/core';
-import { Subscription } from 'rxjs';
 import { FormControl } from '../models';
 import { BaseAccessor } from './base.accessor';
 import {

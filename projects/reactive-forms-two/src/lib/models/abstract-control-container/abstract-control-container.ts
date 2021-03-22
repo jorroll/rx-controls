@@ -111,27 +111,6 @@ export type ContainerControls<C> = C extends AbstractControlContainer<
   ? Controls
   : unknown;
 
-// export interface IControlContainerStateChange<
-//   Controls extends GenericControlsObject,
-//   D
-// > extends IControlStateChanges<ControlsRawValue<Controls>, D> {
-//   controlsStore?: IStateChange<
-//     ReadonlyMap<ControlsKey<Controls>, Controls[ControlsKey<Controls>]>
-//   >;
-// }
-
-// export interface IChildControlEvent extends IControlEvent {
-//   readonly childEvents: { [key: string]: IControlEvent };
-// }
-
-// export interface IChildControlStateChangeEvent
-//   extends IChildControlEvent,
-//     IControlStateChangeEvent {
-//   type: 'StateChange';
-//   subtype: 'Child';
-//   childEvents: { [key: string]: IControlStateChangeEvent };
-// }
-
 export namespace AbstractControlContainer {
   export const INTERFACE = Symbol('@@AbstractControlContainerInterface');
 
