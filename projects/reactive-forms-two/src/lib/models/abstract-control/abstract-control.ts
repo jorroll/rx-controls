@@ -155,6 +155,7 @@ export namespace AbstractControl {
     'errors',
     'selfErrors',
     'errorsStore',
+    'parent',
   ] as const;
 
   /**

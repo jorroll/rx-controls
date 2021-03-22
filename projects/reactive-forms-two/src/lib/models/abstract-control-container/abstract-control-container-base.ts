@@ -654,6 +654,9 @@ export abstract class AbstractControlContainerBase<
       ),
     };
 
+    // replayState does not include the parent prop
+    (event.changes as any).delete('parent');
+
     // when we aren't preserving the controls, then we want to return
     // a new controlsStore & child controls each time
     return options.preserveControls

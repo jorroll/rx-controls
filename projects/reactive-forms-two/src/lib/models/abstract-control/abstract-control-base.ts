@@ -1102,6 +1102,9 @@ export abstract class AbstractControlBase<RawValue, Data, Value>
       ),
     };
 
+    // replay state does not include the "parent" prop
+    (event.changes as any).delete('parent');
+
     return of(event);
   }
 
@@ -1275,6 +1278,20 @@ export abstract class AbstractControlBase<RawValue, Data, Value>
       ...options,
       [AbstractControl.NO_EVENT]: true,
     };
+
+    // const changes: Array<keyof this & string> = [];
+
+    // for (const prop of this.constructor.PUBLIC_PROPERTIES) {
+    //   if (!event.changes.has(prop)) continue;
+
+    //   changes.push(
+    //     ...this._processIndividualStateChange(
+    //       _options,
+    //       prop,
+    //       event.changes.get(prop)!
+    //     )
+    //   );
+    // }
 
     const changes: Array<keyof this & string> = Array.from(
       event.changes
