@@ -670,10 +670,7 @@ export default function runSharedTestSuite(
           meta: {},
           controlId: expect.any(Symbol),
           debugPath: expect.any(String),
-          changes: new Map([
-            ['selfTouched', true],
-            ['touched', true],
-          ]),
+          changes: { selfTouched: true, touched: true },
         });
       });
 
@@ -718,10 +715,7 @@ export default function runSharedTestSuite(
           meta: {},
           controlId: expect.any(Symbol),
           debugPath: expect.any(String),
-          changes: new Map([
-            ['selfDirty', true],
-            ['dirty', true],
-          ]),
+          changes: { selfDirty: true, dirty: true },
         });
       });
 
@@ -766,10 +760,7 @@ export default function runSharedTestSuite(
           meta: {},
           controlId: expect.any(Symbol),
           debugPath: expect.any(String),
-          changes: new Map([
-            ['selfReadonly', true],
-            ['readonly', true],
-          ]),
+          changes: { selfReadonly: true, readonly: true },
         });
       });
 
@@ -817,13 +808,13 @@ export default function runSharedTestSuite(
           meta: {},
           controlId: expect.any(Symbol),
           debugPath: expect.any(String),
-          changes: new Map<string, any>([
-            ['selfDisabled', true],
-            ['disabled', true],
-            ['selfEnabled', false],
-            ['enabled', false],
-            ['status', 'DISABLED'],
-          ]),
+          changes: {
+            selfDisabled: true,
+            disabled: true,
+            selfEnabled: false,
+            enabled: false,
+            status: 'DISABLED',
+          },
         });
       });
 
@@ -871,10 +862,10 @@ export default function runSharedTestSuite(
           meta: {},
           controlId: expect.any(Symbol),
           debugPath: expect.any(String),
-          changes: new Map<string, any>([
-            ['selfSubmitted', true],
-            ['submitted', true],
-          ]),
+          changes: {
+            selfSubmitted: true,
+            submitted: true,
+          },
         });
       });
 
@@ -922,12 +913,12 @@ export default function runSharedTestSuite(
             meta: {},
             controlId: expect.any(Symbol),
             debugPath: expect.any(String),
-            changes: new Map<string, any>([
-              ['pendingStore', new Set([CONTROL_SELF_ID])],
-              ['selfPending', true],
-              ['pending', true],
-              ['status', 'PENDING'],
-            ]),
+            changes: {
+              pendingStore: new Set([CONTROL_SELF_ID]),
+              selfPending: true,
+              pending: true,
+              status: 'PENDING',
+            },
           });
         });
 
@@ -978,12 +969,12 @@ export default function runSharedTestSuite(
             meta: {},
             controlId: expect.any(Symbol),
             debugPath: expect.any(String),
-            changes: new Map<string, any>([
-              ['selfPending', true],
-              ['pending', true],
-              ['pendingStore', pendingStore],
-              ['status', 'PENDING'],
-            ]),
+            changes: {
+              pendingStore: pendingStore,
+              selfPending: true,
+              pending: true,
+              status: 'PENDING',
+            },
           });
         });
       });
@@ -1010,7 +1001,7 @@ export default function runSharedTestSuite(
           meta: {},
           controlId: expect.any(Symbol),
           debugPath: expect.any(String),
-          changes: new Map([['parent', a]]),
+          changes: { parent: a },
         });
       });
     });
@@ -1038,7 +1029,7 @@ export default function runSharedTestSuite(
           meta: {},
           controlId: expect.any(Symbol),
           debugPath: expect.any(String),
-          changes: new Map([['data', data]]),
+          changes: { data },
         });
       });
     });
@@ -1089,16 +1080,16 @@ export default function runSharedTestSuite(
             meta: {},
             controlId: expect.any(Symbol),
             debugPath: expect.any(String),
-            changes: new Map<string, any>([
-              ['errorsStore', errorsStore],
-              ['selfErrors', error],
-              ['errors', error],
-              ['valid', false],
-              ['selfValid', false],
-              ['invalid', true],
-              ['selfInvalid', true],
-              ['status', 'INVALID'],
-            ]),
+            changes: {
+              errorsStore,
+              selfErrors: error,
+              errors: error,
+              valid: false,
+              selfValid: false,
+              invalid: true,
+              selfInvalid: true,
+              status: 'INVALID',
+            },
           });
         });
 
@@ -1156,11 +1147,11 @@ export default function runSharedTestSuite(
             meta: {},
             controlId: expect.any(Symbol),
             debugPath: expect.any(String),
-            changes: new Map<string, any>([
-              ['errorsStore', newErrorsStore],
-              ['selfErrors', errors],
-              ['errors', errors],
-            ]),
+            changes: {
+              errorsStore: newErrorsStore,
+              selfErrors: errors,
+              errors,
+            },
           });
         });
 
@@ -1215,11 +1206,11 @@ export default function runSharedTestSuite(
             meta: {},
             controlId: expect.any(Symbol),
             debugPath: expect.any(String),
-            changes: new Map<string, any>([
-              ['errorsStore', newErrorsStore],
-              ['selfErrors', newError],
-              ['errors', newError],
-            ]),
+            changes: {
+              errorsStore: newErrorsStore,
+              selfErrors: newError,
+              errors: newError,
+            },
           });
         });
 
@@ -1258,16 +1249,16 @@ export default function runSharedTestSuite(
             meta: {},
             controlId: expect.any(Symbol),
             debugPath: expect.any(String),
-            changes: new Map<string, any>([
-              ['errorsStore', new Map()],
-              ['selfErrors', null],
-              ['errors', null],
-              ['valid', true],
-              ['selfValid', true],
-              ['invalid', false],
-              ['selfInvalid', false],
-              ['status', 'VALID'],
-            ]),
+            changes: {
+              errorsStore: new Map(),
+              selfErrors: null,
+              errors: null,
+              valid: true,
+              selfValid: true,
+              invalid: false,
+              selfInvalid: false,
+              status: 'VALID',
+            },
           });
         });
       });
@@ -1309,16 +1300,16 @@ export default function runSharedTestSuite(
             meta: {},
             controlId: expect.any(Symbol),
             debugPath: expect.any(String),
-            changes: new Map<string, any>([
-              ['errorsStore', errorsStore],
-              ['selfErrors', errors],
-              ['errors', errors],
-              ['valid', false],
-              ['selfValid', false],
-              ['invalid', true],
-              ['selfInvalid', true],
-              ['status', 'INVALID'],
-            ]),
+            changes: {
+              errorsStore: errorsStore,
+              selfErrors: errors,
+              errors: errors,
+              valid: false,
+              selfValid: false,
+              invalid: true,
+              selfInvalid: true,
+              status: 'INVALID',
+            },
           });
         });
       });
@@ -1382,16 +1373,16 @@ export default function runSharedTestSuite(
             meta: {},
             controlId: expect.any(Symbol),
             debugPath: expect.any(String),
-            changes: new Map<string, any>([
-              ['errorsStore', new Map()],
-              ['selfErrors', null],
-              ['errors', null],
-              ['valid', true],
-              ['selfValid', true],
-              ['invalid', false],
-              ['selfInvalid', false],
-              ['status', 'VALID'],
-            ]),
+            changes: {
+              errorsStore: new Map(),
+              selfErrors: null,
+              errors: null,
+              valid: true,
+              selfValid: true,
+              invalid: false,
+              selfInvalid: false,
+              status: 'VALID',
+            },
           });
         });
 
@@ -1488,16 +1479,16 @@ export default function runSharedTestSuite(
             meta: {},
             controlId: expect.any(Symbol),
             debugPath: expect.any(String),
-            changes: new Map<string, any>([
-              ['errorsStore', new Map([[CONTROL_SELF_ID, error]])],
-              ['errors', error],
-              ['selfErrors', error],
-              ['valid', false],
-              ['selfValid', false],
-              ['invalid', true],
-              ['selfInvalid', true],
-              ['status', 'INVALID'],
-            ]),
+            changes: {
+              errorsStore: new Map([[CONTROL_SELF_ID, error]]),
+              errors: error,
+              selfErrors: error,
+              valid: false,
+              selfValid: false,
+              invalid: true,
+              selfInvalid: true,
+              status: 'INVALID',
+            },
           });
         });
 
@@ -1550,11 +1541,11 @@ export default function runSharedTestSuite(
             meta: {},
             controlId: expect.any(Symbol),
             debugPath: expect.any(String),
-            changes: new Map<string, any>([
-              ['errorsStore', preexistingErrorsStore],
-              ['selfErrors', errors],
-              ['errors', errors],
-            ]),
+            changes: {
+              errorsStore: preexistingErrorsStore,
+              selfErrors: errors,
+              errors: errors,
+            },
           });
         });
 
@@ -1592,16 +1583,16 @@ export default function runSharedTestSuite(
             meta: {},
             controlId: expect.any(Symbol),
             debugPath: expect.any(String),
-            changes: new Map<string, any>([
-              ['errorsStore', new Map()],
-              ['selfErrors', null],
-              ['errors', null],
-              ['valid', true],
-              ['selfValid', true],
-              ['invalid', false],
-              ['selfInvalid', false],
-              ['status', 'VALID'],
-            ]),
+            changes: {
+              errorsStore: new Map(),
+              selfErrors: null,
+              errors: null,
+              valid: true,
+              selfValid: true,
+              invalid: false,
+              selfInvalid: false,
+              status: 'VALID',
+            },
           });
         });
 
@@ -1694,16 +1685,16 @@ export default function runSharedTestSuite(
             meta: {},
             controlId: expect.any(Symbol),
             debugPath: expect.any(String),
-            changes: new Map<string, any>([
-              ['errorsStore', errorsStore],
-              ['selfErrors', errorsStore.get(a.id)],
-              ['errors', errorsStore.get(a.id)],
-              ['valid', false],
-              ['selfValid', false],
-              ['invalid', true],
-              ['selfInvalid', true],
-              ['status', 'INVALID'],
-            ]),
+            changes: {
+              errorsStore: errorsStore,
+              selfErrors: errorsStore.get(a.id),
+              errors: errorsStore.get(a.id),
+              valid: false,
+              selfValid: false,
+              invalid: true,
+              selfInvalid: true,
+              status: 'INVALID',
+            },
           });
         });
 
@@ -1764,11 +1755,11 @@ export default function runSharedTestSuite(
             meta: {},
             controlId: expect.any(Symbol),
             debugPath: expect.any(String),
-            changes: new Map<string, any>([
-              ['errorsStore', errorsStore],
-              ['selfErrors', errors],
-              ['errors', errors],
-            ]),
+            changes: {
+              errorsStore: errorsStore,
+              selfErrors: errors,
+              errors: errors,
+            },
           });
         });
 
@@ -1817,11 +1808,11 @@ export default function runSharedTestSuite(
             meta: {},
             controlId: expect.any(Symbol),
             debugPath: expect.any(String),
-            changes: new Map<string, any>([
-              ['errorsStore', errorsStore],
-              ['selfErrors', { required: null }],
-              ['errors', { required: null }],
-            ]),
+            changes: {
+              errorsStore: errorsStore,
+              selfErrors: { required: null },
+              errors: { required: null },
+            },
           });
         });
 
@@ -1875,14 +1866,14 @@ export default function runSharedTestSuite(
             meta: {},
             controlId: expect.any(Symbol),
             debugPath: expect.any(String),
-            changes: new Map<string, any>([
-              [
-                'errorsStore',
-                new Map([...preexistingErrorsStore, ...errorsStore] as any),
-              ],
-              ['selfErrors', errors],
-              ['errors', errors],
-            ]),
+            changes: {
+              errorsStore: new Map([
+                ...preexistingErrorsStore,
+                ...errorsStore,
+              ] as any),
+              selfErrors: errors,
+              errors: errors,
+            },
           });
         });
       });

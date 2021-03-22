@@ -30,7 +30,11 @@ import {
   INormControlEventOptions,
 } from '../abstract-control/abstract-control-base';
 
-import { getSimpleChildStateChangeEventArgs, isStateChange } from '../util';
+import {
+  getSimpleChildStateChangeEventArgs,
+  getSortedChanges,
+  isStateChange,
+} from '../util';
 
 export type DeepPartial<T> = {
   [P in keyof T]?: T[P] extends object ? DeepPartial<T[P]> : T[P];
@@ -83,6 +87,10 @@ export abstract class AbstractControlContainerBase<
     ControlsValue<Controls>
   >
   implements PrivateAbstractControlContainer<Controls, Data> {
+  static readonly PUBLIC_PROPERTIES = AbstractControlContainer.PUBLIC_PROPERTIES as readonly string[];
+  static readonly PUBLIC_PROPERTIES_INDEX =
+    AbstractControlContainer._PUBLIC_PROPERTIES_INDEX;
+
   protected _controls!: Controls;
   get controls() {
     return this._controls;
@@ -599,10 +607,10 @@ export abstract class AbstractControlContainerBase<
       // Merge the two `event.changes` objects together, favoring the second
       // round of results in case of conflicts, and then overwrite the
       // saved result changes
-      (results[key] as any).changes = new Map([
+      (results[key] as any).changes = {
         ...markChanges,
         ...markChildrenChanges,
-      ]);
+      };
     });
 
     return this._processChildResults(childOptions, normOptions);
@@ -634,28 +642,30 @@ export abstract class AbstractControlContainerBase<
       meta: {},
       ...this._normalizeOptions('replayState', options),
       // the order of these changes matters
-      changes: new Map<string, unknown>(
-        AbstractControlContainer.PUBLIC_PROPERTIES.map((p) => {
-          if (p === 'controlsStore') {
-            return [p, controlsStore];
-          } else if (p === 'controls') {
-            const controls = options.preserveControls
-              ? this._controls
-              : // prettier-ignore
-              Array.isArray(this._controls)
+      changes: Object.fromEntries(
+        (this.constructor as any).PUBLIC_PROPERTIES.map(
+          (p: string & keyof this) => {
+            if (p === 'controlsStore') {
+              return [p, controlsStore];
+            } else if (p === 'controls') {
+              const controls = options.preserveControls
+                ? this._controls
+                : // prettier-ignore
+                Array.isArray(this._controls)
                 ? Array.from(controlsStore.values())
                 : Object.fromEntries(controlsStore);
 
-            return [p, controls];
-          }
+              return [p, controls];
+            }
 
-          return [p, this[p]];
-        })
+            return [p, this[p]];
+          }
+        )
       ),
     };
 
-    // replayState does not include the parent prop
-    (event.changes as any).delete('parent');
+    // replayState should not include the parent prop
+    delete (event.changes as any).parent;
 
     // when we aren't preserving the controls, then we want to return
     // a new controlsStore & child controls each time
@@ -663,24 +673,24 @@ export abstract class AbstractControlContainerBase<
       ? of(event)
       : of(event).pipe(
           map((e) => {
-            const changes = new Map(e.changes);
+            const changes = { ...e.changes };
 
             const controlsStore = new Map(
               Array.from(
-                changes.get('controlsStore') as Map<
+                changes.controlsStore as Map<
                   ControlsKey<Controls>,
                   NonNullable<Controls[ControlsKey<Controls>]>
                 >
               ).map(([k, c]) => [k, (c as AbstractControl).clone() as typeof c])
             );
 
-            changes.set('controlsStore', controlsStore);
+            changes.controlsStore = controlsStore;
 
-            const controls = Array.isArray(changes.get('controls'))
+            const controls = Array.isArray(changes.controls)
               ? Array.from(controlsStore.values())
               : Object.fromEntries(controlsStore);
 
-            changes.set('controls', controls);
+            changes.controls = controls;
 
             return {
               ...e,
@@ -904,12 +914,11 @@ export abstract class AbstractControlContainerBase<
       [AbstractControl.NO_EVENT]: true,
     };
 
-    const otherChangedProps: Array<keyof this & string> = Array.from(
+    const otherChangedProps: Array<keyof this & string> = getSortedChanges(
+      (this.constructor as any).PUBLIC_PROPERTIES_INDEX,
       event.changes
     ).flatMap(
       ([prop, value]: [string, any]): Array<keyof this & string> => {
-        if (changedProps.includes(prop as keyof this & string)) return [];
-
         return this._processIndividualStateChange(_options, prop, value);
       }
     );
@@ -933,7 +942,7 @@ export abstract class AbstractControlContainerBase<
     };
 
     if (processedEvent.result && !normOptions[AbstractControl.NO_EVENT]) {
-      if (processedEvent.result.changes.has('value')) {
+      if (processedEvent.result.changes.value !== undefined) {
         this._emitValidationEvents(normOptions);
       }
 
@@ -955,9 +964,8 @@ export abstract class AbstractControlContainerBase<
       const newRawValue = this._shallowCloneValue(this.rawValue);
 
       normalizedChanges.get('rawValue')!.forEach((key) => {
-        newRawValue[key] = events[key].changes.get(
-          'rawValue'
-        ) as ControlsRawValue<Controls>[typeof key];
+        newRawValue[key] = events[key].changes
+          .rawValue as ControlsRawValue<Controls>[typeof key];
       });
 
       this._rawValue = newRawValue;
@@ -975,9 +983,8 @@ export abstract class AbstractControlContainerBase<
         ) {
           delete newValue[key];
         } else {
-          newValue[key] = events[key].changes.get(
-            'value'
-          ) as ControlsValue<Controls>[typeof key];
+          newValue[key] = events[key].changes
+            .value as ControlsValue<Controls>[typeof key];
         }
       });
 
@@ -1034,15 +1041,15 @@ export abstract class AbstractControlContainerBase<
 
       if (
         control.disabled &&
-        !(
-          childEvent.changes.has('disabled') ||
-          childEvent.changes.has('rawValue')
-        )
+        childEvent.changes.disabled === undefined &&
+        childEvent.changes.rawValue === undefined
       ) {
         return;
       }
 
-      childEvent.changes.forEach((_, prop) => {
+      Object.entries(childEvent.changes).forEach(([prop, value]) => {
+        if (value === undefined) return;
+
         if (prop === 'rawValue' || prop === 'disabled') {
           addChange('value', key as ControlsKey<Controls>);
         }

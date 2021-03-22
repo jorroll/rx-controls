@@ -578,20 +578,20 @@ describe('FormGroup', () => {
         source: a.id,
         controlId: expect.any(Symbol),
         debugPath: expect.any(String),
-        changes: new Map([
-          ['rawValue', newValue],
-          ['value', newValue],
-        ]),
+        changes: {
+          rawValue: newValue,
+          value: newValue,
+        },
         childEvents: {
           one: {
             type: 'StateChange',
             source: a.id,
             controlId: expect.any(Symbol),
             debugPath: expect.any(String),
-            changes: new Map([
-              ['rawValue', newValue.one],
-              ['value', newValue.one],
-            ]),
+            changes: {
+              rawValue: newValue.one,
+              value: newValue.one,
+            },
             meta: {},
           },
           two: {
@@ -599,10 +599,10 @@ describe('FormGroup', () => {
             source: a.id,
             controlId: expect.any(Symbol),
             debugPath: expect.any(String),
-            changes: new Map([
-              ['rawValue', newValue.two],
-              ['value', newValue.two],
-            ]),
+            changes: {
+              rawValue: newValue.two,
+              value: newValue.two,
+            },
             meta: {},
           },
         },
@@ -636,30 +636,30 @@ describe('FormGroup', () => {
         source: a.id,
         controlId: expect.any(Symbol),
         debugPath: expect.any(String),
-        changes: new Map([
-          ['rawValue', bNewValue],
-          ['value', bNewValue],
-        ]),
+        changes: {
+          rawValue: bNewValue,
+          value: bNewValue,
+        },
         childEvents: {
           four: {
             type: 'StateChange',
             source: a.id,
             controlId: expect.any(Symbol),
             debugPath: expect.any(String),
-            changes: new Map([
-              ['rawValue', newValue],
-              ['value', newValue],
-            ]),
+            changes: {
+              rawValue: newValue,
+              value: newValue,
+            },
             childEvents: {
               one: {
                 type: 'StateChange',
                 source: a.id,
                 controlId: expect.any(Symbol),
                 debugPath: expect.any(String),
-                changes: new Map([
-                  ['rawValue', newValue.one],
-                  ['value', newValue.one],
-                ]),
+                changes: {
+                  rawValue: newValue.one,
+                  value: newValue.one,
+                },
                 meta: {},
               },
               two: {
@@ -667,10 +667,10 @@ describe('FormGroup', () => {
                 source: a.id,
                 controlId: expect.any(Symbol),
                 debugPath: expect.any(String),
-                changes: new Map([
-                  ['rawValue', newValue.two],
-                  ['value', newValue.two],
-                ]),
+                changes: {
+                  rawValue: newValue.two,
+                  value: newValue.two,
+                },
                 meta: {},
               },
             },
@@ -1102,12 +1102,9 @@ describe('FormGroup', () => {
           meta: {},
           controlId: expect.any(Symbol),
           debugPath: expect.any(String),
-          changes: new Map([
-            [
-              'controlsStore',
-              new Map<string, any>(Object.entries(controlsObj)),
-            ],
-          ]),
+          changes: {
+            controlsStore: new Map<string, any>(Object.entries(controlsObj)),
+          },
         };
 
         const result = a.processEvent(e);
@@ -1148,12 +1145,12 @@ describe('FormGroup', () => {
           meta: {},
           controlId: expect.any(Symbol),
           debugPath: expect.any(String),
-          changes: new Map<string, any>([
-            ['controls', controls],
-            ['controlsStore', controlsStore],
-            ['rawValue', value],
-            ['value', value],
-          ]),
+          changes: {
+            controls: controls,
+            controlsStore: controlsStore,
+            rawValue: value,
+            value: value,
+          },
         });
       });
     });
@@ -1275,9 +1272,8 @@ describe('FormGroup', () => {
 
       const event1 = await replay.toPromise();
 
-      const controlsStore = event1.changes.get(
-        'controlsStore'
-      ) as typeof b['controlsStore'];
+      const controlsStore = event1.changes
+        .controlsStore as typeof b['controlsStore'];
 
       const controlTwo = controlsStore.get('one')!.controlsStore.get('two')!;
 
@@ -1313,73 +1309,66 @@ describe('FormGroup', () => {
         meta: {},
         controlId: expect.any(Symbol),
         debugPath: expect.any(String),
-        changes: new Map<string, any>([
-          [
-            'controls',
-            { one: expect.toEqualControl(control().clone(), { skip: ['id'] }) },
-          ],
-          ['size', 1],
-          [
-            'controlsStore',
-            new Map([
-              [
-                'one',
-                expect.toEqualControl(control().clone(), { skip: ['id'] }),
-              ],
-            ]),
-          ],
-          ['childValid', false],
-          ['childrenValid', false],
-          ['childInvalid', true],
-          ['childrenInvalid', true],
-          ['childEnabled', true],
-          ['childrenEnabled', true],
-          ['childDisabled', false],
-          ['childrenDisabled', false],
-          ['childReadonly', false],
-          ['childrenReadonly', false],
-          ['childPending', false],
-          ['childrenPending', false],
-          ['childTouched', false],
-          ['childrenTouched', false],
-          ['childDirty', false],
-          ['childrenDirty', false],
-          ['childSubmitted', false],
-          ['childrenSubmitted', false],
-          ['childrenErrors', { required: true }],
-          ['enabled', true],
-          ['selfEnabled', true],
-          ['disabled', false],
-          ['selfDisabled', false],
-          ['touched', false],
-          ['selfTouched', false],
-          ['dirty', false],
-          ['selfDirty', false],
-          ['readonly', false],
-          ['selfReadonly', false],
-          ['submitted', false],
-          ['selfSubmitted', false],
-          ['data', undefined],
-          ['value', { one: '' }],
-          ['rawValue', { one: '' }],
-          ['validator', null],
-          ['validatorStore', new Map()],
-          ['pending', false],
-          ['selfPending', false],
-          ['pendingStore', new Set()],
-          ['valid', false],
-          ['selfValid', true],
-          ['invalid', true],
-          ['selfInvalid', false],
-          ['status', 'INVALID'],
-          ['errors', { required: true }],
-          ['selfErrors', null],
-          ['errorsStore', new Map()],
-        ]),
+        changes: {
+          controls: {
+            one: expect.toEqualControl(control().clone(), { skip: ['id'] }),
+          },
+          size: 1,
+          controlsStore: new Map([
+            ['one', expect.toEqualControl(control().clone(), { skip: ['id'] })],
+          ]),
+          childValid: false,
+          childrenValid: false,
+          childInvalid: true,
+          childrenInvalid: true,
+          childEnabled: true,
+          childrenEnabled: true,
+          childDisabled: false,
+          childrenDisabled: false,
+          childReadonly: false,
+          childrenReadonly: false,
+          childPending: false,
+          childrenPending: false,
+          childTouched: false,
+          childrenTouched: false,
+          childDirty: false,
+          childrenDirty: false,
+          childSubmitted: false,
+          childrenSubmitted: false,
+          childrenErrors: { required: true },
+          enabled: true,
+          selfEnabled: true,
+          disabled: false,
+          selfDisabled: false,
+          touched: false,
+          selfTouched: false,
+          dirty: false,
+          selfDirty: false,
+          readonly: false,
+          selfReadonly: false,
+          submitted: false,
+          selfSubmitted: false,
+          data: undefined,
+          value: { one: '' },
+          rawValue: { one: '' },
+          validator: null,
+          validatorStore: new Map(),
+          pending: false,
+          selfPending: false,
+          pendingStore: new Set(),
+          valid: false,
+          selfValid: true,
+          invalid: true,
+          selfInvalid: false,
+          status: 'INVALID',
+          errors: { required: true },
+          selfErrors: null,
+          errorsStore: new Map(),
+        },
       };
 
       expect(event1).toEqual<IControlStateChangeEvent>(expectation);
-      expect((event1.changes.get('controls') as any).one).toImplementObject({
+      expect((event1.changes.controls as any).one).toImplementObject({
         rawValue: '',
         value: '',
       });
@@ -1391,7 +1380,7 @@ describe('FormGroup', () => {
 
       expect(event2).toEqual<IControlStateChangeEvent>(expectation);
 
-      expect((event2.changes.get('controls') as any).one).toImplementObject({
+      expect((event2.changes.controls as any).one).toImplementObject({
         rawValue: '',
         value: '',
       });

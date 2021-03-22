@@ -33,7 +33,7 @@ function subscribeToRelevantChanges(
       filter(
         (e) =>
           isStateChange(e) &&
-          (e.changes.has('rawValue') || e.changes.has('dirty'))
+          (e.changes.rawValue !== undefined || e.changes.dirty !== undefined)
       )
     )
     .subscribe((e) => subscribee.control.processEvent(e));

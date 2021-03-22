@@ -95,7 +95,7 @@ export function getSimpleStateChangeEventArgs<T extends AbstractControl>(
   return {
     type: 'StateChange' as const,
     // subtype: 'Self' as const,
-    changes: new Map(changedProps.map((p) => [p, control[p]])),
+    changes: Object.fromEntries(changedProps.map((p) => [p, control[p]])),
   };
 }
 
@@ -108,7 +108,7 @@ export function getSimpleChildStateChangeEventArgs<T extends AbstractControl>(
     type: 'StateChange' as const,
     // subtype: 'Child' as const,
     childEvents,
-    changes: new Map(changedProps.map((p) => [p, control[p]])),
+    changes: Object.fromEntries(changedProps.map((p) => [p, control[p]])),
   };
 }
 
@@ -160,12 +160,11 @@ export function transformRawValueStateChange<RawValue, NewRawValue>(
   event: IControlStateChangeEvent,
   fn: (rawValue: RawValue) => NewRawValue
 ) {
-  if (!event.changes.has('rawValue')) return event;
+  if (event.changes['rawValue'] === undefined) return event;
 
-  const oldRawValue = event.changes.get('rawValue') as any;
+  const oldRawValue = event.changes['rawValue'] as any;
   const newRawValue = fn(oldRawValue) as any;
-  const newChanges = new Map(event.changes).set('rawValue', newRawValue);
-
+  const newChanges = { ...event.changes, rawValue: newRawValue };
   const newEvent = { ...event, changes: newChanges };
 
   if (event.childEvents) {
@@ -192,4 +191,18 @@ export function transformRawValueStateChange<RawValue, NewRawValue>(
   }
 
   return newEvent;
+}
+
+export function getSortedChanges(
+  index: { [key: string]: number },
+  changes: { [key: string]: unknown }
+) {
+  return Object.entries(changes).sort(([a], [b]) => {
+    const a1 = index[a];
+    const b1 = index[b];
+
+    if (a1 === b1) return 0;
+    if (a1 > b1) return 1;
+    return -1;
+  });
 }

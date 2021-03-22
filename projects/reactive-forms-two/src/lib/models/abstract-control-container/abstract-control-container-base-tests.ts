@@ -397,58 +397,58 @@ export default function runAbstractControlContainerBaseTestSuite<
           meta: {},
           controlId: expect.any(Symbol),
           debugPath: expect.any(String),
-          changes: new Map<string, any>([
-            ['controls', expect.any(Object)],
-            ['size', 0],
-            ['controlsStore', new Map()],
-            ['childValid', true],
-            ['childrenValid', true],
-            ['childInvalid', false],
-            ['childrenInvalid', false],
-            ['childEnabled', true],
-            ['childrenEnabled', true],
-            ['childDisabled', false],
-            ['childrenDisabled', false],
-            ['childReadonly', false],
-            ['childrenReadonly', false],
-            ['childPending', false],
-            ['childrenPending', false],
-            ['childTouched', false],
-            ['childrenTouched', false],
-            ['childDirty', false],
-            ['childrenDirty', false],
-            ['childSubmitted', false],
-            ['childrenSubmitted', false],
-            ['childrenErrors', null],
-            ['enabled', true],
-            ['selfEnabled', true],
-            ['disabled', false],
-            ['selfDisabled', false],
-            ['touched', false],
-            ['selfTouched', false],
-            ['dirty', false],
-            ['selfDirty', false],
-            ['readonly', false],
-            ['selfReadonly', false],
-            ['submitted', false],
-            ['selfSubmitted', false],
-            ['data', undefined],
-            ['value', expect.any(Object)],
-            ['rawValue', expect.any(Object)],
-            ['validator', null],
-            ['validatorStore', new Map()],
-            ['pending', false],
-            ['selfPending', false],
-            ['pendingStore', new Set()],
-            ['valid', true],
-            ['selfValid', true],
-            ['invalid', false],
-            ['selfInvalid', false],
-            ['status', 'VALID'],
-            ['errors', null],
-            ['selfErrors', null],
-            ['errorsStore', new Map()],
-          ]),
+          changes: {
+            controls: expect.any(Object),
+            size: 0,
+            controlsStore: new Map(),
+            childValid: true,
+            childrenValid: true,
+            childInvalid: false,
+            childrenInvalid: false,
+            childEnabled: true,
+            childrenEnabled: true,
+            childDisabled: false,
+            childrenDisabled: false,
+            childReadonly: false,
+            childrenReadonly: false,
+            childPending: false,
+            childrenPending: false,
+            childTouched: false,
+            childrenTouched: false,
+            childDirty: false,
+            childrenDirty: false,
+            childSubmitted: false,
+            childrenSubmitted: false,
+            childrenErrors: null,
+            enabled: true,
+            selfEnabled: true,
+            disabled: false,
+            selfDisabled: false,
+            touched: false,
+            selfTouched: false,
+            dirty: false,
+            selfDirty: false,
+            readonly: false,
+            selfReadonly: false,
+            submitted: false,
+            selfSubmitted: false,
+            data: undefined,
+            value: expect.any(Object),
+            rawValue: expect.any(Object),
+            validator: null,
+            validatorStore: new Map(),
+            pending: false,
+            selfPending: false,
+            pendingStore: new Set(),
+            valid: true,
+            selfValid: true,
+            invalid: false,
+            selfInvalid: false,
+            status: 'VALID',
+            errors: null,
+            selfErrors: null,
+            errorsStore: new Map(),
+          },
         });
       });
 
@@ -496,61 +496,60 @@ export default function runAbstractControlContainerBaseTestSuite<
             meta: {},
             controlId: expect.any(Symbol),
             debugPath: expect.any(String),
-            changes: new Map<string, any>([
-              ['controls', expect.any(Object)],
-              ['size', 1],
-              [
-                'controlsStore',
-                new Map([[expect.anything(), expect.any(AbstractControlBase)]]),
-              ],
-              ['childValid', true],
-              ['childrenValid', true],
-              ['childInvalid', false],
-              ['childrenInvalid', false],
-              ['childEnabled', true],
-              ['childrenEnabled', true],
-              ['childDisabled', false],
-              ['childrenDisabled', false],
-              ['childReadonly', false],
-              ['childrenReadonly', false],
-              ['childPending', false],
-              ['childrenPending', false],
-              ['childTouched', false],
-              ['childrenTouched', false],
-              ['childDirty', false],
-              ['childrenDirty', false],
-              ['childSubmitted', false],
-              ['childrenSubmitted', false],
-              ['childrenErrors', null],
-              ['enabled', true],
-              ['selfEnabled', true],
-              ['disabled', false],
-              ['selfDisabled', false],
-              ['touched', false],
-              ['selfTouched', false],
-              ['dirty', false],
-              ['selfDirty', false],
-              ['readonly', false],
-              ['selfReadonly', false],
-              ['submitted', false],
-              ['selfSubmitted', false],
-              ['data', undefined],
-              ['value', expect.any(Object)],
-              ['rawValue', expect.any(Object)],
-              ['validator', null],
-              ['validatorStore', new Map()],
-              ['pending', false],
-              ['selfPending', false],
-              ['pendingStore', new Set()],
-              ['valid', true],
-              ['selfValid', true],
-              ['invalid', false],
-              ['selfInvalid', false],
-              ['status', 'VALID'],
-              ['errors', null],
-              ['selfErrors', null],
-              ['errorsStore', new Map()],
-            ]),
+            changes: {
+              controls: expect.any(Object),
+              size: 1,
+              controlsStore: new Map([
+                [expect.anything(), expect.any(AbstractControlBase)],
+              ]),
+              childValid: true,
+              childrenValid: true,
+              childInvalid: false,
+              childrenInvalid: false,
+              childEnabled: true,
+              childrenEnabled: true,
+              childDisabled: false,
+              childrenDisabled: false,
+              childReadonly: false,
+              childrenReadonly: false,
+              childPending: false,
+              childrenPending: false,
+              childTouched: false,
+              childrenTouched: false,
+              childDirty: false,
+              childrenDirty: false,
+              childSubmitted: false,
+              childrenSubmitted: false,
+              childrenErrors: null,
+              enabled: true,
+              selfEnabled: true,
+              disabled: false,
+              selfDisabled: false,
+              touched: false,
+              selfTouched: false,
+              dirty: false,
+              selfDirty: false,
+              readonly: false,
+              selfReadonly: false,
+              submitted: false,
+              selfSubmitted: false,
+              data: undefined,
+              value: expect.any(Object),
+              rawValue: expect.any(Object),
+              validator: null,
+              validatorStore: new Map(),
+              pending: false,
+              selfPending: false,
+              pendingStore: new Set(),
+              valid: true,
+              selfValid: true,
+              invalid: false,
+              selfInvalid: false,
+              status: 'VALID',
+              errors: null,
+              selfErrors: null,
+              errorsStore: new Map(),
+            },
           });
         });
 
@@ -614,11 +613,11 @@ export default function runAbstractControlContainerBaseTestSuite<
               meta: {},
               controlId: expect.any(Symbol),
               debugPath: expect.any(String),
-              changes: new Map([
-                [CHILD_PROP_NAME, true],
-                [CHILDREN_PROP_NAME, true],
-                [PROP_NAME, true],
-              ]),
+              changes: {
+                [CHILD_PROP_NAME]: true,
+                [CHILDREN_PROP_NAME]: true,
+                [PROP_NAME]: true,
+              },
               childEvents: {
                 0: {
                   type: 'StateChange',
@@ -626,10 +625,10 @@ export default function runAbstractControlContainerBaseTestSuite<
                   meta: {},
                   controlId: expect.any(Symbol),
                   debugPath: expect.any(String),
-                  changes: new Map([
-                    [SELF_PROP_NAME, true],
-                    [PROP_NAME, true],
-                  ]),
+                  changes: {
+                    [SELF_PROP_NAME]: true,
+                    [PROP_NAME]: true,
+                  },
                 },
               },
             });
@@ -677,7 +676,7 @@ export default function runAbstractControlContainerBaseTestSuite<
               meta: {},
               controlId: expect.any(Symbol),
               debugPath: expect.any(String),
-              changes: new Map(),
+              changes: {},
               childEvents: {
                 0: {
                   type: 'StateChange',
@@ -685,10 +684,10 @@ export default function runAbstractControlContainerBaseTestSuite<
                   meta: {},
                   controlId: expect.any(Symbol),
                   debugPath: expect.any(String),
-                  changes: new Map([
-                    [SELF_PROP_NAME, true],
-                    [PROP_NAME, true],
-                  ]),
+                  changes: {
+                    [SELF_PROP_NAME]: true,
+                    [PROP_NAME]: true,
+                  },
                 },
               },
             });
@@ -735,11 +734,11 @@ export default function runAbstractControlContainerBaseTestSuite<
               meta: {},
               controlId: b.id,
               debugPath: expect.any(String),
-              changes: new Map([
-                [CHILD_PROP_NAME, true],
-                [CHILDREN_PROP_NAME, true],
-                [PROP_NAME, true],
-              ]),
+              changes: {
+                [CHILD_PROP_NAME]: true,
+                [CHILDREN_PROP_NAME]: true,
+                [PROP_NAME]: true,
+              },
               childEvents: {
                 0: {
                   type: 'StateChange',
@@ -747,10 +746,10 @@ export default function runAbstractControlContainerBaseTestSuite<
                   meta: {},
                   controlId: child1.id,
                   debugPath: expect.any(String),
-                  changes: new Map([
-                    [SELF_PROP_NAME, true],
-                    [PROP_NAME, true],
-                  ]),
+                  changes: {
+                    [SELF_PROP_NAME]: true,
+                    [PROP_NAME]: true,
+                  },
                 },
               },
             });
@@ -781,19 +780,19 @@ export default function runAbstractControlContainerBaseTestSuite<
               meta: {},
               controlId: b.id,
               debugPath: expect.any(String),
-              changes: new Map<string, unknown>([
-                ['value', expect.any(Object)],
-                ['childDisabled', true],
-                ['childrenEnabled', false],
-                ['childrenDisabled', true],
-                ['childEnabled', false],
-                [CHILD_PROP_NAME, false],
-                [CHILDREN_PROP_NAME, false],
-                ['disabled', true],
-                ['enabled', false],
-                [PROP_NAME, false],
-                ['status', 'DISABLED'],
-              ]),
+              changes: {
+                value: expect.any(Object),
+                childDisabled: true,
+                childrenEnabled: false,
+                childrenDisabled: true,
+                childEnabled: false,
+                [CHILD_PROP_NAME]: false,
+                [CHILDREN_PROP_NAME]: false,
+                disabled: true,
+                enabled: false,
+                [PROP_NAME]: false,
+                status: 'DISABLED',
+              },
               childEvents: {
                 0: {
                   type: 'StateChange',
@@ -801,13 +800,13 @@ export default function runAbstractControlContainerBaseTestSuite<
                   meta: {},
                   controlId: child1.id,
                   debugPath: expect.any(String),
-                  changes: new Map<string, unknown>([
-                    ['selfDisabled', true],
-                    ['selfEnabled', false],
-                    ['disabled', true],
-                    ['enabled', false],
-                    ['status', 'DISABLED'],
-                  ]),
+                  changes: {
+                    selfDisabled: true,
+                    selfEnabled: false,
+                    disabled: true,
+                    enabled: false,
+                    status: 'DISABLED',
+                  },
                 },
               },
             });
@@ -852,12 +851,12 @@ export default function runAbstractControlContainerBaseTestSuite<
             meta: {},
             controlId: expect.any(Symbol),
             debugPath: expect.any(String),
-            changes: new Map<string, unknown>([
-              ['childPending', true],
-              ['childrenPending', true],
-              ['pending', true],
-              ['status', 'PENDING'],
-            ]),
+            changes: {
+              childPending: true,
+              childrenPending: true,
+              pending: true,
+              status: 'PENDING',
+            },
             childEvents: {
               0: {
                 type: 'StateChange',
@@ -865,12 +864,12 @@ export default function runAbstractControlContainerBaseTestSuite<
                 meta: {},
                 controlId: expect.any(Symbol),
                 debugPath: expect.any(String),
-                changes: new Map<string, unknown>([
-                  ['pendingStore', new Set([CONTROL_SELF_ID])],
-                  ['selfPending', true],
-                  ['pending', true],
-                  ['status', 'PENDING'],
-                ]),
+                changes: {
+                  pendingStore: new Set([CONTROL_SELF_ID]),
+                  selfPending: true,
+                  pending: true,
+                  status: 'PENDING',
+                },
               },
             },
           });
@@ -920,7 +919,7 @@ export default function runAbstractControlContainerBaseTestSuite<
             meta: {},
             controlId: expect.any(Symbol),
             debugPath: expect.any(String),
-            changes: new Map<string, unknown>(),
+            changes: {},
             childEvents: {
               0: {
                 type: 'StateChange',
@@ -928,11 +927,11 @@ export default function runAbstractControlContainerBaseTestSuite<
                 meta: {},
                 controlId: expect.any(Symbol),
                 debugPath: expect.any(String),
-                changes: new Map<string, unknown>([
-                  ['pendingStore', new Set([CONTROL_SELF_ID])],
-                  ['selfPending', true],
-                  ['pending', true],
-                ]),
+                changes: {
+                  pendingStore: new Set([CONTROL_SELF_ID]),
+                  selfPending: true,
+                  pending: true,
+                },
               },
             },
           });
@@ -979,12 +978,12 @@ export default function runAbstractControlContainerBaseTestSuite<
             meta: {},
             controlId: b.id,
             debugPath: expect.any(String),
-            changes: new Map<string, unknown>([
-              ['childPending', true],
-              ['childrenPending', true],
-              ['pending', true],
-              ['status', 'PENDING'],
-            ]),
+            changes: {
+              childPending: true,
+              childrenPending: true,
+              pending: true,
+              status: 'PENDING',
+            },
             childEvents: {
               0: {
                 type: 'StateChange',
@@ -992,12 +991,12 @@ export default function runAbstractControlContainerBaseTestSuite<
                 meta: {},
                 controlId: child1.id,
                 debugPath: expect.any(String),
-                changes: new Map<string, unknown>([
-                  ['pendingStore', new Set([CONTROL_SELF_ID])],
-                  ['selfPending', true],
-                  ['pending', true],
-                  ['status', 'PENDING'],
-                ]),
+                changes: {
+                  pendingStore: new Set([CONTROL_SELF_ID]),
+                  selfPending: true,
+                  pending: true,
+                  status: 'PENDING',
+                },
               },
             },
           });
@@ -1028,19 +1027,19 @@ export default function runAbstractControlContainerBaseTestSuite<
             meta: {},
             controlId: b.id,
             debugPath: expect.any(String),
-            changes: new Map<string, unknown>([
-              ['value', expect.any(Object)],
-              ['childDisabled', true],
-              ['childrenEnabled', false],
-              ['childrenDisabled', true],
-              ['childEnabled', false],
-              ['childPending', false],
-              ['childrenPending', false],
-              ['disabled', true],
-              ['enabled', false],
-              ['pending', false],
-              ['status', 'DISABLED'],
-            ]),
+            changes: {
+              value: expect.any(Object),
+              childDisabled: true,
+              childrenEnabled: false,
+              childrenDisabled: true,
+              childEnabled: false,
+              childPending: false,
+              childrenPending: false,
+              disabled: true,
+              enabled: false,
+              pending: false,
+              status: 'DISABLED',
+            },
             childEvents: {
               0: {
                 type: 'StateChange',
@@ -1048,13 +1047,13 @@ export default function runAbstractControlContainerBaseTestSuite<
                 meta: {},
                 controlId: child1.id,
                 debugPath: expect.any(String),
-                changes: new Map<string, unknown>([
-                  ['selfDisabled', true],
-                  ['selfEnabled', false],
-                  ['disabled', true],
-                  ['enabled', false],
-                  ['status', 'DISABLED'],
-                ]),
+                changes: {
+                  selfDisabled: true,
+                  selfEnabled: false,
+                  disabled: true,
+                  enabled: false,
+                  status: 'DISABLED',
+                },
               },
             },
           });
@@ -1122,16 +1121,16 @@ export default function runAbstractControlContainerBaseTestSuite<
             meta: {},
             controlId: b.id,
             debugPath: expect.any(String),
-            changes: new Map<string, unknown>([
-              ['value', expect.any(Object)],
-              ['childDisabled', true],
-              ['childrenEnabled', false],
-              ['childrenDisabled', true],
-              ['childEnabled', false],
-              ['disabled', true],
-              ['enabled', false],
-              ['status', 'DISABLED'],
-            ]),
+            changes: {
+              value: expect.any(Object),
+              childDisabled: true,
+              childrenEnabled: false,
+              childrenDisabled: true,
+              childEnabled: false,
+              disabled: true,
+              enabled: false,
+              status: 'DISABLED',
+            },
             childEvents: {
               0: {
                 type: 'StateChange',
@@ -1139,13 +1138,13 @@ export default function runAbstractControlContainerBaseTestSuite<
                 meta: {},
                 controlId: child1.id,
                 debugPath: expect.any(String),
-                changes: new Map<string, unknown>([
-                  ['selfDisabled', true],
-                  ['selfEnabled', false],
-                  ['disabled', true],
-                  ['enabled', false],
-                  ['status', 'DISABLED'],
-                ]),
+                changes: {
+                  selfDisabled: true,
+                  selfEnabled: false,
+                  disabled: true,
+                  enabled: false,
+                  status: 'DISABLED',
+                },
               },
             },
           });
@@ -1202,16 +1201,16 @@ export default function runAbstractControlContainerBaseTestSuite<
             meta: {},
             controlId: b.id,
             debugPath: expect.any(String),
-            changes: new Map<string, unknown>([
-              ['value', expect.any(Object)],
-              ['childDisabled', false],
-              ['childrenEnabled', true],
-              ['childrenDisabled', false],
-              ['childEnabled', true],
-              ['disabled', false],
-              ['enabled', true],
-              ['status', 'VALID'],
-            ]),
+            changes: {
+              value: expect.any(Object),
+              childDisabled: false,
+              childrenEnabled: true,
+              childrenDisabled: false,
+              childEnabled: true,
+              disabled: false,
+              enabled: true,
+              status: 'VALID',
+            },
             childEvents: {
               0: {
                 type: 'StateChange',
@@ -1219,13 +1218,13 @@ export default function runAbstractControlContainerBaseTestSuite<
                 meta: {},
                 controlId: child1.id,
                 debugPath: expect.any(String),
-                changes: new Map<string, unknown>([
-                  ['selfDisabled', false],
-                  ['selfEnabled', true],
-                  ['disabled', false],
-                  ['enabled', true],
-                  ['status', 'VALID'],
-                ]),
+                changes: {
+                  selfDisabled: false,
+                  selfEnabled: true,
+                  disabled: false,
+                  enabled: true,
+                  status: 'VALID',
+                },
               },
             },
           });
@@ -1288,11 +1287,11 @@ export default function runAbstractControlContainerBaseTestSuite<
                 meta: {},
                 controlId: expect.any(Symbol),
                 debugPath: expect.any(String),
-                changes: new Map([
-                  [CHILD_PROP_NAME, true],
-                  [CHILDREN_PROP_NAME, true],
-                  [PROP_NAME, true],
-                ]),
+                changes: {
+                  [CHILD_PROP_NAME]: true,
+                  [CHILDREN_PROP_NAME]: true,
+                  [PROP_NAME]: true,
+                },
                 childEvents: {
                   0: {
                     type: 'StateChange',
@@ -1300,11 +1299,11 @@ export default function runAbstractControlContainerBaseTestSuite<
                     meta: {},
                     controlId: expect.any(Symbol),
                     debugPath: expect.any(String),
-                    changes: new Map([
-                      [CHILD_PROP_NAME, true],
-                      [CHILDREN_PROP_NAME, true],
-                      [PROP_NAME, true],
-                    ]),
+                    changes: {
+                      [CHILD_PROP_NAME]: true,
+                      [CHILDREN_PROP_NAME]: true,
+                      [PROP_NAME]: true,
+                    },
                     childEvents: {
                       0: {
                         type: 'StateChange',
@@ -1312,10 +1311,10 @@ export default function runAbstractControlContainerBaseTestSuite<
                         meta: {},
                         controlId: expect.any(Symbol),
                         debugPath: expect.any(String),
-                        changes: new Map([
-                          [SELF_PROP_NAME, true],
-                          [PROP_NAME, true],
-                        ]),
+                        changes: {
+                          [SELF_PROP_NAME]: true,
+                          [PROP_NAME]: true,
+                        },
                       },
                     },
                   },
@@ -1365,7 +1364,7 @@ export default function runAbstractControlContainerBaseTestSuite<
                 meta: {},
                 controlId: expect.any(Symbol),
                 debugPath: expect.any(String),
-                changes: new Map(),
+                changes: {},
                 childEvents: {
                   0: {
                     type: 'StateChange',
@@ -1373,7 +1372,7 @@ export default function runAbstractControlContainerBaseTestSuite<
                     meta: {},
                     controlId: expect.any(Symbol),
                     debugPath: expect.any(String),
-                    changes: new Map(),
+                    changes: {},
                     childEvents: {
                       0: {
                         type: 'StateChange',
@@ -1381,10 +1380,10 @@ export default function runAbstractControlContainerBaseTestSuite<
                         meta: {},
                         controlId: expect.any(Symbol),
                         debugPath: expect.any(String),
-                        changes: new Map([
-                          [SELF_PROP_NAME, true],
-                          [PROP_NAME, true],
-                        ]),
+                        changes: {
+                          [SELF_PROP_NAME]: true,
+                          [PROP_NAME]: true,
+                        },
                       },
                     },
                   },
@@ -1433,11 +1432,11 @@ export default function runAbstractControlContainerBaseTestSuite<
                 meta: {},
                 controlId: expect.any(Symbol),
                 debugPath: expect.any(String),
-                changes: new Map([
-                  [CHILD_PROP_NAME, true],
-                  [CHILDREN_PROP_NAME, true],
-                  [PROP_NAME, true],
-                ]),
+                changes: {
+                  [CHILD_PROP_NAME]: true,
+                  [CHILDREN_PROP_NAME]: true,
+                  [PROP_NAME]: true,
+                },
                 childEvents: {
                   0: {
                     type: 'StateChange',
@@ -1445,11 +1444,11 @@ export default function runAbstractControlContainerBaseTestSuite<
                     meta: {},
                     controlId: expect.any(Symbol),
                     debugPath: expect.any(String),
-                    changes: new Map([
-                      [CHILD_PROP_NAME, true],
-                      [CHILDREN_PROP_NAME, true],
-                      [PROP_NAME, true],
-                    ]),
+                    changes: {
+                      [CHILD_PROP_NAME]: true,
+                      [CHILDREN_PROP_NAME]: true,
+                      [PROP_NAME]: true,
+                    },
                     childEvents: {
                       0: {
                         type: 'StateChange',
@@ -1457,10 +1456,10 @@ export default function runAbstractControlContainerBaseTestSuite<
                         meta: {},
                         controlId: expect.any(Symbol),
                         debugPath: expect.any(String),
-                        changes: new Map([
-                          [SELF_PROP_NAME, true],
-                          [PROP_NAME, true],
-                        ]),
+                        changes: {
+                          [SELF_PROP_NAME]: true,
+                          [PROP_NAME]: true,
+                        },
                       },
                     },
                   },
@@ -1493,19 +1492,19 @@ export default function runAbstractControlContainerBaseTestSuite<
                 meta: {},
                 controlId: expect.any(Symbol),
                 debugPath: expect.any(String),
-                changes: new Map<string, unknown>([
-                  ['value', expect.any(Object)],
-                  ['childDisabled', true],
-                  ['childrenEnabled', false],
-                  ['childrenDisabled', true],
-                  ['childEnabled', false],
-                  [CHILD_PROP_NAME, false],
-                  [CHILDREN_PROP_NAME, false],
-                  ['disabled', true],
-                  ['enabled', false],
-                  [PROP_NAME, false],
-                  ['status', 'DISABLED'],
-                ]),
+                changes: {
+                  value: expect.any(Object),
+                  childDisabled: true,
+                  childrenEnabled: false,
+                  childrenDisabled: true,
+                  childEnabled: false,
+                  [CHILD_PROP_NAME]: false,
+                  [CHILDREN_PROP_NAME]: false,
+                  disabled: true,
+                  enabled: false,
+                  [PROP_NAME]: false,
+                  status: 'DISABLED',
+                },
                 childEvents: {
                   0: {
                     type: 'StateChange',
@@ -1513,19 +1512,19 @@ export default function runAbstractControlContainerBaseTestSuite<
                     meta: {},
                     controlId: expect.any(Symbol),
                     debugPath: expect.any(String),
-                    changes: new Map<string, unknown>([
-                      ['value', expect.any(Object)],
-                      ['childDisabled', true],
-                      ['childrenEnabled', false],
-                      ['childrenDisabled', true],
-                      ['childEnabled', false],
-                      [CHILD_PROP_NAME, false],
-                      [CHILDREN_PROP_NAME, false],
-                      ['disabled', true],
-                      ['enabled', false],
-                      [PROP_NAME, false],
-                      ['status', 'DISABLED'],
-                    ]),
+                    changes: {
+                      value: expect.any(Object),
+                      childDisabled: true,
+                      childrenEnabled: false,
+                      childrenDisabled: true,
+                      childEnabled: false,
+                      [CHILD_PROP_NAME]: false,
+                      [CHILDREN_PROP_NAME]: false,
+                      disabled: true,
+                      enabled: false,
+                      [PROP_NAME]: false,
+                      status: 'DISABLED',
+                    },
                     childEvents: {
                       0: {
                         type: 'StateChange',
@@ -1533,13 +1532,13 @@ export default function runAbstractControlContainerBaseTestSuite<
                         meta: {},
                         controlId: expect.any(Symbol),
                         debugPath: expect.any(String),
-                        changes: new Map<string, unknown>([
-                          ['selfDisabled', true],
-                          ['selfEnabled', false],
-                          ['disabled', true],
-                          ['enabled', false],
-                          ['status', 'DISABLED'],
-                        ]),
+                        changes: {
+                          selfDisabled: true,
+                          selfEnabled: false,
+                          disabled: true,
+                          enabled: false,
+                          status: 'DISABLED',
+                        },
                       },
                     },
                   },
@@ -1591,11 +1590,11 @@ export default function runAbstractControlContainerBaseTestSuite<
                 meta: {},
                 controlId: expect.any(Symbol),
                 debugPath: expect.any(String),
-                changes: new Map([
-                  [CHILD_PROP_NAME, true],
-                  [CHILDREN_PROP_NAME, true],
-                  [PROP_NAME, true],
-                ]),
+                changes: {
+                  [CHILD_PROP_NAME]: true,
+                  [CHILDREN_PROP_NAME]: true,
+                  [PROP_NAME]: true,
+                },
                 childEvents: {
                   0: {
                     type: 'StateChange',
@@ -1603,10 +1602,10 @@ export default function runAbstractControlContainerBaseTestSuite<
                     meta: {},
                     controlId: expect.any(Symbol),
                     debugPath: expect.any(String),
-                    changes: new Map([
-                      [PROP_NAME, true],
-                      [SELF_PROP_NAME, true],
-                    ]),
+                    changes: {
+                      [PROP_NAME]: true,
+                      [SELF_PROP_NAME]: true,
+                    },
                   },
                 },
               });
@@ -1656,11 +1655,11 @@ export default function runAbstractControlContainerBaseTestSuite<
                 meta: {},
                 controlId: expect.any(Symbol),
                 debugPath: expect.any(String),
-                changes: new Map([
-                  [CHILD_PROP_NAME, true],
-                  [CHILDREN_PROP_NAME, true],
-                  [PROP_NAME, true],
-                ]),
+                changes: {
+                  [CHILD_PROP_NAME]: true,
+                  [CHILDREN_PROP_NAME]: true,
+                  [PROP_NAME]: true,
+                },
                 childEvents: {
                   0: {
                     type: 'StateChange',
@@ -1668,12 +1667,12 @@ export default function runAbstractControlContainerBaseTestSuite<
                     meta: {},
                     controlId: expect.any(Symbol),
                     debugPath: expect.any(String),
-                    changes: new Map([
-                      [CHILD_PROP_NAME, true],
-                      [CHILDREN_PROP_NAME, true],
-                      [SELF_PROP_NAME, true],
-                      [PROP_NAME, true],
-                    ]),
+                    changes: {
+                      [CHILD_PROP_NAME]: true,
+                      [CHILDREN_PROP_NAME]: true,
+                      [PROP_NAME]: true,
+                      [SELF_PROP_NAME]: true,
+                    },
                     childEvents: {
                       0: {
                         type: 'StateChange',
@@ -1681,10 +1680,10 @@ export default function runAbstractControlContainerBaseTestSuite<
                         meta: {},
                         controlId: expect.any(Symbol),
                         debugPath: expect.any(String),
-                        changes: new Map([
-                          [PROP_NAME, true],
-                          [SELF_PROP_NAME, true],
-                        ]),
+                        changes: {
+                          [PROP_NAME]: true,
+                          [SELF_PROP_NAME]: true,
+                        },
                       },
                     },
                   },
@@ -1739,10 +1738,10 @@ export default function runAbstractControlContainerBaseTestSuite<
               meta: {},
               controlId: expect.any(Symbol),
               debugPath: expect.any(String),
-              changes: new Map([
-                [CHILD_PROP_NAME, true],
-                [PROP_NAME, true],
-              ]),
+              changes: {
+                [CHILD_PROP_NAME]: true,
+                [PROP_NAME]: true,
+              },
               childEvents: {
                 0: {
                   type: 'StateChange',
@@ -1750,10 +1749,10 @@ export default function runAbstractControlContainerBaseTestSuite<
                   meta: {},
                   controlId: expect.any(Symbol),
                   debugPath: expect.any(String),
-                  changes: new Map([
-                    [SELF_PROP_NAME, true],
-                    [PROP_NAME, true],
-                  ]),
+                  changes: {
+                    [SELF_PROP_NAME]: true,
+                    [PROP_NAME]: true,
+                  },
                 },
               },
             });
@@ -1801,7 +1800,7 @@ export default function runAbstractControlContainerBaseTestSuite<
               meta: {},
               controlId: expect.any(Symbol),
               debugPath: expect.any(String),
-              changes: new Map(),
+              changes: {},
               childEvents: {
                 0: {
                   type: 'StateChange',
@@ -1809,10 +1808,10 @@ export default function runAbstractControlContainerBaseTestSuite<
                   meta: {},
                   controlId: expect.any(Symbol),
                   debugPath: expect.any(String),
-                  changes: new Map([
-                    [SELF_PROP_NAME, true],
-                    [PROP_NAME, true],
-                  ]),
+                  changes: {
+                    [SELF_PROP_NAME]: true,
+                    [PROP_NAME]: true,
+                  },
                 },
               },
             });
@@ -1859,10 +1858,10 @@ export default function runAbstractControlContainerBaseTestSuite<
               meta: {},
               controlId: b.id,
               debugPath: expect.any(String),
-              changes: new Map([
-                [CHILD_PROP_NAME, true],
-                [PROP_NAME, true],
-              ]),
+              changes: {
+                [CHILD_PROP_NAME]: true,
+                [PROP_NAME]: true,
+              },
               childEvents: {
                 0: {
                   type: 'StateChange',
@@ -1870,10 +1869,10 @@ export default function runAbstractControlContainerBaseTestSuite<
                   meta: {},
                   controlId: child1.id,
                   debugPath: expect.any(String),
-                  changes: new Map([
-                    [SELF_PROP_NAME, true],
-                    [PROP_NAME, true],
-                  ]),
+                  changes: {
+                    [SELF_PROP_NAME]: true,
+                    [PROP_NAME]: true,
+                  },
                 },
               },
             });
@@ -1904,13 +1903,13 @@ export default function runAbstractControlContainerBaseTestSuite<
               meta: {},
               controlId: b.id,
               debugPath: expect.any(String),
-              changes: new Map<string, unknown>([
-                ['value', expect.any(Object)],
-                ['childDisabled', true],
-                ['childrenEnabled', false],
-                [CHILD_PROP_NAME, false],
-                [PROP_NAME, false],
-              ]),
+              changes: {
+                value: expect.any(Object),
+                childDisabled: true,
+                childrenEnabled: false,
+                [CHILD_PROP_NAME]: false,
+                [PROP_NAME]: false,
+              },
               childEvents: {
                 0: {
                   type: 'StateChange',
@@ -1918,13 +1917,13 @@ export default function runAbstractControlContainerBaseTestSuite<
                   meta: {},
                   controlId: child1.id,
                   debugPath: expect.any(String),
-                  changes: new Map<string, unknown>([
-                    ['selfDisabled', true],
-                    ['selfEnabled', false],
-                    ['disabled', true],
-                    ['enabled', false],
-                    ['status', 'DISABLED'],
-                  ]),
+                  changes: {
+                    selfDisabled: true,
+                    selfEnabled: false,
+                    disabled: true,
+                    enabled: false,
+                    status: 'DISABLED',
+                  },
                 },
               },
             });
@@ -1964,7 +1963,7 @@ export default function runAbstractControlContainerBaseTestSuite<
               meta: {},
               controlId: expect.any(Symbol),
               debugPath: expect.any(String),
-              changes: new Map([[CHILD_PROP_NAME, true]]),
+              changes: { [CHILD_PROP_NAME]: true },
               childEvents: {
                 0: {
                   type: 'StateChange',
@@ -1972,10 +1971,10 @@ export default function runAbstractControlContainerBaseTestSuite<
                   meta: {},
                   controlId: expect.any(Symbol),
                   debugPath: expect.any(String),
-                  changes: new Map([
-                    [SELF_PROP_NAME, true],
-                    [PROP_NAME, true],
-                  ]),
+                  changes: {
+                    [SELF_PROP_NAME]: true,
+                    [PROP_NAME]: true,
+                  },
                 },
               },
             });
@@ -2023,7 +2022,7 @@ export default function runAbstractControlContainerBaseTestSuite<
               meta: {},
               controlId: expect.any(Symbol),
               debugPath: expect.any(String),
-              changes: new Map(),
+              changes: {},
               childEvents: {
                 0: {
                   type: 'StateChange',
@@ -2031,10 +2030,10 @@ export default function runAbstractControlContainerBaseTestSuite<
                   meta: {},
                   controlId: expect.any(Symbol),
                   debugPath: expect.any(String),
-                  changes: new Map([
-                    [SELF_PROP_NAME, true],
-                    [PROP_NAME, true],
-                  ]),
+                  changes: {
+                    [SELF_PROP_NAME]: true,
+                    [PROP_NAME]: true,
+                  },
                 },
               },
             });
@@ -2081,7 +2080,7 @@ export default function runAbstractControlContainerBaseTestSuite<
               meta: {},
               controlId: b.id,
               debugPath: expect.any(String),
-              changes: new Map([[CHILD_PROP_NAME, true]]),
+              changes: { [CHILD_PROP_NAME]: true },
               childEvents: {
                 0: {
                   type: 'StateChange',
@@ -2089,10 +2088,10 @@ export default function runAbstractControlContainerBaseTestSuite<
                   meta: {},
                   controlId: child1.id,
                   debugPath: expect.any(String),
-                  changes: new Map([
-                    [SELF_PROP_NAME, true],
-                    [PROP_NAME, true],
-                  ]),
+                  changes: {
+                    [SELF_PROP_NAME]: true,
+                    [PROP_NAME]: true,
+                  },
                 },
               },
             });
@@ -2123,12 +2122,12 @@ export default function runAbstractControlContainerBaseTestSuite<
               meta: {},
               controlId: b.id,
               debugPath: expect.any(String),
-              changes: new Map<string, unknown>([
-                ['value', expect.any(Object)],
-                ['childDisabled', true],
-                ['childrenEnabled', false],
-                [CHILD_PROP_NAME, false],
-              ]),
+              changes: {
+                value: expect.any(Object),
+                childDisabled: true,
+                childrenEnabled: false,
+                [CHILD_PROP_NAME]: false,
+              },
               childEvents: {
                 0: {
                   type: 'StateChange',
@@ -2136,13 +2135,13 @@ export default function runAbstractControlContainerBaseTestSuite<
                   meta: {},
                   controlId: child1.id,
                   debugPath: expect.any(String),
-                  changes: new Map<string, unknown>([
-                    ['selfDisabled', true],
-                    ['selfEnabled', false],
-                    ['disabled', true],
-                    ['enabled', false],
-                    ['status', 'DISABLED'],
-                  ]),
+                  changes: {
+                    selfDisabled: true,
+                    selfEnabled: false,
+                    disabled: true,
+                    enabled: false,
+                    status: 'DISABLED',
+                  },
                 },
               },
             });
@@ -2184,11 +2183,11 @@ export default function runAbstractControlContainerBaseTestSuite<
               meta: {},
               controlId: expect.any(Symbol),
               debugPath: expect.any(String),
-              changes: new Map([
-                [CHILDREN_PROP_NAME, true],
-                [CHILD_PROP_NAME, true],
-                [PROP_NAME, true],
-              ]),
+              changes: {
+                [CHILDREN_PROP_NAME]: true,
+                [CHILD_PROP_NAME]: true,
+                [PROP_NAME]: true,
+              },
               childEvents: {
                 0: {
                   type: 'StateChange',
@@ -2196,10 +2195,10 @@ export default function runAbstractControlContainerBaseTestSuite<
                   meta: {},
                   controlId: expect.any(Symbol),
                   debugPath: expect.any(String),
-                  changes: new Map([
-                    [SELF_PROP_NAME, true],
-                    [PROP_NAME, true],
-                  ]),
+                  changes: {
+                    [SELF_PROP_NAME]: true,
+                    [PROP_NAME]: true,
+                  },
                 },
                 1: {
                   type: 'StateChange',
@@ -2207,10 +2206,10 @@ export default function runAbstractControlContainerBaseTestSuite<
                   meta: {},
                   controlId: expect.any(Symbol),
                   debugPath: expect.any(String),
-                  changes: new Map([
-                    [SELF_PROP_NAME, true],
-                    [PROP_NAME, true],
-                  ]),
+                  changes: {
+                    [SELF_PROP_NAME]: true,
+                    [PROP_NAME]: true,
+                  },
                 },
               },
             });
@@ -2264,11 +2263,11 @@ export default function runAbstractControlContainerBaseTestSuite<
               meta: {},
               controlId: expect.any(Symbol),
               debugPath: expect.any(String),
-              changes: new Map([
-                [CHILDREN_PROP_NAME, true],
-                [CHILD_PROP_NAME, true],
-                [PROP_NAME, true],
-              ]),
+              changes: {
+                [CHILDREN_PROP_NAME]: true,
+                [CHILD_PROP_NAME]: true,
+                [PROP_NAME]: true,
+              },
               childEvents: {
                 0: {
                   type: 'StateChange',
@@ -2276,10 +2275,10 @@ export default function runAbstractControlContainerBaseTestSuite<
                   meta: {},
                   controlId: expect.any(Symbol),
                   debugPath: expect.any(String),
-                  changes: new Map([
-                    [SELF_PROP_NAME, true],
-                    [PROP_NAME, true],
-                  ]),
+                  changes: {
+                    [SELF_PROP_NAME]: true,
+                    [PROP_NAME]: true,
+                  },
                 },
                 1: {
                   type: 'StateChange',
@@ -2287,10 +2286,10 @@ export default function runAbstractControlContainerBaseTestSuite<
                   meta: {},
                   controlId: expect.any(Symbol),
                   debugPath: expect.any(String),
-                  changes: new Map([
-                    [SELF_PROP_NAME, true],
-                    [PROP_NAME, true],
-                  ]),
+                  changes: {
+                    [SELF_PROP_NAME]: true,
+                    [PROP_NAME]: true,
+                  },
                 },
               },
             });
