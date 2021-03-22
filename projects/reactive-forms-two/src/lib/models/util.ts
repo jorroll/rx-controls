@@ -162,7 +162,7 @@ export function transformRawValueStateChange<RawValue, NewRawValue>(
 ) {
   if (event.changes['rawValue'] === undefined) return event;
 
-  const oldRawValue = event.changes['rawValue'] as any;
+  const oldRawValue = event.changes.rawValue as any;
   const newRawValue = fn(oldRawValue) as any;
   const newChanges = { ...event.changes, rawValue: newRawValue };
   const newEvent = { ...event, changes: newChanges };
