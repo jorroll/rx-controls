@@ -72,8 +72,8 @@ export interface IControlValidationEvent<RawValue, Value = RawValue>
 
 export interface IControlStateChangeEvent extends IControlEvent {
   readonly type: 'StateChange';
-  readonly changes: ReadonlyMap<string, unknown>;
-  readonly childEvents?: { [key: string]: IControlStateChangeEvent };
+  readonly changes: { readonly [key: string]: unknown };
+  readonly childEvents?: { readonly [key: string]: IControlStateChangeEvent };
 }
 
 export interface IControlFocusEvent extends IControlEvent {
@@ -157,6 +157,11 @@ export namespace AbstractControl {
     'errorsStore',
     'parent',
   ] as const;
+
+  /** **INTERNAL USE ONLY** */
+  export const _PUBLIC_PROPERTIES_INDEX = Object.fromEntries(
+    PUBLIC_PROPERTIES.map((p, i) => [p, i])
+  );
 
   /**
    * **INTERNAL USE ONLY**

@@ -171,6 +171,11 @@ export namespace AbstractControlContainer {
     'childrenErrors',
     ...AbstractControl.PUBLIC_PROPERTIES,
   ] as const;
+
+  /** **INTERNAL USE ONLY** */
+  export const _PUBLIC_PROPERTIES_INDEX = Object.fromEntries(
+    PUBLIC_PROPERTIES.map((p, i) => [p, i])
+  );
 }
 
 export interface AbstractControlContainer<

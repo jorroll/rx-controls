@@ -329,7 +329,9 @@ export default function runAbstractControlBaseTestSuite(
             meta: {},
             debugPath: expect.any(String),
             controlId: expect.any(Symbol),
-            changes: new Map([['selfDisabled', true]]),
+            changes: {
+              selfDisabled: true,
+            },
           };
 
           const result = a.processEvent(e);
@@ -358,13 +360,13 @@ export default function runAbstractControlBaseTestSuite(
             meta: {},
             controlId: expect.any(Symbol),
             debugPath: expect.any(String),
-            changes: new Map<string, any>([
-              ['disabled', true],
-              ['selfDisabled', true],
-              ['enabled', false],
-              ['selfEnabled', false],
-              ['status', 'DISABLED'],
-            ]),
+            changes: {
+              disabled: true,
+              selfDisabled: true,
+              enabled: false,
+              selfEnabled: false,
+              status: 'DISABLED',
+            },
           });
         });
 
@@ -375,7 +377,7 @@ export default function runAbstractControlBaseTestSuite(
             meta: {},
             controlId: expect.any(Symbol),
             debugPath: expect.any(String),
-            changes: new Map([['selfTouched', true]]),
+            changes: { selfTouched: true },
           };
 
           const result = a.processEvent(e);
@@ -394,10 +396,10 @@ export default function runAbstractControlBaseTestSuite(
             meta: {},
             controlId: expect.any(Symbol),
             debugPath: expect.any(String),
-            changes: new Map<string, any>([
-              ['touched', true],
-              ['selfTouched', true],
-            ]),
+            changes: {
+              touched: true,
+              selfTouched: true,
+            },
           });
         });
 
@@ -408,7 +410,7 @@ export default function runAbstractControlBaseTestSuite(
             meta: {},
             controlId: expect.any(Symbol),
             debugPath: expect.any(String),
-            changes: new Map([['selfDirty', true]]),
+            changes: { selfDirty: true },
           };
 
           const result = a.processEvent(e);
@@ -427,10 +429,10 @@ export default function runAbstractControlBaseTestSuite(
             meta: {},
             controlId: expect.any(Symbol),
             debugPath: expect.any(String),
-            changes: new Map<string, any>([
-              ['dirty', true],
-              ['selfDirty', true],
-            ]),
+            changes: {
+              dirty: true,
+              selfDirty: true,
+            },
           });
         });
 
@@ -441,7 +443,7 @@ export default function runAbstractControlBaseTestSuite(
             meta: {},
             controlId: expect.any(Symbol),
             debugPath: expect.any(String),
-            changes: new Map([['selfReadonly', true]]),
+            changes: { selfReadonly: true },
           };
 
           const result = a.processEvent(e);
@@ -460,10 +462,7 @@ export default function runAbstractControlBaseTestSuite(
             meta: {},
             controlId: expect.any(Symbol),
             debugPath: expect.any(String),
-            changes: new Map<string, any>([
-              ['readonly', true],
-              ['selfReadonly', true],
-            ]),
+            changes: { readonly: true, selfReadonly: true },
           });
         });
 
@@ -474,7 +473,7 @@ export default function runAbstractControlBaseTestSuite(
             meta: {},
             controlId: expect.any(Symbol),
             debugPath: expect.any(String),
-            changes: new Map([['selfSubmitted', true]]),
+            changes: { selfSubmitted: true },
           };
 
           const result = a.processEvent(e);
@@ -493,10 +492,7 @@ export default function runAbstractControlBaseTestSuite(
             meta: {},
             controlId: expect.any(Symbol),
             debugPath: expect.any(String),
-            changes: new Map<string, any>([
-              ['submitted', true],
-              ['selfSubmitted', true],
-            ]),
+            changes: { submitted: true, selfSubmitted: true },
           });
         });
 
@@ -507,7 +503,7 @@ export default function runAbstractControlBaseTestSuite(
             meta: {},
             controlId: expect.any(Symbol),
             debugPath: expect.any(String),
-            changes: new Map([['data', { one: true }]]),
+            changes: { data: { one: true } },
           };
 
           const result = a.processEvent(e);
@@ -525,7 +521,7 @@ export default function runAbstractControlBaseTestSuite(
             meta: {},
             controlId: expect.any(Symbol),
             debugPath: expect.any(String),
-            changes: new Map<string, any>([['data', { one: true }]]),
+            changes: { data: { one: true } },
           });
         });
 
@@ -538,7 +534,7 @@ export default function runAbstractControlBaseTestSuite(
             meta: {},
             controlId: expect.any(Symbol),
             debugPath: expect.any(String),
-            changes: new Map([['validatorStore', validatorStore]]),
+            changes: { validatorStore },
           };
 
           const result = a.processEvent(e);
@@ -557,10 +553,10 @@ export default function runAbstractControlBaseTestSuite(
             meta: {},
             controlId: expect.any(Symbol),
             debugPath: expect.any(String),
-            changes: new Map<string, any>([
-              ['validatorStore', new Map([['one', expect.any(Function)]])],
-              ['validator', expect.any(Function)],
-            ]),
+            changes: {
+              validatorStore: new Map([['one', expect.any(Function)]]),
+              validator: expect.any(Function),
+            },
           });
         });
 
@@ -573,7 +569,7 @@ export default function runAbstractControlBaseTestSuite(
             meta: {},
             controlId: expect.any(Symbol),
             debugPath: expect.any(String),
-            changes: new Map([['pendingStore', pendingStore]]),
+            changes: { pendingStore },
           };
 
           const result = a.processEvent(e);
@@ -600,12 +596,12 @@ export default function runAbstractControlBaseTestSuite(
             meta: {},
             controlId: expect.any(Symbol),
             debugPath: expect.any(String),
-            changes: new Map<string, any>([
-              ['pendingStore', pendingStore],
-              ['selfPending', true],
-              ['pending', true],
-              ['status', 'PENDING'],
-            ]),
+            changes: {
+              pendingStore,
+              selfPending: true,
+              pending: true,
+              status: 'PENDING',
+            },
           });
         });
 
@@ -619,7 +615,7 @@ export default function runAbstractControlBaseTestSuite(
             meta: {},
             controlId: expect.any(Symbol),
             debugPath: expect.any(String),
-            changes: new Map([['errorsStore', errorsStore]]),
+            changes: { errorsStore },
           };
 
           const result = a.processEvent(e);
@@ -654,16 +650,16 @@ export default function runAbstractControlBaseTestSuite(
             meta: {},
             controlId: expect.any(Symbol),
             debugPath: expect.any(String),
-            changes: new Map<string, any>([
-              ['errorsStore', errorsStore],
-              ['selfErrors', errors],
-              ['errors', errors],
-              ['valid', false],
-              ['selfValid', false],
-              ['invalid', true],
-              ['selfInvalid', true],
-              ['status', 'INVALID'],
-            ]),
+            changes: {
+              errorsStore,
+              selfErrors: errors,
+              errors,
+              valid: false,
+              selfValid: false,
+              invalid: true,
+              selfInvalid: true,
+              status: 'INVALID',
+            },
           });
         });
       });

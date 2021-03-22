@@ -212,10 +212,10 @@ describe('FormControl', () => {
         meta: {},
         controlId: expect.any(Symbol),
         debugPath: expect.any(String),
-        changes: new Map([
-          ['rawValue', 'newValue'],
-          ['value', 'newValue'],
-        ]),
+        changes: {
+          rawValue: 'newValue',
+          value: 'newValue',
+        },
       });
 
       expect(event4).toBe(undefined);
@@ -306,18 +306,18 @@ describe('FormControl', () => {
         source: c.id,
         controlId: expect.any(Symbol),
         debugPath: expect.any(String),
-        changes: new Map<string, unknown>([
-          ['rawValue', 'hi'],
-          ['value', 'hi'],
-          ['errorsStore', new Map()],
-          ['selfErrors', null],
-          ['errors', null],
-          ['valid', true],
-          ['selfValid', true],
-          ['invalid', false],
-          ['selfInvalid', false],
-          ['status', 'VALID'],
-        ]),
+        changes: {
+          rawValue: 'hi',
+          value: 'hi',
+          errorsStore: new Map(),
+          selfErrors: null,
+          errors: null,
+          valid: true,
+          selfValid: true,
+          invalid: false,
+          selfInvalid: false,
+          status: 'VALID',
+        },
         meta: {},
       });
 
@@ -385,19 +385,18 @@ describe('FormControl', () => {
         meta: {},
         controlId: expect.any(Symbol),
         debugPath: expect.any(String),
-        changes: new Map<string, any>([
-          [
-            'errorsStore',
-            new Map([['myValidationService', { invalidValue: true }]]),
-          ],
-          ['selfErrors', { invalidValue: true }],
-          ['errors', { invalidValue: true }],
-          ['valid', false],
-          ['selfValid', false],
-          ['invalid', true],
-          ['selfInvalid', true],
-          ['status', 'INVALID'],
-        ]),
+        changes: {
+          errorsStore: new Map([
+            ['myValidationService', { invalidValue: true }],
+          ]),
+          selfErrors: { invalidValue: true },
+          errors: { invalidValue: true },
+          valid: false,
+          selfValid: false,
+          invalid: true,
+          selfInvalid: true,
+          status: 'INVALID',
+        },
       });
 
       expect(event3).toEqual<IControlValidationEvent<unknown, unknown>>({
@@ -416,10 +415,10 @@ describe('FormControl', () => {
         meta: {},
         controlId: expect.any(Symbol),
         debugPath: expect.any(String),
-        changes: new Map<string, any>([
-          ['rawValue', 'invalidValue'],
-          ['value', 'invalidValue'],
-        ]),
+        changes: {
+          rawValue: 'invalidValue',
+          value: 'invalidValue',
+        },
       });
 
       expect(event5).toEqual<IControlValidationEvent<unknown, unknown>>({
@@ -438,16 +437,16 @@ describe('FormControl', () => {
         meta: {},
         controlId: expect.any(Symbol),
         debugPath: expect.any(String),
-        changes: new Map<string, any>([
-          ['errorsStore', new Map()],
-          ['selfErrors', null],
-          ['errors', null],
-          ['valid', true],
-          ['selfValid', true],
-          ['invalid', false],
-          ['selfInvalid', false],
-          ['status', 'VALID'],
-        ]),
+        changes: {
+          errorsStore: new Map(),
+          selfErrors: null,
+          errors: null,
+          valid: true,
+          selfValid: true,
+          invalid: false,
+          selfInvalid: false,
+          status: 'VALID',
+        },
       });
 
       expect(event7).toEqual<IControlValidationEvent<unknown, unknown>>({
@@ -466,10 +465,10 @@ describe('FormControl', () => {
         meta: {},
         controlId: expect.any(Symbol),
         debugPath: expect.any(String),
-        changes: new Map<string, any>([
-          ['rawValue', 'validValue'],
-          ['value', 'validValue'],
-        ]),
+        changes: {
+          rawValue: 'validValue',
+          value: 'validValue',
+        },
       });
 
       expect(event9).toEqual(undefined);
@@ -555,21 +554,18 @@ describe('FormControl', () => {
         meta: {},
         controlId: expect.any(Symbol),
         debugPath: expect.any(String),
-        changes: new Map<string, any>([
-          [
-            'errorsStore',
-            new Map([
-              ['lowercaseValidationService', { mustBeLowercase: true }],
-            ]),
-          ],
-          ['selfErrors', { mustBeLowercase: true }],
-          ['errors', { mustBeLowercase: true }],
-          ['valid', false],
-          ['selfValid', false],
-          ['invalid', true],
-          ['selfInvalid', true],
-          ['status', 'INVALID'],
-        ]),
+        changes: {
+          errorsStore: new Map([
+            ['lowercaseValidationService', { mustBeLowercase: true }],
+          ]),
+          selfErrors: { mustBeLowercase: true },
+          errors: { mustBeLowercase: true },
+          valid: false,
+          selfValid: false,
+          invalid: true,
+          selfInvalid: true,
+          status: 'INVALID',
+        },
       });
 
       expect(event3).toEqual<IControlStateChangeEvent>({
@@ -578,17 +574,14 @@ describe('FormControl', () => {
         meta: {},
         controlId: expect.any(Symbol),
         debugPath: expect.any(String),
-        changes: new Map<string, any>([
-          [
-            'errorsStore',
-            new Map([
-              ['lowercaseValidationService', { mustBeLowercase: true }],
-              ['valueValidationService', { invalidValue: true }],
-            ]),
-          ],
-          ['selfErrors', { invalidValue: true, mustBeLowercase: true }],
-          ['errors', { invalidValue: true, mustBeLowercase: true }],
-        ]),
+        changes: {
+          errorsStore: new Map([
+            ['lowercaseValidationService', { mustBeLowercase: true }],
+            ['valueValidationService', { invalidValue: true }],
+          ]),
+          selfErrors: { invalidValue: true, mustBeLowercase: true },
+          errors: { invalidValue: true, mustBeLowercase: true },
+        },
       });
 
       expect(event4).toEqual<IControlValidationEvent<unknown, unknown>>({
@@ -607,10 +600,10 @@ describe('FormControl', () => {
         meta: {},
         controlId: expect.any(Symbol),
         debugPath: expect.any(String),
-        changes: new Map<string, any>([
-          ['rawValue', 'invalidValue'],
-          ['value', 'invalidValue'],
-        ]),
+        changes: {
+          rawValue: 'invalidValue',
+          value: 'invalidValue',
+        },
       });
 
       expect(event6).toEqual<IControlValidationEvent<unknown, unknown>>({
@@ -629,16 +622,13 @@ describe('FormControl', () => {
         meta: {},
         controlId: expect.any(Symbol),
         debugPath: expect.any(String),
-        changes: new Map<string, any>([
-          [
-            'errorsStore',
-            new Map([
-              ['lowercaseValidationService', { mustBeLowercase: true }],
-            ]),
-          ],
-          ['selfErrors', { mustBeLowercase: true }],
-          ['errors', { mustBeLowercase: true }],
-        ]),
+        changes: {
+          errorsStore: new Map([
+            ['lowercaseValidationService', { mustBeLowercase: true }],
+          ]),
+          selfErrors: { mustBeLowercase: true },
+          errors: { mustBeLowercase: true },
+        },
       });
 
       expect(event8).toEqual<IControlValidationEvent<unknown, unknown>>({
@@ -657,10 +647,10 @@ describe('FormControl', () => {
         meta: {},
         controlId: expect.any(Symbol),
         debugPath: expect.any(String),
-        changes: new Map<string, any>([
-          ['rawValue', 'validValue'],
-          ['value', 'validValue'],
-        ]),
+        changes: {
+          rawValue: 'validValue',
+          value: 'validValue',
+        },
       });
 
       expect(event10).toEqual<IControlValidationEvent<unknown, unknown>>({
@@ -679,16 +669,16 @@ describe('FormControl', () => {
         meta: {},
         controlId: expect.any(Symbol),
         debugPath: expect.any(String),
-        changes: new Map<string, any>([
-          ['errorsStore', new Map()],
-          ['selfErrors', null],
-          ['errors', null],
-          ['valid', true],
-          ['selfValid', true],
-          ['invalid', false],
-          ['selfInvalid', false],
-          ['status', 'VALID'],
-        ]),
+        changes: {
+          errorsStore: new Map(),
+          selfErrors: null,
+          errors: null,
+          valid: true,
+          selfValid: true,
+          invalid: false,
+          selfInvalid: false,
+          status: 'VALID',
+        },
       });
 
       expect(event12).toEqual<IControlValidationEvent<unknown, unknown>>({
@@ -707,10 +697,10 @@ describe('FormControl', () => {
         meta: {},
         controlId: expect.any(Symbol),
         debugPath: expect.any(String),
-        changes: new Map<string, any>([
-          ['rawValue', 'validvalue'],
-          ['value', 'validvalue'],
-        ]),
+        changes: {
+          rawValue: 'validvalue',
+          value: 'validvalue',
+        },
       });
 
       expect(event14).toEqual(undefined);
@@ -734,36 +724,36 @@ describe('FormControl', () => {
         meta: {},
         controlId: expect.any(Symbol),
         debugPath: expect.any(String),
-        changes: new Map<string, any>([
-          ['enabled', true],
-          ['selfEnabled', true],
-          ['disabled', false],
-          ['selfDisabled', false],
-          ['touched', false],
-          ['selfTouched', false],
-          ['dirty', false],
-          ['selfDirty', false],
-          ['readonly', false],
-          ['selfReadonly', false],
-          ['submitted', false],
-          ['selfSubmitted', false],
-          ['data', undefined],
-          ['value', 'one'],
-          ['rawValue', 'one'],
-          ['validator', null],
-          ['validatorStore', new Map()],
-          ['pending', false],
-          ['selfPending', false],
-          ['pendingStore', new Set()],
-          ['valid', true],
-          ['selfValid', true],
-          ['invalid', false],
-          ['selfInvalid', false],
-          ['status', 'VALID'],
-          ['errors', null],
-          ['selfErrors', null],
-          ['errorsStore', new Map()],
-        ]),
+        changes: {
+          enabled: true,
+          selfEnabled: true,
+          disabled: false,
+          selfDisabled: false,
+          touched: false,
+          selfTouched: false,
+          dirty: false,
+          selfDirty: false,
+          readonly: false,
+          selfReadonly: false,
+          submitted: false,
+          selfSubmitted: false,
+          data: undefined,
+          value: 'one',
+          rawValue: 'one',
+          validator: null,
+          validatorStore: new Map(),
+          pending: false,
+          selfPending: false,
+          pendingStore: new Set(),
+          valid: true,
+          selfValid: true,
+          invalid: false,
+          selfInvalid: false,
+          status: 'VALID',
+          errors: null,
+          selfErrors: null,
+          errorsStore: new Map(),
+        },
       });
     });
 

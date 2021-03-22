@@ -11,7 +11,7 @@ import {
   IProcessedEvent,
 } from './abstract-control';
 import { Observable, of, queueScheduler, Subject } from 'rxjs';
-import { getSimpleStateChangeEventArgs } from '../util';
+import { getSimpleStateChangeEventArgs, getSortedChanges } from '../util';
 import {
   map,
   filter,
@@ -79,6 +79,10 @@ export function composeValidators<RawValue, Value>(
 
 export abstract class AbstractControlBase<RawValue, Data, Value>
   implements AbstractControl<RawValue, Data, Value> {
+  static readonly PUBLIC_PROPERTIES = AbstractControl.PUBLIC_PROPERTIES as readonly string[];
+  static readonly PUBLIC_PROPERTIES_INDEX =
+    AbstractControl._PUBLIC_PROPERTIES_INDEX;
+
   id: ControlId;
 
   data!: Data;
@@ -1097,13 +1101,16 @@ export abstract class AbstractControlBase<RawValue, Data, Value>
       meta: {},
       ...this._normalizeOptions('replayState', options),
       // the order of these changes matters
-      changes: new Map<string, unknown>(
-        AbstractControl.PUBLIC_PROPERTIES.map((p) => [p, this[p]])
+      changes: Object.fromEntries(
+        (this
+          .constructor as any).PUBLIC_PROPERTIES.map(
+          (p: string & keyof this) => [p, this[p]]
+        )
       ),
     };
 
-    // replay state does not include the "parent" prop
-    (event.changes as any).delete('parent');
+    // replay state should not include the "parent" prop
+    delete (event.changes as any).parent;
 
     return of(event);
   }
@@ -1279,21 +1286,8 @@ export abstract class AbstractControlBase<RawValue, Data, Value>
       [AbstractControl.NO_EVENT]: true,
     };
 
-    // const changes: Array<keyof this & string> = [];
-
-    // for (const prop of this.constructor.PUBLIC_PROPERTIES) {
-    //   if (!event.changes.has(prop)) continue;
-
-    //   changes.push(
-    //     ...this._processIndividualStateChange(
-    //       _options,
-    //       prop,
-    //       event.changes.get(prop)!
-    //     )
-    //   );
-    // }
-
-    const changes: Array<keyof this & string> = Array.from(
+    const changes: Array<keyof this & string> = getSortedChanges(
+      (this.constructor as any).PUBLIC_PROPERTIES_INDEX,
       event.changes
     ).flatMap(
       ([prop, value]: [string, any]): Array<keyof this & string> => {
@@ -1308,14 +1302,15 @@ export abstract class AbstractControlBase<RawValue, Data, Value>
       result: {
         ...event,
         type: 'StateChange',
-        // TODO: this won't preserve the order of the changes which might pose a problem
-        changes: new Map(Array.from(new Set(changes)).map((p) => [p, this[p]])),
+        changes: Object.fromEntries(
+          Array.from(new Set(changes)).map((p) => [p, this[p]])
+        ),
       },
     };
 
     if (
       !options[AbstractControl.NO_EVENT] &&
-      processedEvent.result!.changes.has('value')
+      processedEvent.result!.changes.value !== undefined
     ) {
       this._emitValidationEvents(options);
     }

@@ -126,10 +126,10 @@ export abstract class BaseDirective<T extends AbstractControl, D = any>
 
     return (event: IControlEvent) => {
       if (isStateChange(event)) {
-        if (valueMapperToFn && event.changes.has('rawValue')) {
+        if (valueMapperToFn && event.changes.rawValue !== undefined) {
           // assertEventShape(event, 'rawValue');
           return this.mapValueEvent(event, valueMapperToFn);
-        } else if (event.changes.has('parent')) {
+        } else if (event.changes.parent !== undefined) {
           // assertEventShape(event, 'parent');
           return {
             ...event,
@@ -156,7 +156,7 @@ export abstract class BaseDirective<T extends AbstractControl, D = any>
       if (
         isStateChange(event) &&
         valueMapperFromFn &&
-        event.changes.has('rawValue')
+        event.changes.rawValue !== undefined
       ) {
         // assertEventShape(event, 'rawValue');
         return this.mapValueEvent(event, valueMapperFromFn);
@@ -174,31 +174,31 @@ export abstract class BaseDirective<T extends AbstractControl, D = any>
   }
 
   protected onControlStateChange(e: IControlStateChangeEvent) {
-    if (e.changes.has('touched')) {
+    if (e.changes.touched !== undefined) {
       this.updateTouchedCSS();
     }
 
-    if (e.changes.has('readonly')) {
+    if (e.changes.readonly !== undefined) {
       this.updateReadonlyCSS();
     }
 
-    if (e.changes.has('disabled')) {
+    if (e.changes.disabled !== undefined) {
       this.updateDisabledCSS();
     }
 
-    if (e.changes.has('invalid')) {
+    if (e.changes.invalid !== undefined) {
       this.updateInvalidCSS();
     }
 
-    if (e.changes.has('submitted')) {
+    if (e.changes.submitted !== undefined) {
       this.updateSubmittedCSS();
     }
 
-    if (e.changes.has('dirty')) {
+    if (e.changes.dirty !== undefined) {
       this.updateDirtyCSS();
     }
 
-    if (e.changes.has('pending')) {
+    if (e.changes.pending !== undefined) {
       this.updatePendingCSS();
     }
   }

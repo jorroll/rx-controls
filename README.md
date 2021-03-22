@@ -23,3 +23,5 @@
      two have different semantic meanings.
 
 ## TODO
+
+1. update `transformRawValueStateChange` so that it transforms the `value` change in addition to the `rawValue` change.
