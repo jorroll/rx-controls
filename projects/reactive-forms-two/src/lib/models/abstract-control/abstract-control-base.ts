@@ -1145,19 +1145,19 @@ export abstract class AbstractControlBase<RawValue, Data, Value>
         );
         break;
       }
-      // case 'ValidationStart':
-      // case 'AsyncValidationStart':
-      // case 'Focus': {
-      //   processedEvent =
-      //     source !== this.id
-      //       ? { status: 'PROCESSED' }
-      //       : {
-      //           status: 'PROCESSED',
-      //           result: { ...event, ...pluckOptions(options) },
-      //         };
+      case 'ValidationStart':
+      case 'AsyncValidationStart':
+      case 'Focus': {
+        processedEvent =
+          event.controlId !== this.id
+            ? { status: 'PROCESSED' }
+            : {
+                status: 'PROCESSED',
+                result: { ...event, ..._options },
+              };
 
-      //   break;
-      // }
+        break;
+      }
       default: {
         processedEvent = { status: 'UNKNOWN' };
         break;

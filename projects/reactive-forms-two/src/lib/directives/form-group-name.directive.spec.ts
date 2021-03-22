@@ -72,8 +72,8 @@ export class ComplexValueMapperTestComponent {
   });
 
   readonly valueMapper: IControlValueMapper<Date | null, string> = {
-    to: (value) => value?.toISOString() ?? '',
-    from: (value) => (value ? new Date(Date.parse(value)) : null),
+    toAccessor: (value) => value?.toISOString() ?? '',
+    fromAccessor: (value) => (value ? new Date(Date.parse(value)) : null),
   };
 
   alternateRelativeFirstNameControl = new FormControl('Bobby');

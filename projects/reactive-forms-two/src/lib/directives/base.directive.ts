@@ -7,38 +7,11 @@ import {
   Input,
 } from '@angular/core';
 import { Subscription } from 'rxjs';
-import {
-  AbstractControl,
-  IControlEvent,
-  isStateChange,
-  transformRawValueStateChange,
-} from '../models';
+import { AbstractControl, IControlEvent, isStateChange } from '../models';
 import { IControlDirectiveCallback, IControlValueMapper } from './interface';
 import { ControlAccessor } from '../accessors/interface';
 import { IControlStateChangeEvent } from '../models/abstract-control/abstract-control';
 import { filter } from 'rxjs/operators';
-
-// function assertEventShape(
-//   event: IControlStateChangeEvent,
-//   prop: 'rawValue' | 'parent'
-// ): asserts event is IControlStateChangeEvent {
-//   if (
-//     event.subtype !== 'Self' ||
-//     !(event as IControlStateChangeEvent).change[prop]
-//   ) {
-//     // because the swFormControlValueMapper returns a `IControlStateChangeEvent`
-//     // state change, we want to ensure that this doesn't accidently destroy a custom
-//     // event returned by a user. The standard FormControl only changes rawValue/parent
-//     // via a IControlStateChangeEvent rawValue/parent event.
-//     throw new Error(
-//       `swFormControlValueMapper expects all changes to a control's ` +
-//         `${prop} to come from IControlStateChangeEvent "${prop}" ` +
-//         `changes but it received a StateChange that didn't conform to this. ` +
-//         `Are you using a custom accessor that doesn't implement ` +
-//         `ControlAccessor<FormControl>?`
-//     );
-//   }
-// }
 
 @Directive()
 export abstract class BaseDirective<T extends AbstractControl, D = any>
@@ -103,11 +76,11 @@ export abstract class BaseDirective<T extends AbstractControl, D = any>
       throw new Error(`${name} expected an object`);
     }
 
-    if (typeof mapper.to !== 'function') {
+    if (typeof mapper.toAccessor !== 'function') {
       throw new Error(`${name} expected to have a "to" mapper function`);
     }
 
-    if (typeof mapper.from !== 'function') {
+    if (typeof mapper.fromAccessor !== 'function') {
       throw new Error(`${name} expected to have a "from" mapper function`);
     }
 
@@ -122,15 +95,13 @@ export abstract class BaseDirective<T extends AbstractControl, D = any>
   }
 
   protected toAccessorEventMapFn() {
-    const valueMapperToFn = this.valueMapper?.to;
+    const valueMapperToFn = this.valueMapper?.toAccessor;
 
     return (event: IControlEvent) => {
       if (isStateChange(event)) {
         if (valueMapperToFn && event.changes.rawValue !== undefined) {
-          // assertEventShape(event, 'rawValue');
           return this.mapValueEvent(event, valueMapperToFn);
         } else if (event.changes.parent !== undefined) {
-          // assertEventShape(event, 'parent');
           return {
             ...event,
             source: this.control.id,
@@ -141,7 +112,7 @@ export abstract class BaseDirective<T extends AbstractControl, D = any>
       if (event.type === 'Focus') {
         return {
           ...event,
-          source: this.control.id,
+          controlId: this.control.id,
         };
       }
 
@@ -150,7 +121,7 @@ export abstract class BaseDirective<T extends AbstractControl, D = any>
   }
 
   protected fromAccessorEventMapFn() {
-    const valueMapperFromFn = this.valueMapper?.from;
+    const valueMapperFromFn = this.valueMapper?.fromAccessor;
 
     return (event: IControlEvent) => {
       if (
@@ -158,7 +129,6 @@ export abstract class BaseDirective<T extends AbstractControl, D = any>
         valueMapperFromFn &&
         event.changes.rawValue !== undefined
       ) {
-        // assertEventShape(event, 'rawValue');
         return this.mapValueEvent(event, valueMapperFromFn);
       }
 
@@ -166,11 +136,26 @@ export abstract class BaseDirective<T extends AbstractControl, D = any>
     };
   }
 
+  /**
+   * This function is only intended for use with FormControls and
+   * isn't suitable for use with an AbstractControlContainer's values
+   */
   private mapValueEvent(
     event: IControlStateChangeEvent,
     mapperFn: (rawValue: unknown) => unknown
   ) {
-    return transformRawValueStateChange(event, mapperFn);
+    if (event.changes.rawValue === undefined) return event;
+
+    const oldRawValue = event.changes.rawValue as any;
+    const newRawValue = mapperFn(oldRawValue) as any;
+    const newChanges = {
+      ...event.changes,
+      rawValue: newRawValue,
+      value: newRawValue,
+    };
+    const newEvent = { ...event, changes: newChanges };
+
+    return newEvent;
   }
 
   protected onControlStateChange(e: IControlStateChangeEvent) {
@@ -204,80 +189,44 @@ export abstract class BaseDirective<T extends AbstractControl, D = any>
   }
 
   protected updateTouchedCSS() {
-    if (this.control.touched) {
-      this.addClass('sw-touched');
-      this.removeClass('sw-untouched');
-    } else {
-      this.addClass('sw-untouched');
-      this.removeClass('sw-touched');
-    }
+    this.updateCSS('touched', 'sw-touched', 'sw-untouched');
   }
 
   protected updateReadonlyCSS() {
-    if (this.control.readonly) {
-      this.addClass('sw-readonly');
-      this.removeClass('sw-not-readonly');
-    } else {
-      this.addClass('sw-not-readonly');
-      this.removeClass('sw-readonly');
-    }
+    this.updateCSS('readonly', 'sw-readonly', 'sw-not-readonly');
   }
 
   protected updateDisabledCSS() {
-    if (this.control.disabled) {
-      this.addClass('sw-disabled');
-      this.removeClass('sw-enabled');
-    } else {
-      this.addClass('sw-enabled');
-      this.removeClass('sw-disabled');
-    }
+    this.updateCSS('disabled', 'sw-disabled', 'sw-enabled');
   }
 
   protected updateInvalidCSS() {
-    if (this.control.invalid) {
-      this.addClass('sw-invalid');
-      this.removeClass('sw-valid');
-    } else {
-      this.addClass('sw-valid');
-      this.removeClass('sw-invalid');
-    }
+    this.updateCSS('invalid', 'sw-invalid', 'sw-valid');
   }
 
   protected updateSubmittedCSS() {
-    if (this.control.submitted) {
-      this.addClass('sw-submitted');
-      this.removeClass('sw-not-submitted');
-    } else {
-      this.addClass('sw-not-submitted');
-      this.removeClass('sw-submitted');
-    }
+    this.updateCSS('submitted', 'sw-submitted', 'sw-not-submitted');
   }
 
   protected updateDirtyCSS() {
-    if (this.control.dirty) {
-      this.addClass('sw-dirty');
-      this.removeClass('sw-pristine');
-    } else {
-      this.addClass('sw-pristine');
-      this.removeClass('sw-dirty');
-    }
+    this.updateCSS('dirty', 'sw-dirty', 'sw-pristine');
   }
 
   protected updatePendingCSS() {
-    if (this.control.pending) {
-      this.addClass('sw-pending');
-      this.removeClass('sw-not-pending');
+    this.updateCSS('pending', 'sw-pending', 'sw-not-pending');
+  }
+
+  private updateCSS(
+    prop: keyof AbstractControl,
+    present: string,
+    notPresent: string
+  ) {
+    if (this.control[prop]) {
+      this.renderer.addClass(this.el.nativeElement, present);
+      this.renderer.removeClass(this.el.nativeElement, notPresent);
     } else {
-      this.addClass('sw-not-pending');
-      this.removeClass('sw-pending');
+      this.renderer.addClass(this.el.nativeElement, notPresent);
+      this.renderer.removeClass(this.el.nativeElement, present);
     }
-  }
-
-  private addClass(text: string) {
-    this.renderer.addClass(this.el.nativeElement, text);
-  }
-
-  private removeClass(text: string) {
-    this.renderer.removeClass(this.el.nativeElement, text);
   }
 }

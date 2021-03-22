@@ -8,8 +8,8 @@ export const SW_CONTROL_DIRECTIVE = new InjectionToken<ControlAccessor>(
 );
 
 export interface IControlValueMapper<ControlValue = any, AccessorValue = any> {
-  to: (value: ControlValue) => AccessorValue;
-  from: (value: AccessorValue) => ControlValue;
+  toAccessor: (value: ControlValue) => AccessorValue;
+  fromAccessor: (value: AccessorValue) => ControlValue;
   accessorValidator?: ValidatorFn;
 }
 

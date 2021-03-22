@@ -156,11 +156,14 @@ export function getSimpleChildStateChangeEventArgs<T extends AbstractControl>(
 //   };
 // }
 
+// This function needs to be updated to also transform an AbstractControlContainer's
+// `value` in addition to it's `rawValue`. At the moment this function is not used
+// or exposed
 export function transformRawValueStateChange<RawValue, NewRawValue>(
   event: IControlStateChangeEvent,
   fn: (rawValue: RawValue) => NewRawValue
 ) {
-  if (event.changes['rawValue'] === undefined) return event;
+  if (event.changes.rawValue === undefined) return event;
 
   const oldRawValue = event.changes.rawValue as any;
   const newRawValue = fn(oldRawValue) as any;

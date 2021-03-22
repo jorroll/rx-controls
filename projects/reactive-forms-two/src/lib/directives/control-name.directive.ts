@@ -1,5 +1,5 @@
 import { OnDestroy, OnChanges, SimpleChange, Directive } from '@angular/core';
-import { AbstractControl } from '../models';
+import { AbstractControl, IControlValidationEvent } from '../models';
 import { IControlValueMapper, IControlAccessorControlEvent } from './interface';
 import { map, filter } from 'rxjs/operators';
 import { BaseDirective } from './base.directive';
@@ -8,6 +8,7 @@ import {
   ControlContainerAccessor,
 } from '../accessors/interface';
 import { concat, Subscription } from 'rxjs';
+import { isValidationStartEvent } from './util';
 
 @Directive()
 export abstract class ControlNameDirective<T extends AbstractControl>
@@ -87,9 +88,9 @@ export abstract class ControlNameDirective<T extends AbstractControl>
       // of the user somehow deleting our validator function.
       this.onChangesSubscriptions.push(
         this.control.events
-          .pipe(filter((e) => e.type === 'ValidationStart'))
-          .subscribe(() => {
-            this.control.setErrors(validator(this.control), {
+          .pipe(filter(isValidationStartEvent))
+          .subscribe((e) => {
+            this.control.setErrors(validator(e), {
               source: this.accessorValidatorId,
             });
           })

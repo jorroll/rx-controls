@@ -1,17 +1,9 @@
-import { InjectionToken, Type } from '@angular/core';
-import { concat } from 'rxjs';
-import {
-  ControlAccessor,
-  ControlContainerAccessor,
-  SW_CONTROL_ACCESSOR,
-} from '../accessors/interface';
+import { ControlAccessor } from '../accessors/interface';
 import {
   selectControlAccessor,
   selectControlContainerAccessor,
 } from '../accessors/util';
-import { IControlEvent } from '../models';
-import { IControlStateChangeEvent } from '../models/abstract-control/abstract-control';
-import { SW_CONTROL_DIRECTIVE } from './interface';
+import { IControlEvent, IControlValidationEvent } from '../models';
 
 export function resolveControlAccessor<T extends ControlAccessor>(
   accessors: T[]
@@ -37,44 +29,8 @@ export function resolveControlContainerAccessor<T extends ControlAccessor>(
   return accessor;
 }
 
-// export function isStateChangeOrChildStateChange(
-//   event: IControlEvent
-// ): event is
-//   | IControlStateChangeEvent<any, any>
-//   | IChildControlStateChangeEvent<any, any> {
-//   return event.type === 'StateChange' || event.type === 'ChildStateChange';
-// }
-
-// export function isValueStateChange<T = unknown>(
-//   event: IControlEvent
-// ): event is IControlStateChangeEvent<T, any> & {
-//   change: { value: IStateChange<T> };
-// } {
-//   return (
-//     event.type === 'StateChange' &&
-//     !!(event as IControlStateChangeEvent<T, any>).change.value
-//   );
-// }
-
-// export function syncAccessorToControl(
-//   accessor: ControlAccessor,
-//   control: AbstractControl
-// ) {
-//   const sub = concat(
-//     accessor.control.replayState(),
-//     accessor.control.events
-//   ).subscribe(control.source);
-
-//   sub.add(control.events.subscribe(accessor.control.source));
-
-//   return sub;
-// }
-
-// export function isSelfStateChange(
-//   e: IControlEvent
-// ): e is IControlStateChangeEvent {
-//   return (
-//     e.type === 'StateChange' &&
-//     (e as IControlStateChangeEvent).subtype === 'Self'
-//   );
-// }
+export function isValidationStartEvent(
+  e: IControlEvent
+): e is IControlValidationEvent<unknown> {
+  return e.type === 'ValidationStart';
+}

@@ -766,13 +766,12 @@ export abstract class AbstractControlContainerBase<
         .pipe(
           filter(isFocusEvent),
           filter(
-            (e) => e.source === ((control as unknown) as AbstractControl).id
+            (e) => e.controlId === ((control as unknown) as AbstractControl).id
           )
         )
-        .subscribe((e) => {
-          _control.focus(e.focus, e);
-          // _control.processEvent({ ...e, source: _control.id });
-        });
+        .subscribe((e) =>
+          _control.processEvent({ ...e, controlId: _control.id })
+        );
 
       control = (_control as unknown) as Controls[ControlsKey<Controls>];
     }
@@ -1423,23 +1422,3 @@ function isChildStateChangeEvent(
 type IChildOptions = INormControlEventOptions & {
   meta: IControlContainerChildStateChangeMeta;
 };
-
-// function buildChildOptions<T extends AbstractControlContainer>(
-//   control: T,
-//   initialTrigger: string,
-//   options?: IControlEventOptions
-// ) {
-//   return {
-//     source: control.id,
-//     initialTrigger,
-//     ...options,
-//     meta: {
-//       ...options?.meta,
-//       [CONTROL_CONTAINER_CHILD_STATE_CHANGE]: {
-//         count: count++,
-//         source: control.id,
-//         results: {} as { [key: string]: IControlStateChangeEvent },
-//       },
-//     },
-//   };
-// }

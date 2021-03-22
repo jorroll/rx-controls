@@ -21,7 +21,3 @@
      that accept a `string`, but we don't know if `ValidatorFn<unknown>` accepts a string or not.
      Oftentimes, developers use `unknown` thinking it is a more type safe version of `any`, but the
      two have different semantic meanings.
-
-## TODO
-
-1. update `transformRawValueStateChange` so that it transforms the `value` change in addition to the `rawValue` change.

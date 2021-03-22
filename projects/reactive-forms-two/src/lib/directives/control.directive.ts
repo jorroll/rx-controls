@@ -5,6 +5,7 @@ import { map, filter } from 'rxjs/operators';
 import { BaseDirective } from './base.directive';
 import { ControlAccessor } from '../accessors/interface';
 import { concat } from 'rxjs';
+import { isValidationStartEvent } from './util';
 
 @Directive()
 export abstract class ControlDirective<T extends AbstractControl>
@@ -61,9 +62,9 @@ export abstract class ControlDirective<T extends AbstractControl>
       // of the user somehow deleting our validator function.
       this.onChangesSubscriptions.push(
         this.control.events
-          .pipe(filter((e) => e.type === 'ValidationStart'))
-          .subscribe(() => {
-            this.control.setErrors(validator(this.control), {
+          .pipe(filter(isValidationStartEvent))
+          .subscribe((e) => {
+            this.control.setErrors(validator(e), {
               source: this.accessorValidatorId,
             });
           })

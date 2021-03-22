@@ -25,6 +25,6 @@ export { IFormGroupArgs, FormGroup } from './form-group';
 
 export { IFormArrayArgs, FormArray } from './form-array';
 
-export { isStateChange, transformRawValueStateChange } from './util';
+export { isStateChange } from './util';
 
 export { composeValidators } from './abstract-control/abstract-control-base';
