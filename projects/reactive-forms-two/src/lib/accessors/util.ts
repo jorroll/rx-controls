@@ -57,7 +57,7 @@ export function setupStdControlEventHandlers<T extends ControlAccessor>(
 
   const sub3 = dir.control.events.subscribe((e) => {
     if (isStateChange(e)) {
-      if (e.changes.value !== undefined) {
+      if (e.changes.rawValue !== undefined) {
         dir._valueHasBeenSet = true;
         options.onValueChangeFn(dir.control.rawValue);
       }
