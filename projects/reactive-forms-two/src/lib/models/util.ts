@@ -1,8 +1,6 @@
 import {
   AbstractControl,
-  ControlId,
   IControlEvent,
-  IControlEventOptions,
   IControlStateChangeEvent,
 } from './abstract-control/abstract-control';
 

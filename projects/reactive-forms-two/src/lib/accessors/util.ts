@@ -10,7 +10,7 @@ import {
   AbstractControl,
   IControlFocusEvent,
 } from '../models/abstract-control/abstract-control';
-import { combineLatest, NEVER, Observable, of } from 'rxjs';
+import { combineLatest, Observable, of } from 'rxjs';
 import { AbstractControlContainer } from '../models';
 
 export function looseIdentical(a: any, b: any): boolean {

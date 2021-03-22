@@ -12,10 +12,9 @@ import {
   Self,
   Optional,
 } from '@angular/core';
-import { AbstractControlContainer, FormArray } from '../models';
+import { FormArray } from '../models';
 import {
   IControlDirectiveCallback,
-  IControlValueMapper,
   SW_CONTROL_DIRECTIVE_CALLBACK,
 } from './interface';
 import { SW_CONTROL_DIRECTIVE } from './interface';

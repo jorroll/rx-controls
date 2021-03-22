@@ -23,8 +23,6 @@ import {
   ControlAccessor,
 } from '../accessors/interface';
 import { ControlDirective } from './control.directive';
-import { IControlValueMapper } from './interface';
-import { concat } from 'rxjs';
 
 @Directive({
   selector: '[swFormGroup]',

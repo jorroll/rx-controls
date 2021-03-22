@@ -11,7 +11,7 @@ import {
   Input,
   Optional,
 } from '@angular/core';
-import { AbstractControl, FormControl } from '../models';
+import { AbstractControl } from '../models';
 import {
   IControlDirectiveCallback,
   SW_CONTROL_DIRECTIVE,
@@ -21,7 +21,6 @@ import { resolveControlAccessor } from './util';
 import { ControlAccessor, SW_CONTROL_ACCESSOR } from '../accessors/interface';
 import { ControlDirective } from './control.directive';
 import { IControlValueMapper } from './interface';
-import { concat } from 'rxjs';
 
 @Directive({
   selector: '[swFormControl]:not([formControl])',

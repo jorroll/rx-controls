@@ -1,4 +1,4 @@
-import { Directive, forwardRef, InjectFlags, Injector } from '@angular/core';
+import { Directive, InjectFlags, Injector } from '@angular/core';
 import { Subscription } from 'rxjs';
 import { CONTROL_ACCESSOR_SPECIFICITY, SW_CONTROL_ACCESSOR } from './interface';
 

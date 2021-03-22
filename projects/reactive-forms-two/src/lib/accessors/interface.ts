@@ -17,7 +17,3 @@ export const SW_CONTROL_ACCESSOR = new InjectionToken<
 export interface ControlContainerAccessor<
   T extends AbstractControlContainer = AbstractControlContainer
 > extends ControlAccessor<T> {}
-
-export const SW_CONTROL_CONTAINER_ACCESSOR = new InjectionToken<ControlContainerAccessor>(
-  'SW_CONTROL_CONTAINER_ACCESSOR'
-);

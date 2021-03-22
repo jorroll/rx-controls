@@ -1,6 +1,6 @@
 import { OnDestroy, OnChanges, SimpleChange, Directive } from '@angular/core';
-import { AbstractControl, IControlValidationEvent } from '../models';
-import { IControlValueMapper, IControlAccessorControlEvent } from './interface';
+import { AbstractControl } from '../models';
+import { IControlValueMapper } from './interface';
 import { map, filter } from 'rxjs/operators';
 import { BaseDirective } from './base.directive';
 import {

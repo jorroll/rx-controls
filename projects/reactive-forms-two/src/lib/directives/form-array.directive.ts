@@ -23,7 +23,6 @@ import {
   ControlAccessor,
 } from '../accessors/interface';
 import { ControlDirective } from './control.directive';
-import { IControlValueMapper } from './interface';
 
 @Directive({
   selector: '[swFormArray]',
