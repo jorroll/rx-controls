@@ -2,7 +2,7 @@ import { FormControl as OldFormControl } from '@angular/forms';
 import {
   FormControl,
   isAncestorControlPropTruthy$,
-} from '@service-work/reactive-forms';
+} from '@service-work/angular-reactive-forms';
 import { testAllAbstractControlDefaultsExcept } from '@service-work/reactive-forms/src/lib/models/test-util';
 import { combineLatest, Subscription } from 'rxjs';
 import { CompatFormControl, FROM_SWCONTROL } from './compat-form-control';

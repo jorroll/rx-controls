@@ -1,9 +1,6 @@
 {
   "name": "@service-work/reactive-forms",
   "version": "0.5.1",
-  "peerDependencies": {
-    "@angular/core": "10 || 11"
-  },
   "dependencies": {
     "tslib": "^2.0.0"
   }

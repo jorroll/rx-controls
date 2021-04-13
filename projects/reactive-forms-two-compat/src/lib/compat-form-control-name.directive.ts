@@ -25,7 +25,7 @@ import {
   IControlDirectiveCallback,
   SW_CONTROL_DIRECTIVE_CALLBACK,
   isAncestorControlPropTruthy$,
-} from '@service-work/reactive-forms';
+} from '@service-work/angular-reactive-forms';
 
 import {
   FormControlDirective,

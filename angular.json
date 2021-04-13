@@ -198,6 +198,42 @@
           }
         }
       }
+    },
+    "reactive-forms-two-angular": {
+      "projectType": "library",
+      "root": "projects/reactive-forms-two-angular",
+      "sourceRoot": "projects/reactive-forms-two-angular/src",
+      "prefix": "lib",
+      "architect": {
+        "build": {
+          "builder": "@angular-devkit/build-angular:ng-packagr",
+          "options": {
+            "tsConfig": "projects/reactive-forms-two-angular/tsconfig.lib.json",
+            "project": "projects/reactive-forms-two-angular/ng-package.json"
+          },
+          "configurations": {
+            "production": {
+              "tsConfig": "projects/reactive-forms-two-angular/tsconfig.lib.prod.json"
+            }
+          }
+        },
+        "test": {
+          "builder": "@angular-builders/jest:run",
+          "options": {
+            "tsConfig": "projects/reactive-forms-two-angular/tsconfig.spec.json"
+          }
+        },
+        "lint": {
+          "builder": "@angular-devkit/build-angular:tslint",
+          "options": {
+            "tsConfig": [
+              "projects/reactive-forms-two-angular/tsconfig.lib.json",
+              "projects/reactive-forms-two-angular/tsconfig.spec.json"
+            ],
+            "exclude": ["**/node_modules/**"]
+          }
+        }
+      }
     }
   }
 }

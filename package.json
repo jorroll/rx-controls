@@ -7,10 +7,13 @@
       "projects/*"
     ]
   },
+  "dependencies": {
+    "tslib": "^2.0.0"
+  },
   "scripts": {
     "ng": "ng",
     "start": "ng serve",
-    "build": "ng build --prod --project reactive-forms-two && ng build --prod --project reactive-forms-two-compat",
+    "build": "ng build --prod --project reactive-forms-two && ng build --prod --project reactive-forms-two-angular && ng build --prod --project reactive-forms-two-compat",
     "pubcanary": "yarn test && yarn lerna version --no-push --preid next && yarn build && yarn lerna publish from-git --yes --dist-tag next --contents build",
     "pub": "yarn test && yarn lerna version --no-push && yarn build && yarn lerna publish from-git --yes --contents build",
     "test": "ng test",
