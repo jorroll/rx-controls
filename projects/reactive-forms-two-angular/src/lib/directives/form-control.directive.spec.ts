@@ -19,8 +19,6 @@ import { wait } from '../test-util';
 import { TestSingleChild } from './test-utils';
 import { FormControlDirective } from './form-control.directive';
 
-import { inspect } from 'util';
-
 const beforeEachFn = TestSingleChild.buildBeforeEachFn({
   declarations: [FormControlDirective],
 });
