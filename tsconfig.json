@@ -19,6 +19,7 @@
     "types": ["jest"]
   },
   "angularCompilerOptions": {
+    "skipTypescriptVersionCheck": true,
     "strictInjectionParameters": true,
     "strictInputAccessModifiers": true,
     "strictTemplates": true

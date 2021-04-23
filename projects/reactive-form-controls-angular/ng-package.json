@@ -5,7 +5,8 @@
     "entryFile": "src/public-api.ts",
     "umdId": "rfcAngular",
     "umdModuleIds": {
-      "reactive-form-controls": "rfControls"
+      "reactive-form-controls": "rfControls",
+      "reactive-form-controls-angular": "rfcAngular"
     }
   },
   "whitelistedNonPeerDependencies": ["tslib"]
