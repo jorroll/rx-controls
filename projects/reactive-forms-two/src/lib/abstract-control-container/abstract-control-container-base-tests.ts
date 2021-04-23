@@ -1,4 +1,3 @@
-import { takeUntil, toArray } from 'rxjs/operators';
 import {
   AbstractControl,
   ControlId,
@@ -15,12 +14,10 @@ import {
   wait,
   subscribeToControlEventsUntilEnd,
 } from '../test-util';
-import { Subject } from 'rxjs';
 import {
   AbstractControlBase,
   CONTROL_SELF_ID,
 } from '../abstract-control/abstract-control-base';
-import { inspect } from 'util';
 
 function testAllDefaultsExcept(
   c: AbstractControlContainer,
@@ -38,11 +35,7 @@ export default function runAbstractControlContainerBaseTestSuite<
   name: string,
   createControlContainer: (args?: {
     children?: number;
-    options?: IAbstractControlContainerBaseArgs<
-      T['data'],
-      T['rawValue'],
-      T['value']
-    >;
+    options?: IAbstractControlContainerBaseArgs<T['data']>;
   }) => T
 ) {
   describe(`AbstractControlContainerBase`, () => {

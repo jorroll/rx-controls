@@ -41,10 +41,8 @@ export type DeepPartial<T> = {
 };
 
 export type IAbstractControlContainerBaseArgs<
-  D,
-  R,
-  V
-> = IAbstractControlBaseArgs<D, R, V>;
+  Data
+> = IAbstractControlBaseArgs<Data>;
 
 const CONTROL_CONTAINER_WATCHED_CHILD_PROPS = [
   // 'enabled',
@@ -278,11 +276,7 @@ export abstract class AbstractControlContainerBase<
   constructor(
     controlId: ControlId,
     controls: Controls,
-    options: IAbstractControlBaseArgs<
-      Data,
-      ControlsRawValue<Controls>,
-      ControlsValue<Controls>
-    > = {}
+    options: IAbstractControlBaseArgs<Data> = {}
   ) {
     super(controlId);
 

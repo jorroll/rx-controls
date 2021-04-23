@@ -31,11 +31,7 @@ export type INormControlEventOptions = Omit<
   debugPath: Exclude<IControlEventOptions['debugPath'], undefined>;
 };
 
-export interface IAbstractControlBaseArgs<
-  Data = any,
-  RawValue = unknown,
-  Value = unknown
-> {
+export interface IAbstractControlBaseArgs<Data = any> {
   data?: Data;
   id?: ControlId;
   disabled?: boolean;
@@ -46,32 +42,25 @@ export interface IAbstractControlBaseArgs<
   errors?: null | ValidationErrors | ReadonlyMap<ControlId, ValidationErrors>;
   validators?:
     | null
-    | ValidatorFn<RawValue, Value>
-    | ValidatorFn<RawValue, Value>[]
-    | ReadonlyMap<ControlId, ValidatorFn<RawValue, Value>>;
+    | ValidatorFn
+    | ValidatorFn[]
+    | ReadonlyMap<ControlId, ValidatorFn>;
   pending?: boolean | ReadonlySet<ControlId>;
 }
 
-export function composeValidators<RawValue, Value>(
-  validators:
-    | undefined
-    | null
-    | ValidatorFn<RawValue, Value>
-    | ValidatorFn<RawValue, Value>[]
-): null | ValidatorFn<RawValue, Value> {
+export function composeValidators(
+  validators: undefined | null | ValidatorFn | ValidatorFn[]
+): null | ValidatorFn {
   if (!validators || (Array.isArray(validators) && validators.length === 0)) {
     return null;
   }
 
   if (Array.isArray(validators)) {
     return (control) =>
-      validators.reduce(
-        (prev: ValidationErrors | null, curr: ValidatorFn<RawValue, Value>) => {
-          const errors = curr(control);
-          return errors ? { ...prev, ...errors } : prev;
-        },
-        null
-      );
+      validators.reduce((prev: ValidationErrors | null, curr: ValidatorFn) => {
+        const errors = curr(control);
+        return errors ? { ...prev, ...errors } : prev;
+      }, null);
   }
 
   return validators;
@@ -168,15 +157,15 @@ export abstract class AbstractControlBase<RawValue, Data, Value>
     return this._errorsStore;
   }
 
-  protected _validator: ValidatorFn<RawValue, Value> | null = null;
+  protected _validator: ValidatorFn | null = null;
   get validator() {
     return this._validator;
   }
 
-  protected _validatorStore: ReadonlyMap<
+  protected _validatorStore: ReadonlyMap<ControlId, ValidatorFn> = new Map<
     ControlId,
-    ValidatorFn<RawValue, Value>
-  > = new Map<ControlId, ValidatorFn<RawValue, Value>>();
+    ValidatorFn
+  >();
   get validatorStore() {
     return this._validatorStore;
   }
@@ -979,15 +968,15 @@ export abstract class AbstractControlBase<RawValue, Data, Value>
 
   setValidators(
     value:
-      | ValidatorFn<RawValue, Value>
-      | ValidatorFn<RawValue, Value>[]
-      | ReadonlyMap<ControlId, ValidatorFn<RawValue, Value>>
+      | ValidatorFn
+      | ValidatorFn[]
+      | ReadonlyMap<ControlId, ValidatorFn>
       | null,
     options?: IControlEventOptions
   ): Array<keyof this & string> {
     const source = options?.source || CONTROL_SELF_ID;
 
-    let newValue: Map<ControlId, ValidatorFn<RawValue, Value>>;
+    let newValue: Map<ControlId, ValidatorFn>;
 
     if (value instanceof Map) {
       newValue = value;

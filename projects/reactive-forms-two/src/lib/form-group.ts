@@ -15,10 +15,8 @@ import {
 import { getSimpleStateChangeEventArgs, Mutable } from './util';
 
 export type IFormGroupArgs<
-  Data = any,
-  RawValue = unknown,
-  Value = unknown
-> = IAbstractControlContainerBaseArgs<Data, RawValue, Value>;
+  Data = any
+> = IAbstractControlContainerBaseArgs<Data>;
 
 export class FormGroup<
   Controls extends { [key: string]: AbstractControl | undefined } = {
@@ -30,11 +28,7 @@ export class FormGroup<
 
   constructor(
     controls: Controls = {} as Controls,
-    options: IFormGroupArgs<
-      Data,
-      ControlsRawValue<Controls>,
-      ControlsValue<Controls>
-    > = {}
+    options: IFormGroupArgs<Data> = {}
   ) {
     super(
       options.id || Symbol(`FormGroup-${FormGroup.id++}`),

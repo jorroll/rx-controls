@@ -3,10 +3,7 @@ import {
   IAbstractControlBaseArgs,
 } from './abstract-control/abstract-control-base';
 
-export type IFormControlArgs<
-  Data = any,
-  Value = unknown
-> = IAbstractControlBaseArgs<Data, Value, Value>;
+export type IFormControlArgs<Data = any> = IAbstractControlBaseArgs<Data>;
 
 export class FormControl<Value = any, Data = any> extends AbstractControlBase<
   Value,
@@ -21,7 +18,7 @@ export class FormControl<Value = any, Data = any> extends AbstractControlBase<
 
   constructor(
     value: Value = null as any,
-    options: IFormControlArgs<Data, Value> = {}
+    options: IFormControlArgs<Data> = {}
   ) {
     super(options.id || Symbol(`FormControl-${FormControl.id++}`));
 

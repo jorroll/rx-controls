@@ -15,10 +15,8 @@ import {
 import { getSimpleStateChangeEventArgs } from './util';
 
 export type IFormArrayArgs<
-  Data = any,
-  RawValue = unknown,
-  Value = unknown
-> = IAbstractControlContainerBaseArgs<Data, RawValue, Value>;
+  Data = any
+> = IAbstractControlContainerBaseArgs<Data>;
 
 export class FormArray<
   Controls extends ReadonlyArray<AbstractControl> = ReadonlyArray<AbstractControl>,
@@ -28,11 +26,7 @@ export class FormArray<
 
   constructor(
     controls: Controls = ([] as unknown) as Controls,
-    options: IFormArrayArgs<
-      Data,
-      ControlsRawValue<Controls>,
-      ControlsValue<Controls>
-    > = {}
+    options: IFormArrayArgs<Data> = {}
   ) {
     super(
       options.id || Symbol(`FormArray-${FormArray.id++}`),

@@ -12,9 +12,9 @@ export type ControlId = string | symbol;
 // Because validator services are now an option, I don't think it's necessary
 // for ValidatorFn to receive the control. Instead they can just receive the
 // rawValue and value.
-export type ValidatorFn<RawValue = any, Value = any> = (obj: {
-  rawValue: RawValue;
-  value: Value;
+export type ValidatorFn = (obj: {
+  rawValue: unknown;
+  value: unknown;
 }) => ValidationErrors | null;
 
 export interface ValidationErrors {

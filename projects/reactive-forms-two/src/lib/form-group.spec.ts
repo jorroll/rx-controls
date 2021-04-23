@@ -1,7 +1,5 @@
-import { merge, Subject } from 'rxjs';
 import {
   AbstractControl,
-  IControlEvent,
   IControlStateChangeEvent,
   IControlValidationEvent,
   ValidationErrors,
@@ -17,14 +15,11 @@ import {
   toControlMatcherEntries,
   testAllAbstractControlDefaultsExcept,
   subscribeToControlEventsUntilEnd,
-  mapControlsToId,
-  TestSingletons,
 } from './test-util';
 import runSharedTestSuite from './shared-tests';
-import { map, takeUntil, tap, toArray } from 'rxjs/operators';
+import { map } from 'rxjs/operators';
 import { isStateChange, transformRawValueStateChange } from './util';
 import { CONTROL_SELF_ID } from './abstract-control/abstract-control-base';
-import { inspect } from 'util';
 
 runAbstractControlContainerBaseTestSuite('FormGroup', (args = {}) => {
   const c = new FormGroup(undefined, args.options);
@@ -153,7 +148,9 @@ describe('FormGroup', () => {
         const aControls = {
           one: new FormControl('', {
             validators: (c) =>
-              c.rawValue.length > 0 ? null : { required: true },
+              typeof c.rawValue === 'string' && c.rawValue.length > 0
+                ? null
+                : { required: true },
           }),
         };
 
@@ -1161,7 +1158,9 @@ describe('FormGroup', () => {
       const aControls = {
         two: new FormControl('', {
           validators: (c) =>
-            c.rawValue.length > 0 ? null : { required: true },
+            typeof c.rawValue === 'string' && c.rawValue.length > 0
+              ? null
+              : { required: true },
         }),
       };
 
@@ -1201,7 +1200,9 @@ describe('FormGroup', () => {
       const aControls = {
         two: new FormControl('', {
           validators: (c) =>
-            c.rawValue.length > 0 ? null : { required: true },
+            typeof c.rawValue === 'string' && c.rawValue.length > 0
+              ? null
+              : { required: true },
         }),
       };
 
@@ -1256,7 +1257,9 @@ describe('FormGroup', () => {
       const aControls = {
         two: new FormControl('', {
           validators: (c) =>
-            c.rawValue.length > 0 ? null : { required: true },
+            typeof c.rawValue === 'string' && c.rawValue.length > 0
+              ? null
+              : { required: true },
         }),
       };
 
@@ -1291,7 +1294,9 @@ describe('FormGroup', () => {
       const group = new FormGroup({
         one: new FormControl('', {
           validators: (c) =>
-            c.rawValue.length > 0 ? null : { required: true },
+            typeof c.rawValue === 'string' && c.rawValue.length > 0
+              ? null
+              : { required: true },
         }),
       });
 
@@ -1763,7 +1768,9 @@ describe('FormGroup', () => {
       const aControls = {
         one: new FormControl('', {
           validators: (c) =>
-            c.rawValue.length > 0 ? null : { required: true },
+            typeof c.rawValue === 'string' && c.rawValue.length > 0
+              ? null
+              : { required: true },
         }),
       };
 
