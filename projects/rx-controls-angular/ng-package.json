@@ -9,5 +9,5 @@
       "rx-controls-angular": "rxControlsAngular"
     }
   },
-  "whitelistedNonPeerDependencies": ["tslib", "rx-controls"]
+  "allowedNonPeerDependencies": ["tslib", "rx-controls"]
 }
