@@ -27,7 +27,7 @@ import { CONTROL_SELF_ID } from './abstract-control/abstract-control-base';
 import { inspect } from 'util';
 
 runAbstractControlContainerBaseTestSuite('FormGroup', (args = {}) => {
-  const c = new FormGroup<{ [key: string]: AbstractControl }>({}, args.options);
+  const c = new FormGroup(undefined, args.options);
 
   if (args.children) {
     for (let i = 0; i < args.children; i++) {
@@ -42,12 +42,12 @@ runAbstractControlBaseTestSuite(
   'FormGroup',
   // type problem is arising because `Array<keyof this & string>` for AbstractControlBase
   // is not the same as `Array<keyof this & string>` for FormGroup
-  (args) => new FormGroup({}, args?.options) as any
+  (args) => new FormGroup(undefined, args?.options)
 );
 
 runSharedTestSuite(
   'FormGroup',
-  (args) => new FormGroup({}, args?.options) as any,
+  (args) => new FormGroup(undefined, args?.options),
   {
     controlContainer: true,
   }
@@ -536,10 +536,10 @@ describe('FormGroup', () => {
 
       a.setValue(newValue);
 
-      expect(a.controls.one.rawValue).toEqual(newValue.one);
-      expect(a.controls.one.value).toEqual(newValue.one);
-      expect(a.controls.two.rawValue).toEqual(newValue.two);
-      expect(a.controls.two.value).toEqual(newValue.two);
+      expect(a.controls.one!.rawValue).toEqual(newValue.one);
+      expect(a.controls.one!.value).toEqual(newValue.one);
+      expect(a.controls.two!.rawValue).toEqual(newValue.two);
+      expect(a.controls.two!.value).toEqual(newValue.two);
       expect(a.rawValue).toEqual(newValue);
       expect(a.value).toEqual(newValue);
 
@@ -694,10 +694,10 @@ describe('FormGroup', () => {
 
       expect(a.rawValue).toEqual({ one: 'two', two: 2 });
       expect(a.value).toEqual({ one: 'two', two: 2 });
-      expect(a.controls.one.rawValue).toEqual('two');
-      expect(a.controls.one.value).toEqual('two');
-      expect(a.controls.two.rawValue).toEqual(2);
-      expect(a.controls.two.value).toEqual(2);
+      expect(a.controls.one!.rawValue).toEqual('two');
+      expect(a.controls.one!.value).toEqual('two');
+      expect(a.controls.two!.rawValue).toEqual(2);
+      expect(a.controls.two!.value).toEqual(2);
       expect(b.rawValue).toEqual({
         three: ['one'],
         four: { one: 'two', two: 2 },
@@ -964,7 +964,7 @@ describe('FormGroup', () => {
     describe('on child', () => {
       describe('b', () => {
         it('{}', async () => {
-          const child = bControls.four.controls.one;
+          const child = bControls.four.controls.one!;
 
           child.patchErrors({});
 
@@ -980,7 +980,7 @@ describe('FormGroup', () => {
         });
 
         it('{ error: true }', async () => {
-          const child = bControls.four.controls.one;
+          const child = bControls.four.controls.one!;
 
           const error: ValidationErrors = { error: true };
 

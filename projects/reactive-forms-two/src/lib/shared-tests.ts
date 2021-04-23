@@ -17,13 +17,13 @@ export default function runSharedTestSuite(
   name: string,
   createControlBase: (args?: {
     options?: IAbstractControlBaseArgs;
-  }) => AbstractControlBase<any, any, any>,
+  }) => AbstractControl<any, any, any>,
   options: { controlContainer?: boolean } = {}
 ) {
   const IS_CONTROL_CONTAINER_TEST = !!options.controlContainer;
 
   describe(`SharedTests`, () => {
-    let a: AbstractControlBase<any, any, any>;
+    let a: AbstractControl<any, any, any>;
 
     beforeEach(() => {
       // AbstractControl.eventId(0);
@@ -31,9 +31,7 @@ export default function runSharedTestSuite(
     });
 
     describe('observe', () => {
-      function observeControlUntilEnd<
-        T extends AbstractControlBase<any, any, any>
-      >(
+      function observeControlUntilEnd<T extends AbstractControl<any, any, any>>(
         control: T,
         prop: keyof T,
         options: { end?: Subject<void>; ignoreNoObserve?: boolean } = {}
@@ -347,7 +345,7 @@ export default function runSharedTestSuite(
 
     describe('observeChanges', () => {
       function observeControlChangesUntilEnd<
-        T extends AbstractControlBase<any, any, any>
+        T extends AbstractControl<any, any, any>
       >(
         control: T,
         prop: keyof T,
@@ -1036,7 +1034,7 @@ export default function runSharedTestSuite(
   });
 
   describe(`SharedTests`, () => {
-    let a: AbstractControlBase<unknown, unknown, unknown>;
+    let a: AbstractControl<unknown, unknown, unknown>;
 
     beforeEach(() => {
       // AbstractControl.eventId(0);

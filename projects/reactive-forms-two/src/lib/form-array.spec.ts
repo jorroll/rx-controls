@@ -11,29 +11,26 @@ import runAbstractControlContainerBaseTestSuite from './abstract-control-contain
 import runSharedTestSuite from './shared-tests';
 import { CONTROL_SELF_ID } from './abstract-control/abstract-control-base';
 
-runAbstractControlContainerBaseTestSuite<FormArray<AbstractControl[]>>(
-  'FormArray',
-  (args = {}) => {
-    const c = new FormArray<AbstractControl[]>([], args.options);
+runAbstractControlContainerBaseTestSuite('FormArray', (args = {}) => {
+  const c = new FormArray(undefined, args.options);
 
-    if (args.children) {
-      for (let i = 0; i < args.children; i++) {
-        c.push(new FormControl(i));
-      }
+  if (args.children) {
+    for (let i = 0; i < args.children; i++) {
+      c.push(new FormControl(i));
     }
-
-    return c;
   }
-);
+
+  return c;
+});
 
 runAbstractControlBaseTestSuite(
   'FormArray',
-  (args) => new FormArray<any[]>([], args?.options) as any
+  (args) => new FormArray(undefined, args?.options)
 );
 
 runSharedTestSuite(
   'FormArray',
-  (args) => new FormArray<any[]>([], args?.options) as any,
+  (args) => new FormArray(undefined, args?.options),
   {
     controlContainer: true,
   }

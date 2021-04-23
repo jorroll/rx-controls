@@ -266,7 +266,7 @@ export function toControlMatcherEntries(
 }
 
 export function setExistingErrors(
-  control: AbstractControlBase<any, any, any>,
+  control: AbstractControl<any, any, any>,
   errors: ValidationErrors | null,
   errorsStore: ReadonlyMap<ControlId, ValidationErrors>
 ) {

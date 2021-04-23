@@ -20,10 +20,10 @@ export default function runAbstractControlBaseTestSuite(
   name: string,
   createControlBase: (args?: {
     options?: IAbstractControlBaseArgs;
-  }) => AbstractControlBase<any, any, any>
+  }) => AbstractControl<any, any, any>
 ) {
   describe(`AbstractControlBase`, () => {
-    let a: AbstractControlBase<any, any, any>;
+    let a: AbstractControl<any, any, any>;
 
     beforeEach(() => {
       // AbstractControl.eventId(0);

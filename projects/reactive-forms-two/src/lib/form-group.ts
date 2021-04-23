@@ -22,7 +22,7 @@ export type IFormGroupArgs<
 
 export class FormGroup<
   Controls extends { [key: string]: AbstractControl | undefined } = {
-    [key: string]: AbstractControl;
+    [key: string]: AbstractControl | undefined;
   },
   Data = any
 > extends AbstractControlContainerBase<Controls, Data> {
