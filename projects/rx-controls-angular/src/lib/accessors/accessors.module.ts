@@ -35,4 +35,4 @@ import {
   ],
   providers: [],
 })
-export class AccessorsModule {}
+export class RxAccessorsModule {}

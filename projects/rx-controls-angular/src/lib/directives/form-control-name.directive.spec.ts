@@ -4,7 +4,7 @@ import { TestSingleChild } from './test-utils';
 import { FormGroupDirective } from './form-group.directive';
 import { FormControlNameDirective } from './form-control-name.directive';
 import { wait } from '../test-util';
-import { FormControl, FormGroup, IControlStateChangeEvent } from 'rx-controls';
+import { FormControl, FormGroup } from 'rx-controls';
 import { DefaultFormGroupDirectiveAccessor } from './default-form-group.directive.accessor';
 
 const beforeEachFn = TestSingleChild.buildBeforeEachFn({
@@ -18,8 +18,8 @@ const beforeEachFn = TestSingleChild.buildBeforeEachFn({
 @Component({
   selector: 'my-test-component',
   template: `
-    <div id="theDiv" *ngIf="showFormElement" [swFormGroup]="control">
-      <input swFormControlName="one" />
+    <div id="theDiv" *ngIf="showFormElement" [rxFormGroup]="control">
+      <input rxFormControlName="one" />
     </div>
   `,
 })

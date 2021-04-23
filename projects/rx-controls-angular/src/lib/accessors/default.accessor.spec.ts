@@ -15,7 +15,7 @@ const beforeEachFn = buildBeforeEachFn<DefaultAccessor, 'input'>({
 
 @Component({
   selector: 'my-test-component',
-  template: ` <input swFormControl type="text" /> `,
+  template: ` <input rxFormControl type="text" /> `,
 })
 export class TextInputComponent {
   @ViewChild(DefaultAccessor) accessor!: DefaultAccessor;
@@ -38,7 +38,7 @@ describe('TextInputComponent', () => {
 
 @Component({
   selector: 'my-test-component',
-  template: ` <input swFormControl type="text" value="hi" /> `,
+  template: ` <input rxFormControl type="text" value="hi" /> `,
 })
 export class InitialValueTextInputComponent {
   @ViewChild(DefaultAccessor) accessor!: DefaultAccessor;

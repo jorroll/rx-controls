@@ -13,8 +13,8 @@ const beforeEachFn = TestSingleChild.buildBeforeEachFn({
   template: `
     <input
       formControl
-      [swFormControl]="control"
-      [swFormControlValueMapper]="valueMapper"
+      [rxFormControl]="control"
+      [rxFormControlValueMapper]="valueMapper"
     />
   `,
 })

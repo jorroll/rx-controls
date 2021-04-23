@@ -3,14 +3,14 @@ import { AbstractControl, FormGroup } from 'rx-controls';
 import {
   ControlContainerAccessor,
   CONTROL_ACCESSOR_SPECIFICITY,
-  SW_CONTROL_ACCESSOR,
+  RX_CONTROL_ACCESSOR,
 } from '../accessors/interface';
 
 @Directive({
-  selector: '[swFormGroup],[swFormGroupName]',
+  selector: '[rxFormGroup],[rxFormGroupName]',
   providers: [
     {
-      provide: SW_CONTROL_ACCESSOR,
+      provide: RX_CONTROL_ACCESSOR,
       useExisting: forwardRef(() => DefaultFormGroupDirectiveAccessor),
       multi: true,
     },
@@ -24,7 +24,7 @@ export class DefaultFormGroupDirectiveAccessor<
 
   readonly control = new FormGroup<T, D>(({} as unknown) as T, {
     id: Symbol(
-      `SwDefaultFormGroupDirectiveAccessor-${DefaultFormGroupDirectiveAccessor.id++}`
+      `RxDefaultFormGroupDirectiveAccessor-${DefaultFormGroupDirectiveAccessor.id++}`
     ),
   });
 

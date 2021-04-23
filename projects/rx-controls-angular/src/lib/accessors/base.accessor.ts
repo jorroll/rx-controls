@@ -1,6 +1,6 @@
 import { Directive, InjectFlags, Injector } from '@angular/core';
 import { Subscription } from 'rxjs';
-import { CONTROL_ACCESSOR_SPECIFICITY, SW_CONTROL_ACCESSOR } from './interface';
+import { CONTROL_ACCESSOR_SPECIFICITY, RX_CONTROL_ACCESSOR } from './interface';
 
 @Directive()
 export abstract class BaseAccessor {
@@ -14,7 +14,7 @@ export abstract class BaseAccessor {
 
   protected shouldDeactivate() {
     const accessors = this.injector.get(
-      SW_CONTROL_ACCESSOR,
+      RX_CONTROL_ACCESSOR,
       [],
       InjectFlags.Self
     );

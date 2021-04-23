@@ -4,11 +4,10 @@ import { TestBed } from '@angular/core/testing';
 import userEvent from '@testing-library/user-event';
 import {
   SelectAccessor,
-  SwSelectOption,
+  RxSelectOption,
   SelectMultipleAccessor,
   SelectSingleAccessor,
 } from './select.accessor';
-// import { SelectAccessor, SwSelectOption } from './select.accessor';
 import { buildBeforeEachFn, BuildTestArgs } from './test-utils';
 
 type TestArgs<T> = BuildTestArgs<
@@ -19,13 +18,13 @@ type TestArgs<T> = BuildTestArgs<
 >;
 
 const beforeEachFn = buildBeforeEachFn<SelectAccessor, 'select'>({
-  declarations: [SelectSingleAccessor, SelectMultipleAccessor, SwSelectOption],
+  declarations: [SelectSingleAccessor, SelectMultipleAccessor, RxSelectOption],
   element: 'select',
 });
 
 @Component({
   selector: 'my-test-component',
-  template: ` <select multiple swFormControl></select> `,
+  template: ` <select multiple rxFormControl></select> `,
 })
 export class SelectNoOptionsComponent {
   @ViewChild(SelectAccessor) accessor!: SelectAccessor;
@@ -69,7 +68,7 @@ describe('SelectNoOptionsComponent', () => {
 @Component({
   selector: 'my-test-component',
   template: `
-    <select multiple swFormControl>
+    <select multiple rxFormControl>
       <option value="mac">macOS</option>
       <option value="linux">Linux</option>
       <option id="stringValue" [value]="stringValue">Windows</option>
@@ -195,7 +194,7 @@ describe('SelectWithOptionsComponent', () => {
 @Component({
   selector: 'my-test-component',
   template: `
-    <select multiple swFormControl>
+    <select multiple rxFormControl>
       <option *ngIf="one" value="mac">macOS</option>
       <option value="linux">Linux</option>
       <option value="windows">Windows</option>

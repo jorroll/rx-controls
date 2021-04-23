@@ -2,33 +2,33 @@ import { FormControl as OldFormControl } from '@angular/forms';
 import { FormControl, isStateChange } from 'rx-controls-angular';
 import { filter } from 'rxjs/operators';
 
-export const FROM_SWCONTROL = Symbol('change from swControl');
+export const FROM_RXCONTROL = Symbol('change from rxControl');
 
 export class CompatFormControl extends OldFormControl {
-  constructor(readonly swControl: FormControl) {
+  constructor(readonly rxControl: FormControl) {
     super();
 
-    this.swControl.events.pipe(filter(isStateChange)).subscribe((event) => {
+    this.rxControl.events.pipe(filter(isStateChange)).subscribe((event) => {
       Object.entries(event.changes).map(([prop, value]) => {
         switch (prop) {
           case 'rawValue':
           case 'value': {
-            this.setValue(value, { [FROM_SWCONTROL]: true });
+            this.setValue(value, { [FROM_RXCONTROL]: true });
             break;
           }
           case 'touched': {
             if (value) {
-              this.markAsTouched({ [FROM_SWCONTROL]: true });
+              this.markAsTouched({ [FROM_RXCONTROL]: true });
             } else {
-              this.markAsUntouched({ [FROM_SWCONTROL]: true });
+              this.markAsUntouched({ [FROM_RXCONTROL]: true });
             }
             break;
           }
           case 'dirty': {
             if (value) {
-              this.markAsDirty({ [FROM_SWCONTROL]: true });
+              this.markAsDirty({ [FROM_RXCONTROL]: true });
             } else {
-              this.markAsPristine({ [FROM_SWCONTROL]: true });
+              this.markAsPristine({ [FROM_RXCONTROL]: true });
             }
             break;
           }
@@ -43,14 +43,14 @@ export class CompatFormControl extends OldFormControl {
           // }
           case 'pending': {
             if (value) {
-              this.markAsPending({ [FROM_SWCONTROL]: true });
+              this.markAsPending({ [FROM_RXCONTROL]: true });
             } else {
-              this.updateValueAndValidity({ [FROM_SWCONTROL]: true });
+              this.updateValueAndValidity({ [FROM_RXCONTROL]: true });
             }
             break;
           }
           case 'errors': {
-            this.setErrors(value, { [FROM_SWCONTROL]: true });
+            this.setErrors(value, { [FROM_RXCONTROL]: true });
             break;
           }
         }
@@ -60,60 +60,60 @@ export class CompatFormControl extends OldFormControl {
 
   markAsTouched(options: any = {}) {
     super.markAsTouched(options);
-    if (!this.swControl || options[FROM_SWCONTROL]) return;
-    this.swControl.markTouched(true);
+    if (!this.rxControl || options[FROM_RXCONTROL]) return;
+    this.rxControl.markTouched(true);
   }
 
   markAsUntouched(options: any = {}) {
     super.markAsUntouched(options);
-    if (!this.swControl || options[FROM_SWCONTROL]) return;
-    this.swControl.markTouched(false);
+    if (!this.rxControl || options[FROM_RXCONTROL]) return;
+    this.rxControl.markTouched(false);
   }
 
   markAsDirty(options: any = {}) {
     super.markAsDirty(options);
-    if (!this.swControl || options[FROM_SWCONTROL]) return;
-    this.swControl.markDirty(true);
+    if (!this.rxControl || options[FROM_RXCONTROL]) return;
+    this.rxControl.markDirty(true);
   }
 
   markAsPristine(options: any = {}) {
     super.markAsPristine(options);
-    if (!this.swControl || options[FROM_SWCONTROL]) return;
-    this.swControl.markDirty(false);
+    if (!this.rxControl || options[FROM_RXCONTROL]) return;
+    this.rxControl.markDirty(false);
   }
 
   disable(options: any = {}) {
     super.disable(options);
-    if (!this.swControl || options[FROM_SWCONTROL]) return;
-    this.swControl.markDisabled(true);
+    if (!this.rxControl || options[FROM_RXCONTROL]) return;
+    this.rxControl.markDisabled(true);
   }
 
   enable(options: any = {}) {
     super.enable(options);
-    if (!this.swControl || options[FROM_SWCONTROL]) return;
-    this.swControl.markDisabled(false);
+    if (!this.rxControl || options[FROM_RXCONTROL]) return;
+    this.rxControl.markDisabled(false);
   }
 
   setValue(value: any, options: any = {}) {
     super.setValue(value === undefined || value === null ? '' : value, options);
-    if (!this.swControl || options[FROM_SWCONTROL]) return;
-    this.swControl.setValue(value);
-    this.swControl.setErrors(this.errors);
-    this.swControl.markPending(false);
+    if (!this.rxControl || options[FROM_RXCONTROL]) return;
+    this.rxControl.setValue(value);
+    this.rxControl.setErrors(this.errors);
+    this.rxControl.markPending(false);
   }
 
   patchValue(value: any, options: any = {}) {
     super.patchValue(value, options);
-    if (!this.swControl || options[FROM_SWCONTROL]) return;
-    this.swControl.setValue(value);
-    this.swControl.setErrors(this.errors);
-    this.swControl.markPending(false);
+    if (!this.rxControl || options[FROM_RXCONTROL]) return;
+    this.rxControl.setValue(value);
+    this.rxControl.setErrors(this.errors);
+    this.rxControl.markPending(false);
   }
 
   setErrors(value: any, options: any = {}) {
     super.setErrors(value, options);
-    if (!this.swControl || options[FROM_SWCONTROL]) return;
-    this.swControl.setErrors(value);
+    if (!this.rxControl || options[FROM_RXCONTROL]) return;
+    this.rxControl.setErrors(value);
   }
 
   // I believe the standard AbstractControl does not
@@ -128,13 +128,13 @@ export class CompatFormControl extends OldFormControl {
 
   markAsPending(options: any = {}) {
     super.markAsPending(options);
-    if (!this.swControl || options[FROM_SWCONTROL]) return;
-    this.swControl.markPending(true);
+    if (!this.rxControl || options[FROM_RXCONTROL]) return;
+    this.rxControl.markPending(true);
   }
 
   updateValueAndValidity(options: any = {}) {
     super.updateValueAndValidity(options);
-    if (!this.swControl || options[FROM_SWCONTROL]) return;
-    this.swControl.setErrors(this.errors);
+    if (!this.rxControl || options[FROM_RXCONTROL]) return;
+    this.rxControl.setErrors(this.errors);
   }
 }

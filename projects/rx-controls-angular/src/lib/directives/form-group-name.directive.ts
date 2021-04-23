@@ -15,23 +15,23 @@ import {
 import { FormGroup } from 'rx-controls';
 import {
   IControlDirectiveCallback,
-  SW_CONTROL_DIRECTIVE_CALLBACK,
+  RX_CONTROL_DIRECTIVE_CALLBACK,
 } from './interface';
-import { SW_CONTROL_DIRECTIVE } from './interface';
+import { RX_CONTROL_DIRECTIVE } from './interface';
 import {
   ControlAccessor,
-  SW_CONTROL_ACCESSOR,
+  RX_CONTROL_ACCESSOR,
   ControlContainerAccessor,
 } from '../accessors/interface';
 import { ControlNameDirective } from './control-name.directive';
 import { resolveControlContainerAccessor } from './util';
 
 @Directive({
-  selector: '[swFormGroupName]',
-  exportAs: 'swForm',
+  selector: '[rxFormGroupName]',
+  exportAs: 'rxForm',
   providers: [
     {
-      provide: SW_CONTROL_DIRECTIVE,
+      provide: RX_CONTROL_DIRECTIVE,
       useExisting: forwardRef(() => FormGroupNameDirective),
     },
   ],
@@ -39,7 +39,7 @@ import { resolveControlContainerAccessor } from './util';
 export class FormGroupNameDirective<T extends FormGroup = FormGroup>
   extends ControlNameDirective<T>
   implements ControlContainerAccessor<T>, OnChanges, OnDestroy {
-  @Input('swFormGroupName') controlName!: string;
+  @Input('rxFormGroupName') controlName!: string;
 
   readonly control: T;
 
@@ -47,13 +47,13 @@ export class FormGroupNameDirective<T extends FormGroup = FormGroup>
 
   constructor(
     @Self()
-    @Inject(SW_CONTROL_ACCESSOR)
+    @Inject(RX_CONTROL_ACCESSOR)
     accessors: Array<ControlAccessor | ControlContainerAccessor>,
     @SkipSelf()
-    @Inject(SW_CONTROL_ACCESSOR)
+    @Inject(RX_CONTROL_ACCESSOR)
     parentAccessors: Array<ControlAccessor | ControlContainerAccessor>,
     @Optional()
-    @Inject(SW_CONTROL_DIRECTIVE_CALLBACK)
+    @Inject(RX_CONTROL_DIRECTIVE_CALLBACK)
     protected controlDirectiveCallbacks: IControlDirectiveCallback<T>[] | null,
     renderer: Renderer2,
     el: ElementRef
@@ -68,7 +68,7 @@ export class FormGroupNameDirective<T extends FormGroup = FormGroup>
   ngOnChanges(_: { controlName?: SimpleChange; valueMapper?: SimpleChange }) {
     if (!this.controlName) {
       throw new Error(
-        `SwFormGroupNameDirective must be passed a swFormControlName`
+        `RxFormGroupNameDirective must be passed a rxFormControlName`
       );
     }
 
@@ -78,7 +78,7 @@ export class FormGroupNameDirective<T extends FormGroup = FormGroup>
   protected validateProvidedControl(control: any): control is T {
     if (!(control instanceof FormGroup)) {
       throw new Error(
-        'SwFormGroupNameDirective must link to an instance of FormGroup'
+        'RxFormGroupNameDirective must link to an instance of FormGroup'
       );
     }
 

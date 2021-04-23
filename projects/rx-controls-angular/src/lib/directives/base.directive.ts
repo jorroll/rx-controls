@@ -23,12 +23,12 @@ export abstract class BaseDirective<T extends AbstractControl, D = any>
   static id = 0;
   abstract readonly control: T;
 
-  @Input('swFormDirectiveData') data: D | null = null;
+  @Input('rxFormDirectiveData') data: D | null = null;
 
   valueMapper?: IControlValueMapper;
 
   protected accessorValidatorId = Symbol(
-    `SwDirectiveAccessorValidator-${BaseDirective.id++}`
+    `RxDirectiveAccessorValidator-${BaseDirective.id++}`
   );
 
   protected abstract controlDirectiveCallbacks:
@@ -193,31 +193,31 @@ export abstract class BaseDirective<T extends AbstractControl, D = any>
   }
 
   protected updateTouchedCSS() {
-    this.updateCSS('touched', 'sw-touched', 'sw-untouched');
+    this.updateCSS('touched', 'rx-touched', 'rx-untouched');
   }
 
   protected updateReadonlyCSS() {
-    this.updateCSS('readonly', 'sw-readonly', 'sw-not-readonly');
+    this.updateCSS('readonly', 'rx-readonly', 'rx-not-readonly');
   }
 
   protected updateDisabledCSS() {
-    this.updateCSS('disabled', 'sw-disabled', 'sw-enabled');
+    this.updateCSS('disabled', 'rx-disabled', 'rx-enabled');
   }
 
   protected updateInvalidCSS() {
-    this.updateCSS('invalid', 'sw-invalid', 'sw-valid');
+    this.updateCSS('invalid', 'rx-invalid', 'rx-valid');
   }
 
   protected updateSubmittedCSS() {
-    this.updateCSS('submitted', 'sw-submitted', 'sw-not-submitted');
+    this.updateCSS('submitted', 'rx-submitted', 'rx-not-submitted');
   }
 
   protected updateDirtyCSS() {
-    this.updateCSS('dirty', 'sw-dirty', 'sw-pristine');
+    this.updateCSS('dirty', 'rx-dirty', 'rx-pristine');
   }
 
   protected updatePendingCSS() {
-    this.updateCSS('pending', 'sw-pending', 'sw-not-pending');
+    this.updateCSS('pending', 'rx-pending', 'rx-not-pending');
   }
 
   private updateCSS(

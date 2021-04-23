@@ -3,14 +3,14 @@ import { FormControlNameDirective } from './form-control-name.directive';
 import { FormGroupDirective } from './form-group.directive';
 import { FormControlDirective } from './form-control.directive';
 import { FormGroupNameDirective } from './form-group-name.directive';
-import { AccessorsModule } from '../accessors/accessors.module';
+import { RxAccessorsModule } from '../accessors/accessors.module';
 import { FormArrayDirective } from './form-array.directive';
 import { FormArrayNameDirective } from './form-array-name.directive';
 import { DefaultFormArrayDirectiveAccessor } from './default-form-array.directive.accessor';
 import { DefaultFormGroupDirectiveAccessor } from './default-form-group.directive.accessor';
 
 @NgModule({
-  imports: [AccessorsModule],
+  imports: [RxAccessorsModule],
   providers: [],
   declarations: [
     FormControlDirective,
@@ -23,7 +23,7 @@ import { DefaultFormGroupDirectiveAccessor } from './default-form-group.directiv
     DefaultFormArrayDirectiveAccessor,
   ],
   exports: [
-    AccessorsModule,
+    RxAccessorsModule,
     FormControlDirective,
     FormControlNameDirective,
     FormGroupDirective,
@@ -34,4 +34,4 @@ import { DefaultFormGroupDirectiveAccessor } from './default-form-group.directiv
     DefaultFormArrayDirectiveAccessor,
   ],
 })
-export class ReactiveFormsModuleTwo {}
+export class RxFormsModule {}

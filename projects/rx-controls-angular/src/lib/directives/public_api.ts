@@ -1,9 +1,9 @@
 export {
-  SW_CONTROL_DIRECTIVE,
+  RX_CONTROL_DIRECTIVE,
   IControlValueMapper,
   IControlAccessorControlEvent,
   IControlDirectiveCallback,
-  SW_CONTROL_DIRECTIVE_CALLBACK,
+  RX_CONTROL_DIRECTIVE_CALLBACK,
 } from './interface';
 
 export { FormArrayNameDirective } from './form-array-name.directive';
@@ -17,7 +17,7 @@ export { FormGroupNameDirective } from './form-group-name.directive';
 export { FormGroupDirective } from './form-group.directive';
 export { DefaultFormGroupDirectiveAccessor } from './default-form-group.directive.accessor';
 
-export { ReactiveFormsModuleTwo } from './form.module';
+export { RxFormsModule } from './form.module';
 
 export { ControlNameDirective as ɵControlNameDirective } from './control-name.directive';
 export { ControlDirective as ɵControlDirective } from './control.directive';

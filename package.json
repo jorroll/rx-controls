@@ -13,7 +13,7 @@
   "scripts": {
     "ng": "ng",
     "start": "ng serve",
-    "build": "ng build --prod",
+    "build": "ng build rx-controls --prod && ng build rx-controls-angular --prod",
     "pubcanary": "yarn test && yarn lerna version --no-push --preid next && yarn build && yarn lerna publish from-git --yes --dist-tag next --contents build",
     "pub": "yarn test && yarn lerna version --no-push && yarn build && yarn lerna publish from-git --yes --contents build",
     "test": "ng test",

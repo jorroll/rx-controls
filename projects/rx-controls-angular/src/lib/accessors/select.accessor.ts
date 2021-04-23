@@ -15,7 +15,7 @@ import { BaseAccessor } from './base.accessor';
 import {
   ControlAccessor,
   CONTROL_ACCESSOR_SPECIFICITY,
-  SW_CONTROL_ACCESSOR,
+  RX_CONTROL_ACCESSOR,
 } from './interface';
 import { setupStdControlEventHandlers, setupListeners } from './util';
 
@@ -50,7 +50,7 @@ export abstract class SelectAccessor
   [CONTROL_ACCESSOR_SPECIFICITY] = '0.2.1';
 
   readonly control = new FormControl(null as any, {
-    id: Symbol(`SwSelectAccessor-${SelectAccessor.id++}`),
+    id: Symbol(`RxSelectAccessor-${SelectAccessor.id++}`),
   });
 
   private _compareWith = Object.is;
@@ -76,7 +76,7 @@ export abstract class SelectAccessor
 
   protected abstract onValueChangeFn: (value: any) => void;
 
-  protected optionMap = new Map<string, SwSelectOption>();
+  protected optionMap = new Map<string, RxSelectOption>();
   protected optionIdCounter = 0;
 
   constructor(
@@ -110,7 +110,7 @@ export abstract class SelectAccessor
     this.control.markTouched(true);
   }
 
-  _registerOption(option: SwSelectOption): string {
+  _registerOption(option: RxSelectOption): string {
     const id: string = (this.optionIdCounter++).toString();
     this.optionMap.set(id, option);
     return id;
@@ -154,7 +154,7 @@ export abstract class SelectAccessor
  * @publicApi
  */
 @Directive({ selector: 'option' })
-export class SwSelectOption implements OnDestroy {
+export class RxSelectOption implements OnDestroy {
   /**
    * @description
    * Tracks the value bound to the option element. Unlike the value binding,
@@ -284,10 +284,10 @@ export class SwSelectOption implements OnDestroy {
  */
 @Directive({
   selector:
-    'select:not([multiple])[swFormControlName],select:not([multiple])[swFormControl]',
+    'select:not([multiple])[rxFormControlName],select:not([multiple])[rxFormControl]',
   providers: [
     {
-      provide: SW_CONTROL_ACCESSOR,
+      provide: RX_CONTROL_ACCESSOR,
       useExisting: forwardRef(() => SelectAccessor),
       multi: true,
     },
@@ -400,10 +400,10 @@ export class SelectSingleAccessor
  */
 @Directive({
   selector:
-    'select[multiple][swFormControlName],select[multiple][swFormControl]',
+    'select[multiple][rxFormControlName],select[multiple][rxFormControl]',
   providers: [
     {
-      provide: SW_CONTROL_ACCESSOR,
+      provide: RX_CONTROL_ACCESSOR,
       useExisting: forwardRef(() => SelectMultipleAccessor),
       multi: true,
     },

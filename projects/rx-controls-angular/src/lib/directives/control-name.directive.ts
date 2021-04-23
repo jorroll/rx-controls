@@ -26,7 +26,7 @@ export abstract class ControlNameDirective<T extends AbstractControl>
   ngOnChanges(_: { controlName?: SimpleChange; valueMapper?: SimpleChange }) {
     if (!this.controlName) {
       throw new Error(
-        `SwFormControlNameDirective must be passed a ngFormControlName`
+        `RxFormControlNameDirective must be passed a ngFormControlName`
       );
     }
 

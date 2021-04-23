@@ -9,7 +9,7 @@ import {
 import { setupStdControlEventHandlers, setupListeners } from './util';
 import { FormControl } from 'rx-controls';
 import {
-  SW_CONTROL_ACCESSOR,
+  RX_CONTROL_ACCESSOR,
   ControlAccessor,
   CONTROL_ACCESSOR_SPECIFICITY,
 } from './interface';
@@ -47,7 +47,7 @@ export abstract class DefaultAccessor
   static id = 0;
 
   readonly control = new FormControl('', {
-    id: Symbol(`SwDefaultAccessor-${DefaultAccessor.id++}`),
+    id: Symbol(`RxDefaultAccessor-${DefaultAccessor.id++}`),
   });
 
   constructor(
@@ -98,11 +98,11 @@ export abstract class DefaultAccessor
 
 @Directive({
   selector:
-    'input[swFormControl],input[swFormControlName],' +
-    'textarea[swFormControl],textarea[swFormControlName]',
+    'input[rxFormControl],input[rxFormControlName],' +
+    'textarea[rxFormControl],textarea[rxFormControlName]',
   providers: [
     {
-      provide: SW_CONTROL_ACCESSOR,
+      provide: RX_CONTROL_ACCESSOR,
       useExisting: DefaultAccessorInputTextarea,
       multi: true,
     },
@@ -117,10 +117,10 @@ export class DefaultAccessorInputTextarea extends DefaultAccessor {
 }
 
 @Directive({
-  selector: '[swInputAccessor]',
+  selector: '[rxInputAccessor]',
   providers: [
     {
-      provide: SW_CONTROL_ACCESSOR,
+      provide: RX_CONTROL_ACCESSOR,
       useExisting: DefaultAccessorAttribute,
       multi: true,
     },

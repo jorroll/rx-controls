@@ -16,12 +16,12 @@ import { AbstractControl } from 'rx-controls';
 import {
   IControlDirectiveCallback,
   IControlValueMapper,
-  SW_CONTROL_DIRECTIVE_CALLBACK,
+  RX_CONTROL_DIRECTIVE_CALLBACK,
 } from './interface';
-import { SW_CONTROL_DIRECTIVE } from './interface';
+import { RX_CONTROL_DIRECTIVE } from './interface';
 import {
   ControlAccessor,
-  SW_CONTROL_ACCESSOR,
+  RX_CONTROL_ACCESSOR,
   ControlContainerAccessor,
 } from '../accessors/interface';
 import {
@@ -31,11 +31,11 @@ import {
 import { ControlNameDirective } from './control-name.directive';
 
 @Directive({
-  selector: '[swFormControlName]:not([formControl])',
-  exportAs: 'swForm',
+  selector: '[rxFormControlName]:not([formControl])',
+  exportAs: 'rxForm',
   providers: [
     {
-      provide: SW_CONTROL_DIRECTIVE,
+      provide: RX_CONTROL_DIRECTIVE,
       useExisting: forwardRef(() => FormControlNameDirective),
     },
   ],
@@ -45,8 +45,8 @@ export class FormControlNameDirective<
   >
   extends ControlNameDirective<T>
   implements ControlAccessor<T>, OnChanges, OnDestroy {
-  @Input('swFormControlName') controlName!: string;
-  @Input('swFormControlValueMapper')
+  @Input('rxFormControlName') controlName!: string;
+  @Input('rxFormControlValueMapper')
   valueMapper: IControlValueMapper | undefined;
 
   readonly control: T;
@@ -55,13 +55,13 @@ export class FormControlNameDirective<
 
   constructor(
     @Self()
-    @Inject(SW_CONTROL_ACCESSOR)
+    @Inject(RX_CONTROL_ACCESSOR)
     accessors: ControlAccessor[],
     @SkipSelf()
-    @Inject(SW_CONTROL_ACCESSOR)
+    @Inject(RX_CONTROL_ACCESSOR)
     parentAccessors: ControlAccessor[],
     @Optional()
-    @Inject(SW_CONTROL_DIRECTIVE_CALLBACK)
+    @Inject(RX_CONTROL_DIRECTIVE_CALLBACK)
     protected controlDirectiveCallbacks: IControlDirectiveCallback<T>[] | null,
     renderer: Renderer2,
     el: ElementRef
@@ -76,12 +76,12 @@ export class FormControlNameDirective<
   ngOnChanges(_: { controlName?: SimpleChange; valueMapper?: SimpleChange }) {
     if (!this.controlName) {
       throw new Error(
-        `NgFormControlNameDirective must be passed a swFormControlName`
+        `NgFormControlNameDirective must be passed a rxFormControlName`
       );
     }
 
     this.assertValidValueMapper(
-      'NgFormControlNameDirective#swFormControlValueMapper',
+      'NgFormControlNameDirective#rxFormControlValueMapper',
       this.valueMapper
     );
 

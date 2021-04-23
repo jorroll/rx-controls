@@ -12,7 +12,7 @@ import { BaseAccessor } from './base.accessor';
 import {
   ControlAccessor,
   CONTROL_ACCESSOR_SPECIFICITY,
-  SW_CONTROL_ACCESSOR,
+  RX_CONTROL_ACCESSOR,
 } from './interface';
 import { setupStdControlEventHandlers, setupListeners } from './util';
 
@@ -41,11 +41,11 @@ import { setupStdControlEventHandlers, setupListeners } from './util';
  */
 @Directive({
   selector:
-    'input[type=checkbox][swFormControlName],input[type=checkbox][swFormControl]' +
-    'input[type=checkbox][swInputAccessor]',
+    'input[type=checkbox][rxFormControlName],input[type=checkbox][rxFormControl]' +
+    'input[type=checkbox][rxInputAccessor]',
   providers: [
     {
-      provide: SW_CONTROL_ACCESSOR,
+      provide: RX_CONTROL_ACCESSOR,
       useExisting: forwardRef(() => CheckboxInputAccessor),
       multi: true,
     },
@@ -59,7 +59,7 @@ export class CheckboxInputAccessor
   [CONTROL_ACCESSOR_SPECIFICITY] = '0.2.1';
 
   readonly control = new FormControl<boolean>(null as any, {
-    id: Symbol(`SwCheckboxInputAccessor-${CheckboxInputAccessor.id++}`),
+    id: Symbol(`RxCheckboxInputAccessor-${CheckboxInputAccessor.id++}`),
   });
 
   constructor(

@@ -13,23 +13,23 @@ import {
 import { AbstractControlContainer, FormArray } from 'rx-controls';
 import {
   IControlDirectiveCallback,
-  SW_CONTROL_DIRECTIVE,
-  SW_CONTROL_DIRECTIVE_CALLBACK,
+  RX_CONTROL_DIRECTIVE,
+  RX_CONTROL_DIRECTIVE_CALLBACK,
 } from './interface';
 import { resolveControlContainerAccessor } from './util';
 import {
   ControlContainerAccessor,
-  SW_CONTROL_ACCESSOR,
+  RX_CONTROL_ACCESSOR,
   ControlAccessor,
 } from '../accessors/interface';
 import { ControlDirective } from './control.directive';
 
 @Directive({
-  selector: '[swFormArray]',
-  exportAs: 'swForm',
+  selector: '[rxFormArray]',
+  exportAs: 'rxForm',
   providers: [
     {
-      provide: SW_CONTROL_DIRECTIVE,
+      provide: RX_CONTROL_DIRECTIVE,
       useExisting: forwardRef(() => FormArrayDirective),
     },
   ],
@@ -37,16 +37,16 @@ import { ControlDirective } from './control.directive';
 export class FormArrayDirective<T extends AbstractControlContainer = FormArray>
   extends ControlDirective<T>
   implements ControlContainerAccessor<T>, OnChanges {
-  @Input('swFormArray') providedControl!: T;
+  @Input('rxFormArray') providedControl!: T;
 
   readonly control: T;
 
   constructor(
     @Self()
-    @Inject(SW_CONTROL_ACCESSOR)
+    @Inject(RX_CONTROL_ACCESSOR)
     accessors: Array<ControlAccessor | ControlContainerAccessor>,
     @Optional()
-    @Inject(SW_CONTROL_DIRECTIVE_CALLBACK)
+    @Inject(RX_CONTROL_DIRECTIVE_CALLBACK)
     protected controlDirectiveCallbacks: IControlDirectiveCallback<T>[] | null,
     renderer: Renderer2,
     el: ElementRef
@@ -61,7 +61,7 @@ export class FormArrayDirective<T extends AbstractControlContainer = FormArray>
     valueMapper?: SimpleChange;
   }) {
     if (!this.providedControl) {
-      throw new Error(`SwFormArrayDirective must be passed a swFormArray`);
+      throw new Error(`RxFormArrayDirective must be passed a rxFormArray`);
     }
 
     super.ngOnChanges(_);

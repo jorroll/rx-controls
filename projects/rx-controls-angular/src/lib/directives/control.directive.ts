@@ -23,7 +23,7 @@ export abstract class ControlDirective<T extends AbstractControl>
   }) {
     if (!this.providedControl) {
       throw new Error(
-        `SwControlDirective#ngOnChanges should never be ` +
+        `RxControlDirective#ngOnChanges should never be ` +
           `called with !this.providedControl`
       );
     }

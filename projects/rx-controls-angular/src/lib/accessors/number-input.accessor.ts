@@ -13,7 +13,7 @@ import { BaseAccessor } from './base.accessor';
 import {
   ControlAccessor,
   CONTROL_ACCESSOR_SPECIFICITY,
-  SW_CONTROL_ACCESSOR,
+  RX_CONTROL_ACCESSOR,
 } from './interface';
 import { setupStdControlEventHandlers, setupListeners } from './util';
 
@@ -43,11 +43,11 @@ import { setupStdControlEventHandlers, setupListeners } from './util';
  */
 @Directive({
   selector:
-    'input[type=number][swFormControlName],input[type=number][swFormControl]' +
-    'input[type=number][swInputAccessor]',
+    'input[type=number][rxFormControlName],input[type=number][rxFormControl]' +
+    'input[type=number][rxInputAccessor]',
   providers: [
     {
-      provide: SW_CONTROL_ACCESSOR,
+      provide: RX_CONTROL_ACCESSOR,
       useExisting: forwardRef(() => NumberInputAccessor),
       multi: true,
     },
@@ -61,7 +61,7 @@ export class NumberInputAccessor
   [CONTROL_ACCESSOR_SPECIFICITY] = '0.2.1';
 
   readonly control = new FormControl<number | null>(null, {
-    id: Symbol(`SwNumberInputAccessor-${NumberInputAccessor.id++}`),
+    id: Symbol(`RxNumberInputAccessor-${NumberInputAccessor.id++}`),
   });
 
   constructor(

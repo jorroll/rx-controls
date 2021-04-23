@@ -19,7 +19,7 @@ import { BaseAccessor } from './base.accessor';
 import {
   ControlAccessor,
   CONTROL_ACCESSOR_SPECIFICITY,
-  SW_CONTROL_ACCESSOR,
+  RX_CONTROL_ACCESSOR,
 } from './interface';
 import { setupStdControlEventHandlers, setupListeners } from './util';
 
@@ -153,11 +153,11 @@ export class RadioInputRegistry {
  */
 @Directive({
   selector:
-    'input[type=radio][swFormControlName],input[type=radio][swFormControl]' +
-    'input[type=radio][swInputAccessor]',
+    'input[type=radio][rxFormControlName],input[type=radio][rxFormControl]' +
+    'input[type=radio][rxInputAccessor]',
   providers: [
     {
-      provide: SW_CONTROL_ACCESSOR,
+      provide: RX_CONTROL_ACCESSOR,
       useExisting: forwardRef(() => RadioInputAccessor),
       multi: true,
     },
@@ -171,7 +171,7 @@ export class RadioInputAccessor
   [CONTROL_ACCESSOR_SPECIFICITY] = '0.2.1';
 
   readonly control = new FormControl(null as any, {
-    id: Symbol(`SwRadioInputAccessor-${RadioInputAccessor.id++}`),
+    id: Symbol(`RxRadioInputAccessor-${RadioInputAccessor.id++}`),
   });
 
   /**

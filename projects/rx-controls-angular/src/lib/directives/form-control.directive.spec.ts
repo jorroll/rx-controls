@@ -1,18 +1,6 @@
-import { Component, forwardRef } from '@angular/core';
-import { ComponentFixture, TestBed } from '@angular/core/testing';
-import {
-  AbstractControl,
-  FormControl,
-  FormGroup,
-  IControlStateChangeEvent,
-} from 'rx-controls';
-import { ReactiveFormsModuleTwo } from './form.module';
-import {
-  SW_CONTROL_ACCESSOR,
-  // SW_CONTROL_CONTAINER_ACCESSOR,
-} from '../accessors/interface';
+import { Component } from '@angular/core';
+import { FormControl, FormGroup } from 'rx-controls';
 
-import { render, screen, fireEvent } from '@testing-library/angular';
 import userEvent from '@testing-library/user-event';
 import { IControlValueMapper } from './interface';
 import { wait } from '../test-util';
@@ -25,7 +13,7 @@ const beforeEachFn = TestSingleChild.buildBeforeEachFn({
 
 @Component({
   selector: 'my-test-component',
-  template: ` <input swFormControl type="text" /> `,
+  template: ` <input rxFormControl type="text" /> `,
 })
 export class NoProvidedControlComponent {}
 
@@ -40,34 +28,34 @@ describe('NoProvidedControlComponent', () => {
 
   it('initializes', () => {
     expect(o.input.value).toEqual('');
-    expect(o.input.className).toContain('sw-untouched');
-    expect(o.input.className).toContain('sw-not-submitted');
-    expect(o.input.className).toContain('sw-pristine');
+    expect(o.input.className).toContain('rx-untouched');
+    expect(o.input.className).toContain('rx-not-submitted');
+    expect(o.input.className).toContain('rx-pristine');
   });
 
   it('applies css on touch', () => {
     o.input.focus();
-    expect(o.input.className).toContain('sw-untouched');
+    expect(o.input.className).toContain('rx-untouched');
     o.input.blur();
-    expect(o.input.className).toContain('sw-touched');
-    expect(o.input.className).toContain('sw-not-submitted');
-    expect(o.input.className).toContain('sw-pristine');
+    expect(o.input.className).toContain('rx-touched');
+    expect(o.input.className).toContain('rx-not-submitted');
+    expect(o.input.className).toContain('rx-pristine');
   });
 
   it('applies css on input', () => {
     userEvent.type(o.input, 'hi');
 
     expect(o.input.value).toContain('hi');
-    expect(o.input.className).toContain('sw-untouched');
-    expect(o.input.className).toContain('sw-not-submitted');
-    expect(o.input.className).toContain('sw-dirty');
+    expect(o.input.className).toContain('rx-untouched');
+    expect(o.input.className).toContain('rx-not-submitted');
+    expect(o.input.className).toContain('rx-dirty');
   });
 });
 
 @Component({
   selector: 'my-test-component',
   template: `
-    <input [swFormControl]="control" [swFormControlValueMapper]="valueMapper" />
+    <input [rxFormControl]="control" [rxFormControlValueMapper]="valueMapper" />
   `,
 })
 export class SimpleValueMapperComponent {
@@ -105,7 +93,7 @@ describe('SimpleValueMapperComponent', () => {
 
 @Component({
   selector: 'my-test-component',
-  template: ` <input [swFormControl]="control" /> `,
+  template: ` <input [rxFormControl]="control" /> `,
 })
 export class ReplayStateTestComponent {
   readonly control = new FormControl('');
@@ -151,7 +139,7 @@ describe('ReplayStateTestComponent', () => {
 @Component({
   selector: 'my-test-component',
   template: `
-    <input *ngIf="showInput" [swFormControl]="control.get('one')" />
+    <input *ngIf="showInput" [rxFormControl]="control.get('one')" />
   `,
 })
 export class NgIfReplayStateWithFormGroupTestComponent {

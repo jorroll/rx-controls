@@ -17,13 +17,13 @@ import {
   ControlContainerAccessor,
   ControlAccessor,
   FormControl,
-  SW_CONTROL_DIRECTIVE,
-  SW_CONTROL_ACCESSOR,
+  RX_CONTROL_DIRECTIVE,
+  RX_CONTROL_ACCESSOR,
   ɵControlNameDirective as ControlNameDirective,
   ɵresolveControlContainerAccessor as resolveControlContainerAccessor,
   IControlValueMapper,
   IControlDirectiveCallback,
-  SW_CONTROL_DIRECTIVE_CALLBACK,
+  RX_CONTROL_DIRECTIVE_CALLBACK,
   isAncestorControlPropTruthy$,
 } from 'rx-controls-angular';
 
@@ -33,15 +33,15 @@ import {
   ControlValueAccessor,
 } from '@angular/forms';
 
-import { CompatFormControl, FROM_SWCONTROL } from './compat-form-control';
+import { CompatFormControl, FROM_RXCONTROL } from './compat-form-control';
 import { combineLatest } from 'rxjs';
 
 @Directive({
-  selector: '[swFormControlName][formControl]',
-  exportAs: 'swCompatForm',
+  selector: '[rxFormControlName][formControl]',
+  exportAs: 'rxCompatForm',
   providers: [
     {
-      provide: SW_CONTROL_DIRECTIVE,
+      provide: RX_CONTROL_DIRECTIVE,
       useExisting: forwardRef(() => CompatFormControlNameDirective),
     },
   ],
@@ -51,19 +51,19 @@ export class CompatFormControlNameDirective
   implements ControlAccessor<FormControl>, OnChanges {
   static id = 0;
 
-  @Input('swFormControlName') controlName!: string;
-  @Input('swFormControlValueMapper')
+  @Input('rxFormControlName') controlName!: string;
+  @Input('rxFormControlValueMapper')
   valueMapper: IControlValueMapper | undefined;
 
   protected ngControl = new CompatFormControl(
     new FormControl(undefined, {
       id: Symbol(
-        `SwCompatFormControlNameDirective-${CompatFormControlNameDirective.id++}`
+        `RxCompatFormControlNameDirective-${CompatFormControlNameDirective.id++}`
       ),
     })
   );
 
-  readonly control = this.ngControl.swControl;
+  readonly control = this.ngControl.rxControl;
 
   protected valueAccessor: ControlValueAccessor | null;
 
@@ -74,12 +74,12 @@ export class CompatFormControlNameDirective
     @Inject(NgControl)
     protected ngDirective: FormControlDirective,
     @Optional()
-    @Inject(SW_CONTROL_DIRECTIVE_CALLBACK)
+    @Inject(RX_CONTROL_DIRECTIVE_CALLBACK)
     protected controlDirectiveCallbacks:
       | IControlDirectiveCallback<FormControl>[]
       | null,
     @SkipSelf()
-    @Inject(SW_CONTROL_ACCESSOR)
+    @Inject(RX_CONTROL_ACCESSOR)
     parentAccessors: ControlAccessor[],
     renderer: Renderer2,
     el: ElementRef
@@ -113,9 +113,9 @@ export class CompatFormControlNameDirective
         isAncestorControlPropTruthy$(this.control, 'selfDisabled'),
       ]).subscribe(([a, b]) => {
         if (a || b) {
-          this.ngControl.disable({ [FROM_SWCONTROL]: true });
+          this.ngControl.disable({ [FROM_RXCONTROL]: true });
         } else {
-          this.ngControl.enable({ [FROM_SWCONTROL]: true });
+          this.ngControl.enable({ [FROM_RXCONTROL]: true });
         }
       })
     );
@@ -124,12 +124,12 @@ export class CompatFormControlNameDirective
   ngOnChanges(_: { controlName?: SimpleChange; valueMapper?: SimpleChange }) {
     if (!this.controlName) {
       throw new Error(
-        `SwCompatFormControlNameDirective must be passed a swFormControlName`
+        `RxCompatFormControlNameDirective must be passed a rxFormControlName`
       );
     }
 
     this.assertValidValueMapper(
-      'SwCompatFormControlNameDirective#swFormControlValueMapper',
+      'RxCompatFormControlNameDirective#rxFormControlValueMapper',
       this.valueMapper
     );
 
@@ -139,7 +139,7 @@ export class CompatFormControlNameDirective
   protected validateProvidedControl(control: any): control is FormControl {
     if (!(control instanceof FormControl)) {
       throw new Error(
-        'SwCompatFormControlNameDirective must link to an instance of (sw)FormControl'
+        'RxCompatFormControlNameDirective must link to an instance of (rx)FormControl'
       );
     }
 

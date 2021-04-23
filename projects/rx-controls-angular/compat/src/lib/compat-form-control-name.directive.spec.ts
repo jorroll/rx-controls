@@ -4,29 +4,20 @@ import { TestSingleChild, wait } from './test-utils';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { CompatFormControlNameDirective } from './compat-form-control-name.directive';
-import {
-  ReactiveFormsModuleTwo,
-  FormGroup,
-  FormControl,
-} from 'rx-controls-angular';
+import { RxFormsModule, FormGroup, FormControl } from 'rx-controls-angular';
 import { CommonModule } from '@angular/common';
 
 const beforeEachFn = TestSingleChild.buildBeforeEachFn({
   declarations: [CompatFormControlNameDirective],
-  imports: [
-    MatFormFieldModule,
-    MatInputModule,
-    ReactiveFormsModuleTwo,
-    CommonModule,
-  ],
+  imports: [MatFormFieldModule, MatInputModule, RxFormsModule, CommonModule],
 });
 
 @Component({
   selector: 'my-test-component',
   template: `
-    <div id="theDiv" *ngIf="showFormElement" [swFormGroup]="control">
+    <div id="theDiv" *ngIf="showFormElement" [rxFormGroup]="control">
       <mat-form-field>
-        <input matInput formControl swFormControlName="one" />
+        <input matInput formControl rxFormControlName="one" />
       </mat-form-field>
     </div>
   `,

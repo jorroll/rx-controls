@@ -3,8 +3,8 @@ import { Subscription } from 'rxjs';
 import { ControlAccessor } from '../accessors/interface';
 import { AbstractControl, IControlEvent, ValidatorFn } from 'rx-controls';
 
-export const SW_CONTROL_DIRECTIVE = new InjectionToken<ControlAccessor>(
-  'SW_CONTROL_DIRECTIVE'
+export const RX_CONTROL_DIRECTIVE = new InjectionToken<ControlAccessor>(
+  'RX_CONTROL_DIRECTIVE'
 );
 
 export interface IControlValueMapper<ControlValue = any, AccessorValue = any> {
@@ -28,6 +28,6 @@ export interface IControlDirectiveCallback<
   ): Subscription | undefined;
 }
 
-export const SW_CONTROL_DIRECTIVE_CALLBACK = new InjectionToken<IControlDirectiveCallback>(
-  'SW_CONTROL_DIRECTIVE_CALLBACK'
+export const RX_CONTROL_DIRECTIVE_CALLBACK = new InjectionToken<IControlDirectiveCallback>(
+  'RX_CONTROL_DIRECTIVE_CALLBACK'
 );

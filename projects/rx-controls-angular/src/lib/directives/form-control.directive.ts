@@ -14,20 +14,20 @@ import {
 import { AbstractControl } from 'rx-controls';
 import {
   IControlDirectiveCallback,
-  SW_CONTROL_DIRECTIVE,
-  SW_CONTROL_DIRECTIVE_CALLBACK,
+  RX_CONTROL_DIRECTIVE,
+  RX_CONTROL_DIRECTIVE_CALLBACK,
 } from './interface';
 import { resolveControlAccessor } from './util';
-import { ControlAccessor, SW_CONTROL_ACCESSOR } from '../accessors/interface';
+import { ControlAccessor, RX_CONTROL_ACCESSOR } from '../accessors/interface';
 import { ControlDirective } from './control.directive';
 import { IControlValueMapper } from './interface';
 
 @Directive({
-  selector: '[swFormControl]:not([formControl])',
-  exportAs: 'swForm',
+  selector: '[rxFormControl]:not([formControl])',
+  exportAs: 'rxForm',
   providers: [
     {
-      provide: SW_CONTROL_DIRECTIVE,
+      provide: RX_CONTROL_DIRECTIVE,
       useExisting: forwardRef(() => FormControlDirective),
     },
   ],
@@ -35,18 +35,18 @@ import { IControlValueMapper } from './interface';
 export class FormControlDirective<T extends AbstractControl = AbstractControl>
   extends ControlDirective<T>
   implements ControlAccessor<T>, OnChanges, OnDestroy {
-  @Input('swFormControl') providedControl: T | undefined;
-  @Input('swFormControlValueMapper')
+  @Input('rxFormControl') providedControl: T | undefined;
+  @Input('rxFormControlValueMapper')
   valueMapper: IControlValueMapper | undefined;
 
   readonly control: T;
 
   constructor(
     @Self()
-    @Inject(SW_CONTROL_ACCESSOR)
+    @Inject(RX_CONTROL_ACCESSOR)
     accessors: ControlAccessor[],
     @Optional()
-    @Inject(SW_CONTROL_DIRECTIVE_CALLBACK)
+    @Inject(RX_CONTROL_DIRECTIVE_CALLBACK)
     protected controlDirectiveCallbacks: IControlDirectiveCallback<T>[] | null,
     renderer: Renderer2,
     el: ElementRef
@@ -60,10 +60,10 @@ export class FormControlDirective<T extends AbstractControl = AbstractControl>
     providedControl?: SimpleChange;
     valueMapper?: SimpleChange;
   }) {
-    // Here, we allow doing <input swFormControl> which simply applies
+    // Here, we allow doing <input rxFormControl> which simply applies
     // the appropriate css to the host element and doesn't link a providedControl.
-    // We do *not* allow actively setting <input [swFormControl]="null">
-    // or <input [swFormControl]="undefined">
+    // We do *not* allow actively setting <input [rxFormControl]="null">
+    // or <input [rxFormControl]="undefined">
     if ((this.providedControl as unknown) === '') {
       this.providedControl = undefined;
       return;
@@ -71,12 +71,12 @@ export class FormControlDirective<T extends AbstractControl = AbstractControl>
 
     if (!AbstractControl.isControl(this.providedControl)) {
       throw new Error(
-        `SwFormControlDirective must be passed an AbstractControl via swFormControl`
+        `RxFormControlDirective must be passed an AbstractControl via rxFormControl`
       );
     }
 
     this.assertValidValueMapper(
-      'SwFormControlDirective#swFormControlValueMapper',
+      'RxFormControlDirective#rxFormControlValueMapper',
       this.valueMapper
     );
 

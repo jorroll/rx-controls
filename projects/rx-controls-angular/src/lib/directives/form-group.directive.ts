@@ -13,23 +13,23 @@ import {
 import { AbstractControlContainer, FormGroup } from 'rx-controls';
 import {
   IControlDirectiveCallback,
-  SW_CONTROL_DIRECTIVE,
-  SW_CONTROL_DIRECTIVE_CALLBACK,
+  RX_CONTROL_DIRECTIVE,
+  RX_CONTROL_DIRECTIVE_CALLBACK,
 } from './interface';
 import { resolveControlContainerAccessor } from './util';
 import {
   ControlContainerAccessor,
-  SW_CONTROL_ACCESSOR,
+  RX_CONTROL_ACCESSOR,
   ControlAccessor,
 } from '../accessors/interface';
 import { ControlDirective } from './control.directive';
 
 @Directive({
-  selector: '[swFormGroup]',
-  exportAs: 'swForm',
+  selector: '[rxFormGroup]',
+  exportAs: 'rxForm',
   providers: [
     {
-      provide: SW_CONTROL_DIRECTIVE,
+      provide: RX_CONTROL_DIRECTIVE,
       useExisting: forwardRef(() => FormGroupDirective),
     },
   ],
@@ -37,16 +37,16 @@ import { ControlDirective } from './control.directive';
 export class FormGroupDirective<T extends AbstractControlContainer = FormGroup>
   extends ControlDirective<T>
   implements ControlContainerAccessor<T>, OnChanges {
-  @Input('swFormGroup') providedControl!: T;
+  @Input('rxFormGroup') providedControl!: T;
 
   readonly control: T;
 
   constructor(
     @Self()
-    @Inject(SW_CONTROL_ACCESSOR)
+    @Inject(RX_CONTROL_ACCESSOR)
     accessors: Array<ControlAccessor | ControlContainerAccessor>,
     @Optional()
-    @Inject(SW_CONTROL_DIRECTIVE_CALLBACK)
+    @Inject(RX_CONTROL_DIRECTIVE_CALLBACK)
     protected controlDirectiveCallbacks: IControlDirectiveCallback<T>[] | null,
     renderer: Renderer2,
     el: ElementRef
@@ -61,7 +61,7 @@ export class FormGroupDirective<T extends AbstractControlContainer = FormGroup>
     valueMapper?: SimpleChange;
   }) {
     if (!this.providedControl) {
-      throw new Error(`SwFormGroupDirective must be passed a swFormGroup`);
+      throw new Error(`RxFormGroupDirective must be passed a rxFormGroup`);
     }
 
     super.ngOnChanges(_);

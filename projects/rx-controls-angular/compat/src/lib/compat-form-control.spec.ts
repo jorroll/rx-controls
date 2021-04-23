@@ -2,7 +2,7 @@ import { FormControl as OldFormControl } from '@angular/forms';
 import { FormControl, isAncestorControlPropTruthy$ } from 'rx-controls-angular';
 import { testAllAbstractControlDefaultsExcept } from 'rx-controls/src/lib/test-util';
 import { combineLatest, Subscription } from 'rxjs';
-import { CompatFormControl, FROM_SWCONTROL } from './compat-form-control';
+import { CompatFormControl, FROM_RXCONTROL } from './compat-form-control';
 import { testAllCompatControlDefaultsExcept } from './test-utils';
 
 const CONTROL_SELF_ID = '__CONTROL_SELF_ID';
@@ -24,9 +24,9 @@ describe('CompatFormControl', () => {
       isAncestorControlPropTruthy$(control, 'selfDisabled'),
     ]).subscribe(([a, b]) => {
       if (a || b) {
-        compat.disable({ [FROM_SWCONTROL]: true });
+        compat.disable({ [FROM_RXCONTROL]: true });
       } else {
-        compat.enable({ [FROM_SWCONTROL]: true });
+        compat.enable({ [FROM_RXCONTROL]: true });
       }
     });
   });
@@ -75,7 +75,7 @@ describe('CompatFormControl', () => {
       );
     }
 
-    it('from swControl', () => {
+    it('from rxControl', () => {
       control.markDisabled(true);
       theTest();
     });
@@ -92,7 +92,7 @@ describe('CompatFormControl', () => {
       testAllCompatControlDefaultsExcept(compat);
     }
 
-    it('from swControl', () => {
+    it('from rxControl', () => {
       control.markDisabled(true);
       control.markDisabled(false);
       theTest();
@@ -116,7 +116,7 @@ describe('CompatFormControl', () => {
       testAllCompatControlDefaultsExcept(compat, 'touched');
     }
 
-    it('from swControl', () => {
+    it('from rxControl', () => {
       control.markTouched(true);
       theTest();
     });
@@ -133,7 +133,7 @@ describe('CompatFormControl', () => {
       testAllCompatControlDefaultsExcept(compat);
     }
 
-    it('from swControl', () => {
+    it('from rxControl', () => {
       control.markTouched(true);
       control.markTouched(false);
       theTest();
@@ -157,7 +157,7 @@ describe('CompatFormControl', () => {
       testAllCompatControlDefaultsExcept(compat, 'dirty');
     }
 
-    it('from swControl', () => {
+    it('from rxControl', () => {
       control.markDirty(true);
       theTest();
     });
@@ -174,7 +174,7 @@ describe('CompatFormControl', () => {
       testAllCompatControlDefaultsExcept(compat);
     }
 
-    it('from swControl', () => {
+    it('from rxControl', () => {
       control.markDirty(true);
       control.markDirty(false);
       theTest();
@@ -214,7 +214,7 @@ describe('CompatFormControl', () => {
       testAllCompatControlDefaultsExcept(compat, 'pending', 'status', 'valid');
     }
 
-    it('from swControl', () => {
+    it('from rxControl', () => {
       control.markPending(true);
       theTest();
     });
@@ -231,7 +231,7 @@ describe('CompatFormControl', () => {
       testAllCompatControlDefaultsExcept(compat);
     }
 
-    it('from swControl', () => {
+    it('from rxControl', () => {
       control.markPending(true);
       control.markPending(false);
       theTest();
@@ -283,7 +283,7 @@ describe('CompatFormControl', () => {
       );
     }
 
-    it('from swControl', () => {
+    it('from rxControl', () => {
       control.setErrors(errors);
       theTest();
     });
@@ -302,7 +302,7 @@ describe('CompatFormControl', () => {
       testAllCompatControlDefaultsExcept(compat);
     }
 
-    it('from swControl', () => {
+    it('from rxControl', () => {
       control.setErrors(errors);
       control.setErrors(null);
       theTest();
@@ -326,7 +326,7 @@ describe('CompatFormControl', () => {
       testAllCompatControlDefaultsExcept(compat, 'value');
     }
 
-    it('from swControl', () => {
+    it('from rxControl', () => {
       control.setValue(value);
       theTest();
     });
@@ -345,7 +345,7 @@ describe('CompatFormControl', () => {
       testAllCompatControlDefaultsExcept(compat);
     }
 
-    it('from swControl', () => {
+    it('from rxControl', () => {
       control.setValue(value);
       control.setValue(null);
       theTest();
@@ -381,7 +381,7 @@ describe('CompatFormControl', () => {
         testAllCompatControlDefaultsExcept(compat, 'validator');
       }
 
-      it('from swControl', () => {
+      it('from rxControl', () => {
         control.setValidators(validator);
         expect(control.validator).toEqual(expect.any(Function));
         expect(control.validatorStore).toEqual(
@@ -447,7 +447,7 @@ describe('CompatFormControl', () => {
         );
       }
 
-      it('from swControl', () => {
+      it('from rxControl', () => {
         control.setValue('hi');
         control.setValidators(validator);
         expect(control.validator).toEqual(expect.any(Function));
@@ -480,7 +480,7 @@ describe('CompatFormControl', () => {
         testAllCompatControlDefaultsExcept(compat, 'validator');
       }
 
-      it('from swControl', () => {
+      it('from rxControl', () => {
         control.setValue('hi');
         control.setValidators(validator);
         control.setValue(null);
@@ -550,7 +550,7 @@ describe('CompatFormControl', () => {
         );
       }
 
-      it('from swControl', () => {
+      it('from rxControl', () => {
         control.setValidators(validator);
         control.setValue('hi');
         expect(control.validator).toEqual(expect.any(Function));

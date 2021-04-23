@@ -1,18 +1,13 @@
 import { Component, forwardRef } from '@angular/core';
-import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { FormControl, FormGroup } from 'rx-controls';
-import { ReactiveFormsModuleTwo } from './form.module';
 import {
-  SW_CONTROL_ACCESSOR,
+  RX_CONTROL_ACCESSOR,
   // SW_CONTROL_CONTAINER_ACCESSOR,
 } from '../accessors/interface';
 
-import { render, screen, fireEvent } from '@testing-library/angular';
-import userEvent from '@testing-library/user-event';
 import { IControlValueMapper } from './interface';
 import { wait } from '../test-util';
 import { TestMultiChild } from './test-utils';
-import { FormGroupDirective } from './form-group.directive';
 import { FormControlDirective } from './form-control.directive';
 import { FormControlNameDirective } from './form-control-name.directive';
 import { FormGroupNameDirective } from './form-group-name.directive';
@@ -31,26 +26,26 @@ const beforeEachFn = TestMultiChild.buildBeforeEachFn({
 @Component({
   selector: 'my-test-component',
   template: `
-    <div swFormGroupName="name">
-      <input swFormControlName="firstName" />
-      <input swFormControlName="lastName" />
+    <div rxFormGroupName="name">
+      <input rxFormControlName="firstName" />
+      <input rxFormControlName="lastName" />
     </div>
 
     <input
-      swFormControlName="birthdate"
-      [swFormControlValueMapper]="valueMapper"
+      rxFormControlName="birthdate"
+      [rxFormControlValueMapper]="valueMapper"
     />
 
-    <div swFormGroupName="relative">
-      <div swFormGroupName="name">
-        <input [swFormControl]="alternateRelativeFirstNameControl" />
-        <input swFormControlName="lastName" />
+    <div rxFormGroupName="relative">
+      <div rxFormGroupName="name">
+        <input [rxFormControl]="alternateRelativeFirstNameControl" />
+        <input rxFormControlName="lastName" />
       </div>
     </div>
   `,
   providers: [
     {
-      provide: SW_CONTROL_ACCESSOR,
+      provide: RX_CONTROL_ACCESSOR,
       useExisting: forwardRef(() => ComplexValueMapperTestComponent),
       multi: true,
     },
@@ -118,29 +113,29 @@ describe('ComplexValueMapperTestComponent', () => {
     );
 
     const name = o.container.querySelector(
-      '[swFormGroupName="name"]'
+      '[rxFormGroupName="name"]'
     ) as HTMLDivElement;
 
     const name_firstName = name.querySelector(
-      '[swFormControlName="firstName"]'
+      '[rxFormControlName="firstName"]'
     ) as HTMLInputElement;
 
     expect(name_firstName).toHaveProperty('value', 'John');
 
     const name_lastName = name.querySelector(
-      '[swFormControlName="lastName"]'
+      '[rxFormControlName="lastName"]'
     ) as HTMLInputElement;
 
     expect(name_lastName).toHaveProperty('value', 'Carroll');
 
     const birthdate = o.container.querySelector(
-      '[swFormControlName="birthdate"]'
+      '[rxFormControlName="birthdate"]'
     ) as HTMLInputElement;
 
     expect(birthdate.value).toEqual(new Date(2020, 0, 1).toISOString());
 
     const relative = o.container.querySelector(
-      '[swFormGroupName="relative"]'
+      '[rxFormGroupName="relative"]'
     ) as HTMLDivElement;
 
     const relative_firstName = relative.querySelector('input');
@@ -148,7 +143,7 @@ describe('ComplexValueMapperTestComponent', () => {
     expect(relative_firstName).toHaveProperty('value', 'Bobby');
 
     const relative_lastName = relative.querySelector(
-      '[swFormControlName="lastName"]'
+      '[rxFormControlName="lastName"]'
     ) as HTMLInputElement;
 
     expect(relative_lastName).toHaveProperty('value', 'Paul');
@@ -174,7 +169,7 @@ describe('ComplexValueMapperTestComponent', () => {
     });
 
     const birthdate = o.container.querySelector(
-      '[swFormControlName="birthdate"]'
+      '[rxFormControlName="birthdate"]'
     ) as HTMLInputElement;
 
     expect(birthdate.value).toEqual(newDate.toISOString());
@@ -202,7 +197,7 @@ describe('ComplexValueMapperTestComponent', () => {
     });
 
     const name = o.container.querySelector(
-      '[swFormGroupName="name"]'
+      '[rxFormGroupName="name"]'
     ) as HTMLDivElement;
 
     const name_firstName = name.querySelector('input');
@@ -246,7 +241,7 @@ describe('ComplexValueMapperTestComponent', () => {
     });
 
     const relative = o.container.querySelector(
-      '[swFormGroupName="relative"]'
+      '[rxFormGroupName="relative"]'
     ) as HTMLDivElement;
 
     const relative_firstName = relative.querySelector('input');

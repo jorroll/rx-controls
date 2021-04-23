@@ -1,4 +1,4 @@
-export { AccessorsModule } from './accessors.module';
+export { RxAccessorsModule as AccessorsModule } from './accessors.module';
 
 export { DefaultAccessor } from './default.accessor';
 
@@ -20,7 +20,7 @@ export {
   ControlAccessor,
   ControlContainerAccessor,
   CONTROL_ACCESSOR_SPECIFICITY,
-  SW_CONTROL_ACCESSOR,
+  RX_CONTROL_ACCESSOR,
 } from './interface';
 
 export {

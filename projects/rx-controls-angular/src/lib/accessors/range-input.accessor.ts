@@ -12,7 +12,7 @@ import { BaseAccessor } from './base.accessor';
 import {
   ControlAccessor,
   CONTROL_ACCESSOR_SPECIFICITY,
-  SW_CONTROL_ACCESSOR,
+  RX_CONTROL_ACCESSOR,
 } from './interface';
 import { setupStdControlEventHandlers, setupListeners } from './util';
 
@@ -42,11 +42,11 @@ import { setupStdControlEventHandlers, setupListeners } from './util';
  */
 @Directive({
   selector:
-    'input[type=range][swFormControlName],input[type=range][swFormControl]' +
-    'input[type=range][swInputAccessor]',
+    'input[type=range][rxFormControlName],input[type=range][rxFormControl]' +
+    'input[type=range][rxInputAccessor]',
   providers: [
     {
-      provide: SW_CONTROL_ACCESSOR,
+      provide: RX_CONTROL_ACCESSOR,
       useExisting: forwardRef(() => RangeInputAccessor),
       multi: true,
     },
@@ -60,7 +60,7 @@ export class RangeInputAccessor
   [CONTROL_ACCESSOR_SPECIFICITY] = '0.2.1';
 
   readonly control = new FormControl<number | null>(null, {
-    id: Symbol(`SwRangeInputAccessor-${RangeInputAccessor.id++}`),
+    id: Symbol(`RxRangeInputAccessor-${RangeInputAccessor.id++}`),
   });
 
   constructor(
