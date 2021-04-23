@@ -7,6 +7,7 @@ module.exports = {
   transformIgnorePatterns: ["<rootDir>/node_modules/(?!lodash-es/.*)"],
   modulePathIgnorePatterns: [
     "<rootDir>/projects/reactive-forms-two/build/",
+    "<rootDir>/projects/reactive-forms-two-angular/build/",
     "<rootDir>/projects/reactive-forms-two-compat/build/",
   ],
 };
