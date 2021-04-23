@@ -6,7 +6,7 @@ module.exports = {
   setupFilesAfterEnv: ["<rootDir>/setup-jest.ts"],
   transformIgnorePatterns: ["<rootDir>/node_modules/(?!lodash-es/.*)"],
   modulePathIgnorePatterns: [
-    "<rootDir>/projects/reactive-form-controls/build/",
-    "<rootDir>/projects/reactive-form-controls-angular/build/",
+    "<rootDir>/projects/rx-controls/build/",
+    "<rootDir>/projects/rx-controls-angular/build/",
   ],
 };

@@ -5,74 +5,74 @@
     "packageManager": "yarn"
   },
   "newProjectRoot": "projects",
-  "defaultProject": "reactive-form-controls-angular",
+  "defaultProject": "rx-controls-angular",
   "projects": {
-    "reactive-form-controls": {
+    "rx-controls": {
       "projectType": "library",
-      "root": "projects/reactive-form-controls",
-      "sourceRoot": "projects/reactive-form-controls/src",
+      "root": "projects/rx-controls",
+      "sourceRoot": "projects/rx-controls/src",
       "prefix": "lib",
       "architect": {
         "build": {
           "builder": "@angular-devkit/build-angular:ng-packagr",
           "options": {
-            "tsConfig": "projects/reactive-form-controls/tsconfig.lib.json",
-            "project": "projects/reactive-form-controls/ng-package.json"
+            "tsConfig": "projects/rx-controls/tsconfig.lib.json",
+            "project": "projects/rx-controls/ng-package.json"
           },
           "configurations": {
             "production": {
-              "tsConfig": "projects/reactive-form-controls/tsconfig.lib.prod.json"
+              "tsConfig": "projects/rx-controls/tsconfig.lib.prod.json"
             }
           }
         },
         "test": {
           "builder": "@angular-builders/jest:run",
           "options": {
-            "tsConfig": "projects/reactive-form-controls/tsconfig.spec.json"
+            "tsConfig": "projects/rx-controls/tsconfig.spec.json"
           }
         },
         "lint": {
           "builder": "@angular-devkit/build-angular:tslint",
           "options": {
             "tsConfig": [
-              "projects/reactive-form-controls/tsconfig.lib.json",
-              "projects/reactive-form-controls/tsconfig.spec.json"
+              "projects/rx-controls/tsconfig.lib.json",
+              "projects/rx-controls/tsconfig.spec.json"
             ],
             "exclude": ["**/node_modules/**"]
           }
         }
       }
     },
-    "reactive-form-controls-angular": {
+    "rx-controls-angular": {
       "projectType": "library",
-      "root": "projects/reactive-form-controls-angular",
-      "sourceRoot": "projects/reactive-form-controls-angular/src",
+      "root": "projects/rx-controls-angular",
+      "sourceRoot": "projects/rx-controls-angular/src",
       "prefix": "lib",
       "architect": {
         "build": {
           "builder": "@angular-devkit/build-angular:ng-packagr",
           "options": {
-            "tsConfig": "projects/reactive-form-controls-angular/tsconfig.lib.json",
-            "project": "projects/reactive-form-controls-angular/ng-package.json"
+            "tsConfig": "projects/rx-controls-angular/tsconfig.lib.json",
+            "project": "projects/rx-controls-angular/ng-package.json"
           },
           "configurations": {
             "production": {
-              "tsConfig": "projects/reactive-form-controls-angular/tsconfig.lib.prod.json"
+              "tsConfig": "projects/rx-controls-angular/tsconfig.lib.prod.json"
             }
           }
         },
         "test": {
           "builder": "@angular-builders/jest:run",
           "options": {
-            "tsConfig": "projects/reactive-form-controls-angular/tsconfig.spec.json"
+            "tsConfig": "projects/rx-controls-angular/tsconfig.spec.json"
           }
         },
         "lint": {
           "builder": "@angular-devkit/build-angular:tslint",
           "options": {
             "tsConfig": [
-              "projects/reactive-form-controls-angular/tsconfig.lib.json",
-              "projects/reactive-form-controls-angular/tsconfig.spec.json"
+              "projects/rx-controls-angular/tsconfig.lib.json",
+              "projects/rx-controls-angular/tsconfig.spec.json"
             ],
             "exclude": ["**/node_modules/**"]
           }

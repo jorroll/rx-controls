@@ -35,7 +35,7 @@ import {
   FormControl,
   FormGroup,
   FormArray,
-} from './projects/reactive-form-controls';
+} from './projects/rx-controls';
 
 expect.extend({
   toEqualControl(received, control, options = {}) {

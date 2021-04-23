@@ -1,0 +1,13 @@
+{
+  "$schema": "../../node_modules/ng-packagr/ng-package.schema.json",
+  "dest": "./build",
+  "lib": {
+    "entryFile": "src/public-api.ts",
+    "umdId": "rxControlsAngular",
+    "umdModuleIds": {
+      "rx-controls": "rxControls",
+      "rx-controls-angular": "rxControlsAngular"
+    }
+  },
+  "whitelistedNonPeerDependencies": ["tslib"]
+}
