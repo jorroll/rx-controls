@@ -1,4 +1,6 @@
 import 'jest-preset-angular';
+import 'core-js/features/object';
+import 'core-js/features/array';
 
 /* global mocks for jsdom */
 const mock = () => {

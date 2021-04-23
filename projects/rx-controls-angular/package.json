@@ -2,10 +2,10 @@
   "name": "rx-controls-angular",
   "version": "0.5.2",
   "peerDependencies": {
-    "@angular/core": "10 || 11",
-    "rx-controls": "^0.5.1"
+    "@angular/core": "10 || 11 || 12"
   },
   "dependencies": {
-    "tslib": "^2.0.0"
+    "tslib": "^2.0.0",
+    "rx-controls": "^0.5.1"
   }
 }
