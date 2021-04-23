@@ -2,7 +2,7 @@ import { Component } from '@angular/core';
 import {
   FormControl,
   IControlValueMapper,
-} from '@service-work/angular-reactive-forms';
+} from 'reactive-form-controls-angular';
 import userEvent from '@testing-library/user-event';
 import { CompatFormControlDirective } from './compat-form-control.directive';
 import { TestSingleChild } from './test-utils';

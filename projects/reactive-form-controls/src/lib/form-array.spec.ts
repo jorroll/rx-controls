@@ -99,7 +99,10 @@ describe('FormArray', () => {
     it('preserveControls = true', async () => {
       const aControls = [
         new FormControl('', {
-          validators: (c) => (c.value.length > 0 ? null : { required: true }),
+          validators: (c) =>
+            typeof c.value === 'string' && c.value.length > 0
+              ? null
+              : { required: true },
         }),
       ];
 
@@ -136,7 +139,10 @@ describe('FormArray', () => {
     it('preserveControls = false', async () => {
       const aControls = [
         new FormControl('', {
-          validators: (c) => (c.value.length > 0 ? null : { required: true }),
+          validators: (c) =>
+            typeof c.value === 'string' && c.value.length > 0
+              ? null
+              : { required: true },
         }),
       ];
 

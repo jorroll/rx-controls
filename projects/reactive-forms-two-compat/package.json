@@ -4,7 +4,7 @@
   "peerDependencies": {
     "@angular/core": "10 || 11",
     "@angular/forms": "10 || 11",
-    "@service-work/angular-reactive-forms": "^0.4.0"
+    "reactive-form-controls-angular": "^0.4.0"
   },
   "dependencies": {
     "tslib": "^2.0.0"

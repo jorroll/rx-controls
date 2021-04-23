@@ -5,7 +5,7 @@
     "packageManager": "yarn"
   },
   "newProjectRoot": "projects",
-  "defaultProject": "reactive-forms-two-angular",
+  "defaultProject": "reactive-form-controls-angular",
   "projects": {
     "reactive-form-controls": {
       "projectType": "library",
@@ -79,36 +79,36 @@
         }
       }
     },
-    "reactive-forms-two-angular": {
+    "reactive-form-controls-angular": {
       "projectType": "library",
-      "root": "projects/reactive-forms-two-angular",
-      "sourceRoot": "projects/reactive-forms-two-angular/src",
+      "root": "projects/reactive-form-controls-angular",
+      "sourceRoot": "projects/reactive-form-controls-angular/src",
       "prefix": "lib",
       "architect": {
         "build": {
           "builder": "@angular-devkit/build-angular:ng-packagr",
           "options": {
-            "tsConfig": "projects/reactive-forms-two-angular/tsconfig.lib.json",
-            "project": "projects/reactive-forms-two-angular/ng-package.json"
+            "tsConfig": "projects/reactive-form-controls-angular/tsconfig.lib.json",
+            "project": "projects/reactive-form-controls-angular/ng-package.json"
           },
           "configurations": {
             "production": {
-              "tsConfig": "projects/reactive-forms-two-angular/tsconfig.lib.prod.json"
+              "tsConfig": "projects/reactive-form-controls-angular/tsconfig.lib.prod.json"
             }
           }
         },
         "test": {
           "builder": "@angular-builders/jest:run",
           "options": {
-            "tsConfig": "projects/reactive-forms-two-angular/tsconfig.spec.json"
+            "tsConfig": "projects/reactive-form-controls-angular/tsconfig.spec.json"
           }
         },
         "lint": {
           "builder": "@angular-devkit/build-angular:tslint",
           "options": {
             "tsConfig": [
-              "projects/reactive-forms-two-angular/tsconfig.lib.json",
-              "projects/reactive-forms-two-angular/tsconfig.spec.json"
+              "projects/reactive-form-controls-angular/tsconfig.lib.json",
+              "projects/reactive-form-controls-angular/tsconfig.spec.json"
             ],
             "exclude": ["**/node_modules/**"]
           }

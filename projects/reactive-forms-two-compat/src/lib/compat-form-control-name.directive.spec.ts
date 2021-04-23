@@ -8,7 +8,7 @@ import {
   ReactiveFormsModuleTwo,
   FormGroup,
   FormControl,
-} from '@service-work/angular-reactive-forms';
+} from 'reactive-form-controls-angular';
 import { CommonModule } from '@angular/common';
 
 const beforeEachFn = TestSingleChild.buildBeforeEachFn({

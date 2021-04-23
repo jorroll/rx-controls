@@ -1,8 +1,5 @@
 import { FormControl as OldFormControl } from '@angular/forms';
-import {
-  FormControl,
-  isStateChange,
-} from '@service-work/angular-reactive-forms';
+import { FormControl, isStateChange } from 'reactive-form-controls-angular';
 import { filter } from 'rxjs/operators';
 
 export const FROM_SWCONTROL = Symbol('change from swControl');
