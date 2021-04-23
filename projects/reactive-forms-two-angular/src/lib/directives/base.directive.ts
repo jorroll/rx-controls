@@ -14,7 +14,7 @@ import {
   IControlEvent,
   isStateChange,
   IControlStateChangeEvent,
-} from '@service-work/reactive-forms';
+} from 'reactive-form-controls';
 import { filter } from 'rxjs/operators';
 
 @Directive()

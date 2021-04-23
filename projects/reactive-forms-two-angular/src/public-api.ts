@@ -4,4 +4,4 @@
 
 export * from './lib/accessors/public_api';
 export * from './lib/directives/public_api';
-export * from '@service-work/reactive-forms';
+export * from 'reactive-form-controls';

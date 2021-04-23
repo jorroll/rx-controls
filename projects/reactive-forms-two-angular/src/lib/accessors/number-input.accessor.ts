@@ -8,7 +8,7 @@ import {
   Renderer2,
 } from '@angular/core';
 import { Subscription } from 'rxjs';
-import { FormControl } from '@service-work/reactive-forms';
+import { FormControl } from 'reactive-form-controls';
 import { BaseAccessor } from './base.accessor';
 import {
   ControlAccessor,

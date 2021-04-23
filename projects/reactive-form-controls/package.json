@@ -1,5 +1,5 @@
 {
-  "name": "@service-work/reactive-forms",
+  "name": "reactive-form-controls",
   "version": "0.5.2",
   "dependencies": {
     "tslib": "^2.0.0"

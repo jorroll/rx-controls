@@ -3,10 +3,7 @@ import {
   selectControlAccessor,
   selectControlContainerAccessor,
 } from '../accessors/util';
-import {
-  IControlEvent,
-  IControlValidationEvent,
-} from '@service-work/reactive-forms';
+import { IControlEvent, IControlValidationEvent } from 'reactive-form-controls';
 
 export function resolveControlAccessor<T extends ControlAccessor>(
   accessors: T[]

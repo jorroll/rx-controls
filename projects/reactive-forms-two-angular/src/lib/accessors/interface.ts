@@ -2,7 +2,7 @@ import { InjectionToken } from '@angular/core';
 import {
   AbstractControl,
   AbstractControlContainer,
-} from '@service-work/reactive-forms';
+} from 'reactive-form-controls';
 
 export const CONTROL_ACCESSOR_SPECIFICITY = Symbol(
   'CONTROL_ACCESSOR_SPECIFICITY'

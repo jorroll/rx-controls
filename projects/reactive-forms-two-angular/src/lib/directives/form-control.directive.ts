@@ -11,7 +11,7 @@ import {
   Input,
   Optional,
 } from '@angular/core';
-import { AbstractControl } from '@service-work/reactive-forms';
+import { AbstractControl } from 'reactive-form-controls';
 import {
   IControlDirectiveCallback,
   SW_CONTROL_DIRECTIVE,

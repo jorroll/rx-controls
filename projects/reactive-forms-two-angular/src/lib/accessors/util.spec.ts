@@ -1,6 +1,6 @@
 import { Observable, Subject } from 'rxjs';
 import { takeUntil, toArray } from 'rxjs/operators';
-import { FormControl, FormGroup } from '@service-work/reactive-forms';
+import { FormControl, FormGroup } from 'reactive-form-controls';
 import { isAncestorControlPropTruthy$ } from './util';
 
 export function subscribeUntilEnd<T extends Observable<any>>(

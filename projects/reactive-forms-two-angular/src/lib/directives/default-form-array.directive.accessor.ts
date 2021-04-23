@@ -1,5 +1,5 @@
 import { Directive, forwardRef } from '@angular/core';
-import { AbstractControl, FormArray } from '@service-work/reactive-forms';
+import { AbstractControl, FormArray } from 'reactive-form-controls';
 import {
   ControlContainerAccessor,
   CONTROL_ACCESSOR_SPECIFICITY,

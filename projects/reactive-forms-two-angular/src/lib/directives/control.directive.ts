@@ -1,5 +1,5 @@
 import { OnDestroy, OnChanges, SimpleChange, Directive } from '@angular/core';
-import { AbstractControl } from '@service-work/reactive-forms';
+import { AbstractControl } from 'reactive-form-controls';
 import { IControlValueMapper } from './interface';
 import { map, filter } from 'rxjs/operators';
 import { BaseDirective } from './base.directive';

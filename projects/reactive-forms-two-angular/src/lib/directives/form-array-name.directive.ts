@@ -12,7 +12,7 @@ import {
   Self,
   Optional,
 } from '@angular/core';
-import { FormArray } from '@service-work/reactive-forms';
+import { FormArray } from 'reactive-form-controls';
 import {
   IControlDirectiveCallback,
   SW_CONTROL_DIRECTIVE_CALLBACK,

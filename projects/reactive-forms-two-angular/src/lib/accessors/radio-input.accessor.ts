@@ -14,7 +14,7 @@ import {
 } from '@angular/core';
 import { BehaviorSubject, Subscription } from 'rxjs';
 import { filter } from 'rxjs/operators';
-import { isStateChange, FormControl } from '@service-work/reactive-forms';
+import { isStateChange, FormControl } from 'reactive-form-controls';
 import { BaseAccessor } from './base.accessor';
 import {
   ControlAccessor,

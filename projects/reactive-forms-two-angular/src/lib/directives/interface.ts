@@ -5,7 +5,7 @@ import {
   AbstractControl,
   IControlEvent,
   ValidatorFn,
-} from '@service-work/reactive-forms';
+} from 'reactive-form-controls';
 
 export const SW_CONTROL_DIRECTIVE = new InjectionToken<ControlAccessor>(
   'SW_CONTROL_DIRECTIVE'

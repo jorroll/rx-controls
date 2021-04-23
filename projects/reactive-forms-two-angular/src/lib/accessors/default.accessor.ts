@@ -7,7 +7,7 @@ import {
   Injector,
 } from '@angular/core';
 import { setupStdControlEventHandlers, setupListeners } from './util';
-import { FormControl } from '@service-work/reactive-forms';
+import { FormControl } from 'reactive-form-controls';
 import {
   SW_CONTROL_ACCESSOR,
   ControlAccessor,

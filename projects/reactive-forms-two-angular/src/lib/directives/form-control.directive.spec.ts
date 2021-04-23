@@ -5,7 +5,7 @@ import {
   FormControl,
   FormGroup,
   IControlStateChangeEvent,
-} from '@service-work/reactive-forms';
+} from 'reactive-form-controls';
 import { ReactiveFormsModuleTwo } from './form.module';
 import {
   SW_CONTROL_ACCESSOR,

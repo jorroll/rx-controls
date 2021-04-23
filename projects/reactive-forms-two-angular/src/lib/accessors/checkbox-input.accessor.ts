@@ -7,7 +7,7 @@ import {
   OnInit,
   Renderer2,
 } from '@angular/core';
-import { FormControl } from '@service-work/reactive-forms';
+import { FormControl } from 'reactive-form-controls';
 import { BaseAccessor } from './base.accessor';
 import {
   ControlAccessor,

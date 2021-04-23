@@ -1,6 +1,6 @@
 import { Component, forwardRef } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { FormControl, FormGroup } from '@service-work/reactive-forms';
+import { FormControl, FormGroup } from 'reactive-form-controls';
 import { ReactiveFormsModuleTwo } from './form.module';
 import {
   SW_CONTROL_ACCESSOR,

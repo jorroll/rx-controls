@@ -34,7 +34,10 @@ const beforeEachFn = TestSingleChild.buildBeforeEachFn({
 export class MatInputTestComponent {
   readonly control = new FormGroup({
     one: new FormControl('', {
-      validators: (c) => (c.value.length > 0 ? null : { required: true }),
+      validators: (c) =>
+        typeof c.value === 'string' && c.value.length > 0
+          ? null
+          : { required: true },
     }),
   });
 

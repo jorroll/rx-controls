@@ -12,7 +12,7 @@ import {
   Self,
   Optional,
 } from '@angular/core';
-import { FormGroup } from '@service-work/reactive-forms';
+import { FormGroup } from 'reactive-form-controls';
 import {
   IControlDirectiveCallback,
   SW_CONTROL_DIRECTIVE_CALLBACK,

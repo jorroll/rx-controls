@@ -10,10 +10,7 @@ import {
   Input,
   Optional,
 } from '@angular/core';
-import {
-  AbstractControlContainer,
-  FormArray,
-} from '@service-work/reactive-forms';
+import { AbstractControlContainer, FormArray } from 'reactive-form-controls';
 import {
   IControlDirectiveCallback,
   SW_CONTROL_DIRECTIVE,

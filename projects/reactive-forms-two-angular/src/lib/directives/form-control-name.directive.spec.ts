@@ -8,7 +8,7 @@ import {
   FormControl,
   FormGroup,
   IControlStateChangeEvent,
-} from '@service-work/reactive-forms';
+} from 'reactive-form-controls';
 import { DefaultFormGroupDirectiveAccessor } from './default-form-group.directive.accessor';
 
 const beforeEachFn = TestSingleChild.buildBeforeEachFn({
@@ -30,7 +30,10 @@ const beforeEachFn = TestSingleChild.buildBeforeEachFn({
 export class InputTestComponent {
   readonly control = new FormGroup({
     one: new FormControl('', {
-      validators: (c) => (c.value.length > 0 ? null : { required: true }),
+      validators: (c) =>
+        typeof c.value === 'string' && c.value.length > 0
+          ? null
+          : { required: true },
     }),
   });
 

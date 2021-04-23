@@ -1,5 +1,5 @@
 {
-  "name": "@service-work/reactive-forms-compat",
+  "name": "reactive-form-controls-compat",
   "version": "0.5.2",
   "peerDependencies": {
     "@angular/core": "10 || 11",

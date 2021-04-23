@@ -4,7 +4,7 @@ import {
   AbstractControlContainer,
   AbstractControl,
   IControlFocusEvent,
-} from '@service-work/reactive-forms';
+} from 'reactive-form-controls';
 import {
   ControlAccessor,
   ControlContainerAccessor,
