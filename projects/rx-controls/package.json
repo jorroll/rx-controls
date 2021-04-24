@@ -1,6 +1,9 @@
 {
   "name": "rx-controls",
   "version": "0.6.0",
+  "peerDependencies": {
+    "rxjs": "^6.0.0"
+  },
   "dependencies": {
     "tslib": "^2.0.0"
   }
