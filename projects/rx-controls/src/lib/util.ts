@@ -1,8 +1,11 @@
-import {
-  AbstractControl,
+import type {
   IControlEvent,
+  IControlFocusEvent,
   IControlStateChangeEvent,
+  IControlValidationEvent,
 } from './abstract-control/abstract-control';
+
+import { AbstractControl } from './abstract-control/abstract-control';
 
 export type Mutable<T> = {
   -readonly [P in keyof T]: T[P] extends ReadonlyArray<infer U> ? U[] : T[P];
@@ -30,10 +33,28 @@ export function isTruthy<T>(value: T): value is NonNullable<T> {
   return !!value;
 }
 
-export function isStateChange<
+export function isStateChangeEvent<
   T extends IControlStateChangeEvent = IControlStateChangeEvent
 >(event: IControlEvent): event is T {
   return event.type === 'StateChange';
+}
+
+export function isFocusEvent<T extends IControlFocusEvent = IControlFocusEvent>(
+  event: IControlEvent
+): event is T {
+  return event.type === 'Focus';
+}
+
+export function isValidationStartEvent<
+  T extends IControlValidationEvent<any> = IControlValidationEvent<unknown>
+>(event: IControlEvent): event is T {
+  return event.type === 'ValidationStart';
+}
+
+export function isAsyncValidationStartEvent<
+  T extends IControlValidationEvent<any> = IControlValidationEvent<unknown>
+>(event: IControlEvent): event is T {
+  return event.type === 'AsyncValidationStart';
 }
 
 export function getSimpleStateChangeEventArgs<T extends AbstractControl>(

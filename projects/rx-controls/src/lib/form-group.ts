@@ -1,18 +1,23 @@
-import {
-  AbstractControl,
+import type {
   IControlEventOptions,
   IControlStateChangeEvent,
 } from './abstract-control/abstract-control';
-import {
-  AbstractControlContainerBase,
-  IAbstractControlContainerBaseArgs,
-} from './abstract-control-container/abstract-control-container-base';
-import {
+
+import { AbstractControl } from './abstract-control/abstract-control';
+
+import type { IAbstractControlContainerBaseArgs } from './abstract-control-container/abstract-control-container-base';
+
+import { AbstractControlContainerBase } from './abstract-control-container/abstract-control-container-base';
+
+import type {
   ControlsValue,
   ControlsRawValue,
   ControlsKey,
 } from './abstract-control-container/abstract-control-container';
-import { getSimpleStateChangeEventArgs, Mutable } from './util';
+
+import { getSimpleStateChangeEventArgs } from './util';
+
+import type { Mutable } from './util';
 
 export type IFormGroupArgs<
   Data = any
@@ -139,6 +144,84 @@ export class FormGroup<
     }
 
     return changedProps;
+  }
+
+  setControl<N extends ControlsKey<Controls>>(
+    name: N,
+    control: Controls[N] | null,
+    options?: IControlEventOptions
+  ): Array<keyof this & string> {
+    if (((control as unknown) as AbstractControl)?.parent) {
+      throw new Error(
+        `Attempted to add AbstractControl to AbstractControlContainer, ` +
+          `but AbstractControl already has a parent.`
+      );
+    }
+
+    const controlsStore = new Map(this._controlsStore);
+
+    if (control) {
+      controlsStore.set(name, control as any);
+    } else {
+      controlsStore.delete(name);
+    }
+
+    return this.setControls(controlsStore, options);
+  }
+
+  /**
+   * Adds a control with the specified name/key. If a control
+   * already exists with that name/key, this does nothing.
+   */
+  addControl<N extends ControlsKey<Controls>>(
+    name: N,
+    control: Controls[N],
+    options?: IControlEventOptions
+  ): Array<keyof this & string> {
+    if (((control as unknown) as AbstractControl)?.parent) {
+      throw new Error(
+        `Attempted to add AbstractControl to AbstractControlContainer, ` +
+          `but AbstractControl already has a parent.`
+      );
+    } else if (this._controlsStore.has(name)) return [];
+
+    const controlsStore = new Map(this._controlsStore).set(
+      name,
+      control as any
+    );
+
+    return this.setControls(controlsStore, options);
+  }
+
+  /**
+   * If a control key is provided, this removes the control with the specified name/key
+   * if one exists. If a control is provided, that control is removed from this FormGroup
+   * if it is a child of this FormGroup.
+   */
+  removeControl(
+    name: ControlsKey<Controls> | Controls[ControlsKey<Controls>],
+    options?: IControlEventOptions
+  ): Array<keyof this & string> {
+    let key!: ControlsKey<Controls>;
+
+    if (AbstractControl.isControl(name)) {
+      for (const [k, c] of this.controlsStore) {
+        if (c !== name) continue;
+
+        key = k;
+        break;
+      }
+    } else {
+      key = name as ControlsKey<Controls>;
+    }
+
+    if (!key) return [];
+    if (!this._controlsStore.has(key)) return [];
+
+    const controlsStore = new Map(this._controlsStore);
+    controlsStore.delete(key);
+
+    return this.setControls(controlsStore, options);
   }
 
   protected _shallowCloneValue<T extends this['rawValue'] | this['value']>(

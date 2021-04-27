@@ -9,4 +9,4 @@ import { CompatFormControlNameDirective } from './compat-form-control-name.direc
   declarations: [CompatFormControlDirective, CompatFormControlNameDirective],
   exports: [CompatFormControlDirective, CompatFormControlNameDirective],
 })
-export class ReactiveFormsModuleTwoCompat {}
+export class RxCompatFormsModule {}

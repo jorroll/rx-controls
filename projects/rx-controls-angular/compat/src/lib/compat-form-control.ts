@@ -1,5 +1,5 @@
 import { FormControl as OldFormControl } from '@angular/forms';
-import { FormControl, isStateChange } from 'rx-controls-angular';
+import { FormControl, isStateChangeEvent } from 'rx-controls-angular';
 import { filter } from 'rxjs/operators';
 
 export const FROM_RXCONTROL = Symbol('change from rxControl');
@@ -8,54 +8,56 @@ export class CompatFormControl extends OldFormControl {
   constructor(readonly rxControl: FormControl) {
     super();
 
-    this.rxControl.events.pipe(filter(isStateChange)).subscribe((event) => {
-      Object.entries(event.changes).map(([prop, value]) => {
-        switch (prop) {
-          case 'rawValue':
-          case 'value': {
-            this.setValue(value, { [FROM_RXCONTROL]: true });
-            break;
-          }
-          case 'touched': {
-            if (value) {
-              this.markAsTouched({ [FROM_RXCONTROL]: true });
-            } else {
-              this.markAsUntouched({ [FROM_RXCONTROL]: true });
+    this.rxControl.events
+      .pipe(filter(isStateChangeEvent))
+      .subscribe((event) => {
+        Object.entries(event.changes).map(([prop, value]) => {
+          switch (prop) {
+            case 'rawValue':
+            case 'value': {
+              this.setValue(value, { [FROM_RXCONTROL]: true });
+              break;
             }
-            break;
-          }
-          case 'dirty': {
-            if (value) {
-              this.markAsDirty({ [FROM_RXCONTROL]: true });
-            } else {
-              this.markAsPristine({ [FROM_RXCONTROL]: true });
+            case 'touched': {
+              if (value) {
+                this.markAsTouched({ [FROM_RXCONTROL]: true });
+              } else {
+                this.markAsUntouched({ [FROM_RXCONTROL]: true });
+              }
+              break;
             }
-            break;
-          }
-          // this is handled in the ControlDirective
-          // case 'disabled': {
-          //   if (value) {
-          //     this.disable({ [FROM_SWCONTROL]: true });
-          //   } else {
-          //     this.enable({ [FROM_SWCONTROL]: true });
-          //   }
-          //   break;
-          // }
-          case 'pending': {
-            if (value) {
-              this.markAsPending({ [FROM_RXCONTROL]: true });
-            } else {
-              this.updateValueAndValidity({ [FROM_RXCONTROL]: true });
+            case 'dirty': {
+              if (value) {
+                this.markAsDirty({ [FROM_RXCONTROL]: true });
+              } else {
+                this.markAsPristine({ [FROM_RXCONTROL]: true });
+              }
+              break;
             }
-            break;
+            // this is handled in the ControlDirective
+            // case 'disabled': {
+            //   if (value) {
+            //     this.disable({ [FROM_SWCONTROL]: true });
+            //   } else {
+            //     this.enable({ [FROM_SWCONTROL]: true });
+            //   }
+            //   break;
+            // }
+            case 'pending': {
+              if (value) {
+                this.markAsPending({ [FROM_RXCONTROL]: true });
+              } else {
+                this.updateValueAndValidity({ [FROM_RXCONTROL]: true });
+              }
+              break;
+            }
+            case 'errors': {
+              this.setErrors(value, { [FROM_RXCONTROL]: true });
+              break;
+            }
           }
-          case 'errors': {
-            this.setErrors(value, { [FROM_RXCONTROL]: true });
-            break;
-          }
-        }
+        });
       });
-    });
   }
 
   markAsTouched(options: any = {}) {

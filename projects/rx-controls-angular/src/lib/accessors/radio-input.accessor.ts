@@ -14,7 +14,7 @@ import {
 } from '@angular/core';
 import { BehaviorSubject, Subscription } from 'rxjs';
 import { filter } from 'rxjs/operators';
-import { isStateChange, FormControl } from 'rx-controls';
+import { isStateChangeEvent, FormControl } from 'rx-controls';
 import { BaseAccessor } from './base.accessor';
 import {
   ControlAccessor,
@@ -31,7 +31,7 @@ function subscribeToRelevantChanges(
     .pipe(
       filter(
         (e) =>
-          isStateChange(e) &&
+          isStateChangeEvent(e) &&
           (e.changes.rawValue !== undefined || e.changes.dirty !== undefined)
       )
     )

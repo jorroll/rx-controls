@@ -1,8 +1,7 @@
 {
-  "packages": [
-    "projects/*"
-  ],
+  "packages": ["projects/*"],
   "version": "0.6.0",
   "npmClient": "yarn",
-  "useWorkspaces": true
+  "useWorkspaces": true,
+  "concurrency": 2
 }

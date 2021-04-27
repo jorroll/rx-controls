@@ -1,6 +1,7 @@
 {
   "name": "rx-controls-angular",
   "version": "0.6.0",
+  "sideEffects": false,
   "peerDependencies": {
     "@angular/core": "10 || 11 || 12",
     "rxjs": "^6.0.0"
@@ -8,5 +9,11 @@
   "dependencies": {
     "rx-controls": "^0.6.0",
     "tslib": "^2.0.0"
+  },
+  "scripts": {
+    "ng": "ng",
+    "start": "ng serve",
+    "build": "ng build --prod",
+    "test": "jest --config './jest.config.js'"
   }
 }

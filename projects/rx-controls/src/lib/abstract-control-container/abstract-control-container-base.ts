@@ -2,8 +2,7 @@ import { Subscription, Observable, of } from 'rxjs';
 
 import { filter, map } from 'rxjs/operators';
 
-import {
-  AbstractControl,
+import type {
   ControlId,
   IControlEvent,
   IControlEventOptions,
@@ -13,8 +12,9 @@ import {
   IControlFocusEvent,
 } from '../abstract-control/abstract-control';
 
-import {
-  AbstractControlContainer,
+import { AbstractControl } from '../abstract-control/abstract-control';
+
+import type {
   ControlsRawValue,
   ControlsValue,
   GenericControlsObject,
@@ -23,17 +23,22 @@ import {
   PrivateAbstractControlContainer,
 } from './abstract-control-container';
 
-import {
-  AbstractControlBase,
-  CONTROL_SELF_ID,
+import { AbstractControlContainer } from './abstract-control-container';
+
+import type {
   IAbstractControlBaseArgs,
   INormControlEventOptions,
 } from '../abstract-control/abstract-control-base';
 
 import {
+  AbstractControlBase,
+  CONTROL_SELF_ID,
+} from '../abstract-control/abstract-control-base';
+
+import {
   getSimpleChildStateChangeEventArgs,
   getSortedChanges,
-  isStateChange,
+  isStateChangeEvent,
 } from '../util';
 
 export type DeepPartial<T> = {
@@ -421,74 +426,22 @@ export abstract class AbstractControlContainerBase<
     options?: IControlEventOptions
   ): Array<keyof this & string>;
 
-  setControl<N extends ControlsKey<Controls>>(
+  abstract setControl<N extends ControlsKey<Controls>>(
     name: N,
     control: Controls[N] | null,
     options?: IControlEventOptions
-  ): Array<keyof this & string> {
-    if (((control as unknown) as AbstractControl)?.parent) {
-      throw new Error(
-        `Attempted to add AbstractControl to AbstractControlContainer, ` +
-          `but AbstractControl already has a parent.`
-      );
-    }
+  ): Array<keyof this & string>;
 
-    const controlsStore = new Map(this._controlsStore);
-
-    if (control) {
-      controlsStore.set(name, control as any);
-    } else {
-      controlsStore.delete(name);
-    }
-
-    return this.setControls(controlsStore, options);
-  }
-
-  addControl<N extends ControlsKey<Controls>>(
+  abstract addControl<N extends ControlsKey<Controls>>(
     name: N,
     control: Controls[N],
     options?: IControlEventOptions
-  ): Array<keyof this & string> {
-    if (((control as unknown) as AbstractControl)?.parent) {
-      throw new Error(
-        `Attempted to add AbstractControl to AbstractControlContainer, ` +
-          `but AbstractControl already has a parent.`
-      );
-    } else if (this._controlsStore.has(name)) return [];
+  ): Array<keyof this & string>;
 
-    const controlsStore = new Map(this._controlsStore).set(
-      name,
-      control as any
-    );
-
-    return this.setControls(controlsStore, options);
-  }
-
-  removeControl(
-    name: ControlsKey<Controls> | Controls[ControlsKey<Controls>],
+  abstract removeControl(
+    name: ControlsKey<Controls>,
     options?: IControlEventOptions
-  ): Array<keyof this & string> {
-    let key!: ControlsKey<Controls>;
-
-    if (AbstractControl.isControl(name)) {
-      for (const [k, c] of this.controlsStore) {
-        if (c !== name) continue;
-
-        key = k;
-        break;
-      }
-    } else {
-      key = name as ControlsKey<Controls>;
-    }
-
-    if (!key) return [];
-    if (!this._controlsStore.has(key)) return [];
-
-    const controlsStore = new Map(this._controlsStore);
-    controlsStore.delete(key);
-
-    return this.setControls(controlsStore, options);
-  }
+  ): Array<keyof this & string>;
 
   markChildrenDisabled(
     value: boolean,
@@ -774,7 +727,7 @@ export abstract class AbstractControlContainerBase<
 
     const sub = ((control as unknown) as AbstractControl).events
       .pipe(
-        filter(isStateChange),
+        filter(isStateChangeEvent),
         filter((e) => {
           const changeOriginatedFromThisContainer =
             (e.meta as IControlContainerChildStateChangeMeta)[

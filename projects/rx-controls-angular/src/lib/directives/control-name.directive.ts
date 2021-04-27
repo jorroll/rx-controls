@@ -1,5 +1,5 @@
 import { OnDestroy, OnChanges, SimpleChange, Directive } from '@angular/core';
-import { AbstractControl } from 'rx-controls';
+import { AbstractControl, isValidationStartEvent } from 'rx-controls';
 import { IControlValueMapper } from './interface';
 import { map, filter } from 'rxjs/operators';
 import { BaseDirective } from './base.directive';
@@ -8,7 +8,6 @@ import {
   ControlContainerAccessor,
 } from '../accessors/interface';
 import { concat, Subscription } from 'rxjs';
-import { isValidationStartEvent } from './util';
 
 @Directive()
 export abstract class ControlNameDirective<T extends AbstractControl>
