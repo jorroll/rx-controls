@@ -1,5 +1,5 @@
 import esbuild from "esbuild";
-import babel from "esbuild-plugin-babel";
+// import babel from "esbuild-plugin-babel";
 
 async function main() {
   await esbuild.build({
@@ -7,10 +7,10 @@ async function main() {
     bundle: true,
     outfile: "build/module.js",
     format: "esm",
-    plugins: [babel()],
+    // plugins: [babel()],
     platform: "neutral",
     target: "es2015",
-    external: ["rx-controls", "tslib", "rxjs", "solid-js"],
+    external: ["tslib", "rxjs"],
     // sourcemap: true,
     // target: ['es5'] // if you target es5 with babel, add this option
   });
@@ -20,10 +20,10 @@ async function main() {
     bundle: true,
     outfile: "build/main.js",
     format: "cjs",
-    plugins: [babel()],
+    // plugins: [babel()],
     platform: "neutral",
-    target: "es5",
-    external: ["rx-controls", "tslib", "rxjs", "solid-js"],
+    target: "es2015",
+    external: ["tslib", "rxjs"],
     // sourcemap: true,
     // target: ['es5'] // if you target es5 with babel, add this option
   });
