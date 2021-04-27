@@ -1,6 +1,6 @@
 {
   "name": "rx-controls-solid",
-  "version": "0.7.1",
+  "version": "0.7.2",
   "main": "main.js",
   "module": "module.js",
   "types": "public-api.d.ts",
@@ -10,7 +10,7 @@
     "solid-js": "^0.26.2"
   },
   "dependencies": {
-    "rx-controls": "^0.7.0",
+    "rx-controls": "^0.7.2",
     "tslib": "^2.0.0"
   },
   "devDependencies": {
