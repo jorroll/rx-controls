@@ -15,31 +15,6 @@ import {
 } from './interface';
 import { BaseAccessor } from './base.accessor';
 
-/**
- * @description
- * The default `ControlValueAccessor` for writing a value and listening to changes on input
- * elements. The accessor is used by the `FormControlDirective`, `FormControlName`, and
- * `NgModel` directives.
- *
- * @usageNotes
- *
- * ### Using the default value accessor
- *
- * The following example shows how to use an input element that activates the default value accessor
- * (in this case, a text field).
- *
- * ```ts
- * const firstNameControl = new FormControl();
- * ```
- *
- * ```
- * <input type="text" [formControl]="firstNameControl">
- * ```
- *
- * @ngModule ReactiveFormsModule
- * @ngModule FormsModule
- * @publicApi
- */
 @Directive()
 export abstract class DefaultAccessor
   extends BaseAccessor

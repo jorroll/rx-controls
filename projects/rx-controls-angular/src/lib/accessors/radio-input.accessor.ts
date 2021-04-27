@@ -38,10 +38,6 @@ function subscribeToRelevantChanges(
     .subscribe((e) => subscribee.control.processEvent(e));
 }
 
-/**
- * @description
- * Class used by Angular to track radio buttons. For internal use only.
- */
 @Injectable({
   providedIn: 'root',
 })
@@ -131,26 +127,6 @@ export class RadioInputRegistry {
   }
 }
 
-/**
- * @description
- * The `ControlValueAccessor` for writing radio control values and listening to radio control
- * changes. The value accessor is used by the `FormControlDirective`, `FormControlName`, and
- * `NgModel` directives.
- *
- * @usageNotes
- *
- * ### Using radio buttons with reactive form directives
- *
- * The follow example shows how to use radio buttons in a reactive form. When using radio buttons in
- * a reactive form, radio buttons in the same group should have the same `formControlName`.
- * Providing a `name` attribute is optional.
- *
- * {@example forms/ts/reactiveRadioButtons/reactive_radio_button_example.ts region='Reactive'}
- *
- * @ngModule ReactiveFormsModule
- * @ngModule FormsModule
- * @publicApi
- */
 @Directive({
   selector:
     'input[type=radio][rxFormControlName],input[type=radio][rxFormControl]' +

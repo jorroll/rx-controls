@@ -16,29 +16,6 @@ import {
 } from './interface';
 import { setupStdControlEventHandlers, setupListeners } from './util';
 
-/**
- * @description
- * A `ControlValueAccessor` for writing a value and listening to changes on a checkbox input
- * element.
- *
- * @usageNotes
- *
- * ### Using a checkbox with a reactive form.
- *
- * The following example shows how to use a checkbox with a reactive form.
- *
- * ```ts
- * const rememberLoginControl = new FormControl();
- * ```
- *
- * ```
- * <input type="checkbox" [formControl]="rememberLoginControl">
- * ```
- *
- * @ngModule ReactiveFormsModule
- * @ngModule FormsModule
- * @publicApi
- */
 @Directive({
   selector:
     'input[type=checkbox][rxFormControlName],input[type=checkbox][rxFormControl]' +

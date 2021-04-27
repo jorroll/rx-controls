@@ -7,7 +7,6 @@ import {
   OnInit,
   Renderer2,
 } from '@angular/core';
-import { Subscription } from 'rxjs';
 import { FormControl } from 'rx-controls';
 import { BaseAccessor } from './base.accessor';
 import {
@@ -17,30 +16,6 @@ import {
 } from './interface';
 import { setupStdControlEventHandlers, setupListeners } from './util';
 
-/**
- * @description
- * The `ControlValueAccessor` for writing a number value and listening to number input changes.
- * The value accessor is used by the `FormControlDirective`, `FormControlName`, and `NgModel`
- * directives.
- *
- * @usageNotes
- *
- * ### Using a number input with a reactive form.
- *
- * The following example shows how to use a number input with a reactive form.
- *
- * ```ts
- * const totalCountControl = new FormControl();
- * ```
- *
- * ```
- * <input type="number" [formControl]="totalCountControl">
- * ```
- *
- * @ngModule ReactiveFormsModule
- * @ngModule FormsModule
- * @publicApi
- */
 @Directive({
   selector:
     'input[type=number][rxFormControlName],input[type=number][rxFormControl]' +
