@@ -1,18 +1,9 @@
 {
   "name": "rx-controls",
-  "version": "0.7.0",
-  "main": "main/index.js",
-  "module": "module/index.js",
+  "version": "0.7.3",
+  "main": "main.js",
+  "module": "module.js",
   "types": "public-api.d.ts",
-  "targets": {
-    "types": false,
-    "main": {
-      "isLibrary": true
-    },
-    "module": {
-      "isLibrary": true
-    }
-  },
   "sideEffects": false,
   "peerDependencies": {
     "rxjs": "^6.0.0"
@@ -22,11 +13,8 @@
   },
   "scripts": {
     "test": "jest --config './jest.config.js'",
-    "build": "yarn clean && yarn types && yarn compile && yarn copy-files && yarn cleanup-artifacts",
     "clean": "rm -rf build",
     "types": "tsc",
-    "compile": "parcel build src/public-api.ts --no-autoinstall --no-optimize",
-    "copy-files": "ncp package.json build/package.json && ncp main build/main && ncp module build/module",
-    "cleanup-artifacts": "rm -rf main && rm -rf module"
+    "build": "yarn clean && yarn types && ncp package.json build/package.json && node esbuild.config.mjs"
   }
 }

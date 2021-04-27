@@ -1,13 +1,13 @@
 {
   "name": "rx-controls-angular",
-  "version": "0.7.0",
+  "version": "0.7.3",
   "sideEffects": false,
   "peerDependencies": {
     "@angular/core": "10 || 11 || 12",
     "rxjs": "^6.0.0"
   },
   "dependencies": {
-    "rx-controls": "^0.7.0",
+    "rx-controls": "^0.7.3",
     "tslib": "^2.0.0"
   },
   "scripts": {
