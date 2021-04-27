@@ -6,7 +6,7 @@ RxControls provides several javascript `FormControl` objects to make dealing wit
 
 ### Demos
 
-- [Solidjs demo](https://codesandbox.io/s/rxcontrols-solid-blog-example-4sh0x?initialpath=index.tsx)
+- [Solidjs demo](https://codesandbox.io/s/rxcontrols-solid-blog-example-4sh0x?file=/index.tsx)
 
 ## Docs
 
