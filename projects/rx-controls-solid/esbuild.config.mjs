@@ -22,7 +22,7 @@ async function main() {
     format: "cjs",
     plugins: [babel()],
     platform: "neutral",
-    target: "es5",
+    target: "es2015",
     external: ["rx-controls", "tslib", "rxjs", "solid-js"],
     // sourcemap: true,
     // target: ['es5'] // if you target es5 with babel, add this option
