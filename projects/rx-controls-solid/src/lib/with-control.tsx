@@ -5,7 +5,7 @@ import {
 } from "rx-controls";
 import { ControlContext } from "./context";
 import { setupFocusHandler, syncProvidedControl } from "./utils";
-import { Component, JSX } from "solid-js";
+import type { Component, JSX } from "solid-js";
 
 type PropsWithChildren<P> = P & { children?: JSX.Element };
 

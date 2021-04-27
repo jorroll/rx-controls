@@ -14,7 +14,7 @@ import {
   switchMap,
 } from 'rxjs/operators';
 import { useControl } from './context';
-import { ElementOf } from 'ts-essentials';
+import type { ElementOf } from 'ts-essentials';
 
 export function toSignal<T>(input: Observable<T>, defaultValue?: T) {
   const [value, setValue] = createSignal(defaultValue as T);
