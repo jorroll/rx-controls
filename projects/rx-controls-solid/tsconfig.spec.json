@@ -8,11 +8,5 @@
     "allowJs": true
   },
   "files": [],
-  "include": [
-    "./src/**/*.spec.ts",
-    "./src/**/*.d.ts",
-    "./compat/src/**/*.spec.ts",
-    "./compat/src/**/*.d.ts",
-    "./setup-jest.ts"
-  ]
+  "include": ["./src/**/*.spec.ts", "./src/**/*.d.ts", "./setup-jest.ts"]
 }

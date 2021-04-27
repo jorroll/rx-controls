@@ -1,9 +1,9 @@
 import { distinctUntilChanged, switchMap } from 'rxjs/operators';
 import {
-  isStateChange,
+  isStateChangeEvent,
   AbstractControlContainer,
   AbstractControl,
-  IControlFocusEvent,
+  isFocusEvent,
 } from 'rx-controls';
 import {
   ControlAccessor,
@@ -56,19 +56,19 @@ export function setupStdControlEventHandlers<T extends ControlAccessor>(
   });
 
   const sub3 = dir.control.events.subscribe((e) => {
-    if (isStateChange(e)) {
+    if (isStateChangeEvent(e)) {
       if (e.changes.rawValue !== undefined) {
         dir._valueHasBeenSet = true;
         options.onValueChangeFn(dir.control.rawValue);
       }
     } else if (
-      e.type === 'Focus' &&
+      isFocusEvent(e) &&
       // make sure that the nativeElement has a "focus" method
       dir.el.nativeElement &&
       'focus' in dir.el.nativeElement &&
       typeof (dir.el.nativeElement as any).focus === 'function'
     ) {
-      if ((e as IControlFocusEvent).focus) {
+      if (e.focus) {
         (dir.el.nativeElement as any).focus();
       } else {
         (dir.el.nativeElement as any).blur();

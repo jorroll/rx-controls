@@ -18,7 +18,7 @@ import {
 } from './test-util';
 import runSharedTestSuite from './shared-tests';
 import { map } from 'rxjs/operators';
-import { isStateChange, transformRawValueStateChange } from './util';
+import { isStateChangeEvent, transformRawValueStateChange } from './util';
 import { CONTROL_SELF_ID } from './abstract-control/abstract-control-base';
 
 runAbstractControlContainerBaseTestSuite('FormGroup', (args = {}) => {
@@ -2098,7 +2098,7 @@ describe('FormGroup', () => {
         c.events
           .pipe(
             map((e) => {
-              if (!isStateChange(e)) return e;
+              if (!isStateChangeEvent(e)) return e;
 
               return transformRawValueStateChange(
                 e,
@@ -2119,7 +2119,7 @@ describe('FormGroup', () => {
         b.events
           .pipe(
             map((e) => {
-              if (!isStateChange(e)) return e;
+              if (!isStateChangeEvent(e)) return e;
 
               return transformRawValueStateChange(
                 e,

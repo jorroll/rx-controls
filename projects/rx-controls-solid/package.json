@@ -1,0 +1,47 @@
+{
+  "name": "rx-controls-solid",
+  "version": "0.7.1",
+  "main": "main/index.js",
+  "module": "module/index.js",
+  "types": "public-api.d.ts",
+  "targets": {
+    "types": false,
+    "main": {
+      "context": "browser",
+      "engines": {
+        "browsers": "> 0.25%"
+      },
+      "isLibrary": true
+    },
+    "module": {
+      "context": "browser",
+      "engines": {
+        "browsers": "> 0.25%"
+      },
+      "isLibrary": true
+    }
+  },
+  "sideEffects": false,
+  "peerDependencies": {
+    "rxjs": "^6.0.0",
+    "solid-js": "^0.26.2"
+  },
+  "dependencies": {
+    "rx-controls": "^0.7.0",
+    "tslib": "^2.0.0"
+  },
+  "devDependencies": {
+    "ts-essentials": "^7.0.1"
+  },
+  "scripts": {
+    "test": "jest --config './jest.config.js'",
+    "build": "yarn clean && yarn types && yarn setup-babel && yarn compile && yarn copy-files && yarn cleanup-artifacts",
+    "clean": "rm -rf build",
+    "types": "tsc",
+    "setup-babel": "ncp babel.config.json ../../babel.config.json",
+    "compile": "parcel build src/public-api.ts --no-autoinstall --no-optimize",
+    "copy-files": "ncp package.json build/package.json && ncp main build/main && ncp module build/module",
+    "cleanup-babel": "rm -rf ../../babel.config.json",
+    "cleanup-artifacts": "rm -rf main && rm -rf module && yarn cleanup-babel"
+  }
+}

@@ -3,7 +3,6 @@ import {
   selectControlAccessor,
   selectControlContainerAccessor,
 } from '../accessors/util';
-import { IControlEvent, IControlValidationEvent } from 'rx-controls';
 
 export function resolveControlAccessor<T extends ControlAccessor>(
   accessors: T[]
@@ -27,10 +26,4 @@ export function resolveControlContainerAccessor<T extends ControlAccessor>(
   }
 
   return accessor;
-}
-
-export function isValidationStartEvent(
-  e: IControlEvent
-): e is IControlValidationEvent<unknown> {
-  return e.type === 'ValidationStart';
 }

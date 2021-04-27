@@ -1,5 +1,4 @@
-import {
-  AbstractControl,
+import type {
   ValidatorFn,
   ValidationErrors,
   ControlId,
@@ -10,6 +9,7 @@ import {
   IControlStateChangeEvent,
   IProcessedEvent,
 } from './abstract-control';
+import { AbstractControl } from './abstract-control';
 import { Observable, of, queueScheduler, Subject } from 'rxjs';
 import { getSimpleStateChangeEventArgs, getSortedChanges } from '../util';
 import {

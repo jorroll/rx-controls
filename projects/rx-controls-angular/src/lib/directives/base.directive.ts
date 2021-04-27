@@ -12,7 +12,7 @@ import { ControlAccessor } from '../accessors/interface';
 import {
   AbstractControl,
   IControlEvent,
-  isStateChange,
+  isStateChangeEvent,
   IControlStateChangeEvent,
 } from 'rx-controls';
 import { filter } from 'rxjs/operators';
@@ -63,7 +63,7 @@ export abstract class BaseDirective<T extends AbstractControl, D = any>
 
     this.subscriptions.push(
       this.control.events
-        .pipe(filter(isStateChange))
+        .pipe(filter(isStateChangeEvent))
         .subscribe((e) => this.onControlStateChange(e))
     );
   }
@@ -102,7 +102,7 @@ export abstract class BaseDirective<T extends AbstractControl, D = any>
     const valueMapperToFn = this.valueMapper?.toAccessor;
 
     return (event: IControlEvent) => {
-      if (isStateChange(event)) {
+      if (isStateChangeEvent(event)) {
         if (valueMapperToFn && event.changes.rawValue !== undefined) {
           return this.mapValueEvent(event, valueMapperToFn);
         } else if (event.changes.parent !== undefined) {
@@ -129,7 +129,7 @@ export abstract class BaseDirective<T extends AbstractControl, D = any>
 
     return (event: IControlEvent) => {
       if (
-        isStateChange(event) &&
+        isStateChangeEvent(event) &&
         valueMapperFromFn &&
         event.changes.rawValue !== undefined
       ) {

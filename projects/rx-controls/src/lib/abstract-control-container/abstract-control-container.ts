@@ -1,9 +1,11 @@
-import { Observable } from 'rxjs';
-import {
-  AbstractControl,
+import type { Observable } from 'rxjs';
+import type {
   IControlEvent,
   IControlEventOptions,
   ValidationErrors,
+} from '../abstract-control/abstract-control';
+import {
+  AbstractControl,
 } from '../abstract-control/abstract-control';
 
 // UTILITY TYPES

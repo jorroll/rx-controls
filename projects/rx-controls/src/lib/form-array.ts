@@ -1,13 +1,11 @@
-import {
-  AbstractControl,
+import type {
   IControlEventOptions,
   IControlStateChangeEvent,
 } from './abstract-control/abstract-control';
-import {
-  AbstractControlContainerBase,
-  IAbstractControlContainerBaseArgs,
-} from './abstract-control-container/abstract-control-container-base';
-import {
+import { AbstractControl } from './abstract-control/abstract-control';
+import { AbstractControlContainerBase } from './abstract-control-container/abstract-control-container-base';
+import type { IAbstractControlContainerBaseArgs } from './abstract-control-container/abstract-control-container-base';
+import type {
   ControlsValue,
   ControlsRawValue,
   ControlsKey,
@@ -44,33 +42,6 @@ export class FormArray<
     if (!this._value) {
       this._value = ([] as unknown) as ControlsValue<Controls>;
     }
-  }
-
-  push(control: Controls[number], options?: IControlEventOptions) {
-    if (((control as unknown) as AbstractControl)?.parent) {
-      throw new Error('AbstractControl can only have one parent');
-    }
-
-    const controlsStore = new Map(this.controlsStore).set(
-      this.controlsStore.size as ControlsKey<Controls>,
-      control as NonNullable<Controls[ControlsKey<Controls>]>
-    );
-
-    return this.setControls(controlsStore, options);
-  }
-
-  unshift(control: Controls[number], options?: IControlEventOptions) {
-    if (((control as unknown) as AbstractControl)?.parent) {
-      throw new Error('AbstractControl can only have one parent');
-    }
-
-    const controlsStore = new Map([[0 as ControlsKey<Controls>, control]]);
-
-    for (const [k, v] of this.controlsStore) {
-      controlsStore.set(((k as number) + 1) as ControlsKey<Controls>, v);
-    }
-
-    return this.setControls(controlsStore, options);
   }
 
   setControls(
@@ -161,6 +132,144 @@ export class FormArray<
     }
 
     return changedProps;
+  }
+
+  /**
+   * Sets the specified index to be equal to the provided control.
+   * If `null` is provided for the control, this is the same as
+   * `removeControl(name)`.
+   */
+  setControl<N extends ControlsKey<Controls>>(
+    name: N,
+    control: Controls[N] | null,
+    options?: IControlEventOptions
+  ): Array<keyof this & string> {
+    if (((control as unknown) as AbstractControl)?.parent) {
+      throw new Error(
+        `Attempted to add AbstractControl to FormArray, ` +
+          `but AbstractControl already has a parent.`
+      );
+    } else if (!Number.isInteger(name)) {
+      throw new Error('FormArray#setControl(name) must be an integer');
+    } else if (this.controlsStore.size < name) {
+      throw new Error(
+        'FormArray#setControl(name) must be <= the size of the FormArray'
+      );
+    }
+
+    const controlsStore = new Map(this._controlsStore);
+
+    if (control) {
+      return this.setControls(controlsStore.set(name, control as any), options);
+    } else {
+      return this.removeControl(name, options);
+    }
+  }
+
+  /**
+   * Adds a control at the specified index. If you insert a control in the
+   * middle of the FormArray, then all the controls after the added control
+   * will have their index increased by 1.
+   */
+  addControl<N extends ControlsKey<Controls>>(
+    name: N,
+    control: Controls[N],
+    options?: IControlEventOptions
+  ): Array<keyof this & string> {
+    if (((control as unknown) as AbstractControl)?.parent) {
+      throw new Error(
+        `Attempted to add AbstractControl to FormArray, ` +
+          `but AbstractControl already has a parent.`
+      );
+    } else if (!Number.isInteger(name)) {
+      throw new Error('FormArray#addControl(name) must be an integer');
+    } else if (this.controlsStore.size < name) {
+      throw new Error(
+        'FormArray#addControl(name) must be <= the size of the FormArray'
+      );
+    }
+
+    const part1 = this.controls.slice(0, name);
+    const part2 = this.controls.slice(name);
+
+    const controlsStore = new Map(
+      [...part1, control, ...part2].map(
+        (p, i) => [i as ControlsKey<Controls>, p] as const
+      )
+    );
+
+    return this.setControls(controlsStore, options);
+  }
+
+  /**
+   * If an index is provided, removes a control at the specified index.
+   * If a control is provided, and if that control is a child of this
+   * FormArray, that control is removed from this FormArray.
+   *
+   * If a control is removed in the middle of the FormArray, all the
+   * controls that come after it will have their index reduced by 1.
+   */
+  removeControl(
+    name: ControlsKey<Controls> | Controls[ControlsKey<Controls>],
+    options?: IControlEventOptions
+  ): Array<keyof this & string> {
+    let key!: ControlsKey<Controls>;
+
+    if (AbstractControl.isControl(name)) {
+      for (const [k, c] of this.controlsStore) {
+        if (c !== name) continue;
+
+        key = k;
+        break;
+      }
+    } else {
+      key = name as ControlsKey<Controls>;
+    }
+
+    if (!key) return [];
+    if (!this._controlsStore.has(key)) return [];
+
+    const newControls = this.controls.slice();
+    newControls.splice(key, 1);
+
+    const controlsStore = new Map(
+      newControls.map((c, i) => [i as ControlsKey<Controls>, c] as const)
+    );
+
+    return this.setControls(controlsStore, options);
+  }
+
+  /**
+   * Adds a control at the end of the FormArray.
+   */
+  push(control: Controls[number], options?: IControlEventOptions) {
+    if (((control as unknown) as AbstractControl)?.parent) {
+      throw new Error('AbstractControl can only have one parent');
+    }
+
+    const controlsStore = new Map(this.controlsStore).set(
+      this.controlsStore.size as ControlsKey<Controls>,
+      control as NonNullable<Controls[ControlsKey<Controls>]>
+    );
+
+    return this.setControls(controlsStore, options);
+  }
+
+  /**
+   * Adds a control at the beginning of the FormArray
+   */
+  unshift(control: Controls[number], options?: IControlEventOptions) {
+    if (((control as unknown) as AbstractControl)?.parent) {
+      throw new Error('AbstractControl can only have one parent');
+    }
+
+    const controlsStore = new Map([[0 as ControlsKey<Controls>, control]]);
+
+    for (const [k, v] of this.controlsStore) {
+      controlsStore.set(((k as number) + 1) as ControlsKey<Controls>, v);
+    }
+
+    return this.setControls(controlsStore, options);
   }
 
   protected _shallowCloneValue<T extends this['rawValue'] | this['value']>(

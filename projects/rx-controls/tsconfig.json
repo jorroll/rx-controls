@@ -2,16 +2,12 @@
 {
   "extends": "../../tsconfig.json",
   "compilerOptions": {
-    "outDir": "../../out-tsc/lib",
+    "outDir": "./build",
     "declaration": true,
     "declarationMap": true,
+    "emitDeclarationOnly": true,
     "inlineSources": true,
     "types": []
   },
-  "angularCompilerOptions": {
-    "skipTemplateCodegen": true,
-    "strictMetadataEmit": true,
-    "enableResourceInlining": true
-  },
-  "exclude": ["src/test.ts", "**/*.spec.ts"]
+  "files": ["./src/public-api.ts"]
 }

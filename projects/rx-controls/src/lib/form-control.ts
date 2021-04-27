@@ -1,7 +1,6 @@
-import {
-  AbstractControlBase,
-  IAbstractControlBaseArgs,
-} from './abstract-control/abstract-control-base';
+import type { IAbstractControlBaseArgs } from './abstract-control/abstract-control-base';
+
+import { AbstractControlBase } from './abstract-control/abstract-control-base';
 
 export type IFormControlArgs<Data = any> = IAbstractControlBaseArgs<Data>;
 

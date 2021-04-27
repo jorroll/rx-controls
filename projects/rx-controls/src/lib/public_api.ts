@@ -1,4 +1,4 @@
-export {
+export type {
   ControlId,
   ValidatorFn,
   ValidationErrors,
@@ -7,24 +7,34 @@ export {
   IControlValidationEvent,
   IControlStateChangeEvent,
   IControlFocusEvent,
-  AbstractControl,
 } from './abstract-control/abstract-control';
 
-export {
+export { AbstractControl } from './abstract-control/abstract-control';
+
+export type {
   GenericControlsObject,
   ControlsKey,
   ControlsRawValue,
   ControlsValue,
   ContainerControls,
-  AbstractControlContainer,
 } from './abstract-control-container/abstract-control-container';
 
-export { IFormControlArgs, FormControl } from './form-control';
+export { AbstractControlContainer } from './abstract-control-container/abstract-control-container';
 
-export { IFormGroupArgs, FormGroup } from './form-group';
+export { FormControl } from './form-control';
+export type { IFormControlArgs } from './form-control';
 
-export { IFormArrayArgs, FormArray } from './form-array';
+export { FormGroup } from './form-group';
+export type { IFormGroupArgs } from './form-group';
 
-export { isStateChange } from './util';
+export { FormArray } from './form-array';
+export type { IFormArrayArgs } from './form-array';
+
+export {
+  isStateChangeEvent,
+  isFocusEvent,
+  isValidationStartEvent,
+  isAsyncValidationStartEvent,
+} from './util';
 
 export { composeValidators } from './abstract-control/abstract-control-base';
