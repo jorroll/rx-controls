@@ -5,7 +5,7 @@ import {
   isFocusEvent,
 } from 'rx-controls';
 import { createComputed, onCleanup, onMount, createSignal } from 'solid-js';
-import { concat, Observable, Subscription } from 'rxjs';
+import { concat, Observable, pipe, Subscription } from 'rxjs';
 import {
   distinctUntilChanged,
   filter,
@@ -15,6 +15,7 @@ import {
 } from 'rxjs/operators';
 import { useControl } from './context';
 import type { ElementOf } from 'ts-essentials';
+import { IControlEvent } from 'projects/rx-controls/src/public-api';
 
 export function toSignal<T>(input: Observable<T>, defaultValue?: T) {
   const [value, setValue] = createSignal(defaultValue as T);
@@ -50,15 +51,28 @@ export function syncProvidedControl(
       }
     }
 
+    // map focus events from dynamic control to static control (used below)
+    const mapFocusEvents = pipe(
+      map((e: IControlEvent) => {
+        if (isFocusEvent(e)) {
+          return {
+            ...e,
+            controlId: staticControl.id,
+          };
+        }
+
+        return e;
+      })
+    );
+
     let s: Subscription;
 
     if (props.control) {
       const dynamicControl = props.control;
 
-      s = concat(
-        dynamicControl.replayState(),
-        dynamicControl.events
-      ).subscribe((e) => staticControl.processEvent(e));
+      s = concat(dynamicControl.replayState(), dynamicControl.events)
+        .pipe(mapFocusEvents)
+        .subscribe((e) => staticControl.processEvent(e));
 
       s.add(
         staticControl.events.subscribe((e) => dynamicControl.processEvent(e))
@@ -75,7 +89,8 @@ export function syncProvidedControl(
         .pipe(
           switchMap((dynamicControl) =>
             concat(dynamicControl.replayState(), dynamicControl.events)
-          )
+          ),
+          mapFocusEvents
         )
         .subscribe((dynamicControlEvent) =>
           staticControl.processEvent(dynamicControlEvent)
