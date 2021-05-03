@@ -3,6 +3,7 @@ import {
   AbstractControlContainer,
   isStateChangeEvent,
   isFocusEvent,
+  IControlEvent,
 } from 'rx-controls';
 import { createComputed, onCleanup, onMount, createSignal } from 'solid-js';
 import { concat, Observable, pipe, Subscription } from 'rxjs';
@@ -15,7 +16,6 @@ import {
 } from 'rxjs/operators';
 import { useControl } from './context';
 import type { ElementOf } from 'ts-essentials';
-import { IControlEvent } from 'projects/rx-controls/src/public-api';
 
 export function toSignal<T>(input: Observable<T>, defaultValue?: T) {
   const [value, setValue] = createSignal(defaultValue as T);
@@ -120,7 +120,7 @@ export function syncProvidedControl(
 
 export function setupFocusHandler(
   control: AbstractControl,
-  el: () => HTMLElement | undefined
+  el: () => { focus(): void; blur(): void } | undefined
 ) {
   onMount(() => {
     if (!el()) return;

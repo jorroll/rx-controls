@@ -10,8 +10,8 @@
   "scripts": {
     "pubcanary": "yarn test && yarn lerna version --no-push --preid next && yarn build && yarn lerna publish from-git --yes --dist-tag next --contents build",
     "pub": "yarn test && yarn lerna version --no-push && yarn build && yarn lerna publish from-git --yes --contents build",
-    "test": "lerna run test --stream",
-    "build": "lerna run build --stream"
+    "build": "lerna run build --stream",
+    "test": "yarn build && lerna run test --stream"
   },
   "devDependencies": {
     "@angular-builders/jest": "10.0.1",
@@ -44,6 +44,7 @@
     "ncp": "^2.0.0",
     "ng-packagr": "^11.2.4",
     "rxjs": "~6.6.0",
+    "solid-jest": "^0.0.3",
     "solid-js": "0.26.1",
     "ts-essentials": "^7.0.1",
     "ts-node": "~8.3.0",
