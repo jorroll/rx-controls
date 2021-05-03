@@ -6,16 +6,17 @@ stages:
 # coverage: '/All\sfiles.*?\s+(\d+.\d+)/'
 
 build:
-  image: node:12.16.3-alpine
+  image: node:12.20.0-alpine
   stage: build
   cache:
     untracked: true
   script:
     - apk add yarn
     - yarn install
+    - yarn build
 
 test:
-  image: node:12.16.3-alpine
+  image: node:12.20.0-alpine
   stage: test
   cache:
     untracked: true
