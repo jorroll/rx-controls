@@ -20,6 +20,6 @@
     "test": "jest --config './jest.config.js'",
     "clean": "rm -rf build",
     "types": "tsc",
-    "build": "yarn clean && yarn types && ncp package.json build/package.json && node esbuild.config.mjs"
+    "build": "yarn clean && yarn types && ncp package.json build/package.json && rollup -c rollup.config.js"
   }
 }

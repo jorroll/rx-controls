@@ -4,7 +4,7 @@ import {
   FormControl,
   FormGroup,
   FormArray,
-} from './src/public-api';
+} from 'rx-controls';
 
 expect.extend({
   toEqualControl(received, control, options = {}) {

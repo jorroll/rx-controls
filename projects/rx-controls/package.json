@@ -1,9 +1,9 @@
 {
   "name": "rx-controls",
   "version": "0.7.3",
-  "main": "build/main.js",
-  "module": "build/module.js",
-  "types": "build/public-api.d.ts",
+  "main": "umd.js",
+  "module": "module.js",
+  "types": "public-api.d.ts",
   "sideEffects": false,
   "peerDependencies": {
     "rxjs": "^6.0.0"
@@ -15,6 +15,6 @@
     "test": "jest --config './jest.config.js'",
     "clean": "rm -rf build",
     "types": "tsc",
-    "build": "yarn clean && yarn types && node esbuild.config.mjs"
+    "build": "yarn clean && yarn types && ncp package.json build/package.json && rollup -c rollup.config.js"
   }
 }
