@@ -13,7 +13,6 @@ build:
   script:
     - apk add yarn
     - yarn install
-    - yarn build
 
 test:
   image: node:12.20.0-alpine
