@@ -17,6 +17,10 @@ export default [
       "tslib",
       "ts-essentials",
     ],
+    // this is necessary because otherwise rollup removes
+    // line 68 (const Component = options.component as any;) from
+    // `with-control.tsx` which breaks the bundle
+    treeshake: false,
     acornInjectPlugins: [jsx()],
     plugins: [
       typescript(),
@@ -39,6 +43,7 @@ export default [
       "tslib",
       "ts-essentials",
     ],
+    treeshake: false,
     acornInjectPlugins: [jsx()],
     plugins: [
       typescript(),
