@@ -1,3 +1,6 @@
+import 'core-js/features/object';
+import 'core-js/features/array';
+
 import {
   AbstractControl,
   AbstractControlContainer,
@@ -5,8 +8,6 @@ import {
   FormGroup,
   FormArray,
 } from 'rx-controls';
-import 'core-js/features/object';
-import 'core-js/features/array';
 
 expect.extend({
   toEqualControl(received, control, options = {}) {
