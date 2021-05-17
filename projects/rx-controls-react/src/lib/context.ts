@@ -8,9 +8,9 @@ export function useControl<T extends AbstractControl = AbstractControl>() {
   return useContext(ControlContext) as T | undefined;
 }
 
-export function useControlState<T extends AbstractControl>(
+export function useControlState<T extends AbstractControl, K extends keyof T>(
   control: T,
-  key: keyof T
+  key: K
 ) {
   return useObservable(() => control.observeChanges(key), control[key]);
 }
