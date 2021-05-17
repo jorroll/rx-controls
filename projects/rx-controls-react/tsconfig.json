@@ -7,8 +7,9 @@
     "declarationMap": true,
     "emitDeclarationOnly": true,
     "inlineSources": true,
-    "jsxImportSource": "solid-js",
-    "jsx": "preserve",
+    // ts-ignore
+    // "jsxImportSource": "react",
+    "jsx": "react",
     "types": []
   },
   "files": ["./src/public-api.ts"]

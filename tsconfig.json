@@ -21,7 +21,7 @@
     "types": ["jest"],
     // These JSX options need to be specified here so that the VSCode editor
     // properly picks them up and uses them when editing `rx-controls-solid`
-    "jsxImportSource": "solid-js",
+    // "jsxImportSource": "solid-js",
     "jsx": "preserve"
   },
   "exclude": ["./tmp/**", "./projects/*/build/**"]
