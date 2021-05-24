@@ -10,8 +10,8 @@
   "scripts": {
     "pubcanary": "yarn test && yarn lerna version --no-push --preid next && yarn build && yarn lerna publish from-git --yes --dist-tag next --contents build",
     "pub": "yarn test && yarn lerna version --no-push && yarn build && yarn lerna publish from-git --yes --contents build",
-    "build": "lerna run build --stream",
-    "test": "lerna run test --stream"
+    "build": "lerna run build --stream --since",
+    "test": "lerna run test --stream --since"
   },
   "devDependencies": {
     "@angular-builders/jest": "10.0.1",
