@@ -67,8 +67,10 @@ export function composeValidators(
 }
 
 export abstract class AbstractControlBase<RawValue, Data, Value>
-  implements AbstractControl<RawValue, Data, Value> {
-  static readonly PUBLIC_PROPERTIES = AbstractControl.PUBLIC_PROPERTIES as readonly string[];
+  implements AbstractControl<RawValue, Data, Value>
+{
+  static readonly PUBLIC_PROPERTIES =
+    AbstractControl.PUBLIC_PROPERTIES as readonly string[];
   static readonly PUBLIC_PROPERTIES_INDEX =
     AbstractControl._PUBLIC_PROPERTIES_INDEX;
 
@@ -421,7 +423,9 @@ export abstract class AbstractControlBase<RawValue, Data, Value>
       props.push(a);
     }
 
-    const args = [b, c, d, e, f, g, h, i, j, k, o].filter((v) => !!v);
+    const args = [b, c, d, e, f, g, h, i, j, k, o].filter(
+      (v) => v !== undefined
+    );
 
     const options =
       typeof args[args.length - 1] === 'object'
@@ -1091,8 +1095,7 @@ export abstract class AbstractControlBase<RawValue, Data, Value>
       ...this._normalizeOptions('replayState', options),
       // the order of these changes matters
       changes: Object.fromEntries(
-        (this
-          .constructor as any).PUBLIC_PROPERTIES.map(
+        (this.constructor as any).PUBLIC_PROPERTIES.map(
           (p: string & keyof this) => [p, this[p]]
         )
       ),
@@ -1129,7 +1132,7 @@ export abstract class AbstractControlBase<RawValue, Data, Value>
     switch (event.type) {
       case 'StateChange': {
         processedEvent = this._processEvent_StateChange(
-          (event as unknown) as IControlStateChangeEvent,
+          event as unknown as IControlStateChangeEvent,
           _options
         );
         break;
@@ -1278,11 +1281,9 @@ export abstract class AbstractControlBase<RawValue, Data, Value>
     const changes: Array<keyof this & string> = getSortedChanges(
       (this.constructor as any).PUBLIC_PROPERTIES_INDEX,
       event.changes
-    ).flatMap(
-      ([prop, value]: [string, any]): Array<keyof this & string> => {
-        return this._processIndividualStateChange(_options, prop, value);
-      }
-    );
+    ).flatMap(([prop, value]: [string, any]): Array<keyof this & string> => {
+      return this._processIndividualStateChange(_options, prop, value);
+    });
 
     if (changes.length === 0) return { status: 'PROCESSED' };
 
