@@ -110,7 +110,7 @@ export function syncProvidedControl(
     }
 
     return () => s.unsubscribe();
-  }, [])();
+  }, [props.control, props.controlContainer, props.controlName])();
 }
 
 export function useFocusHandler(
