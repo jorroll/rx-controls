@@ -19,9 +19,8 @@ import { getSimpleStateChangeEventArgs } from './util';
 
 import type { Mutable } from './util';
 
-export type IFormGroupArgs<
-  Data = any
-> = IAbstractControlContainerBaseArgs<Data>;
+export type IFormGroupArgs<Data = any> =
+  IAbstractControlContainerBaseArgs<Data>;
 
 export class FormGroup<
   Controls extends { [key: string]: AbstractControl | undefined } = {
@@ -69,7 +68,7 @@ export class FormGroup<
     if (AbstractControl._isEqual(this._controlsStore, controlsStore)) return [];
 
     const normOptions = this._normalizeOptions('setControls', options);
-    const controls = (Object.fromEntries(controlsStore) as unknown) as Controls;
+    const controls = Object.fromEntries(controlsStore) as unknown as Controls;
     const newRawValue = { ...this._rawValue } as Mutable<this['rawValue']>;
     const newValue = { ...this._value } as Mutable<this['value']>;
 
@@ -151,7 +150,7 @@ export class FormGroup<
     control: Controls[N] | null,
     options?: IControlEventOptions
   ): Array<keyof this & string> {
-    if (((control as unknown) as AbstractControl)?.parent) {
+    if ((control as unknown as AbstractControl)?.parent) {
       throw new Error(
         `Attempted to add AbstractControl to AbstractControlContainer, ` +
           `but AbstractControl already has a parent.`
@@ -178,7 +177,7 @@ export class FormGroup<
     control: Controls[N],
     options?: IControlEventOptions
   ): Array<keyof this & string> {
-    if (((control as unknown) as AbstractControl)?.parent) {
+    if ((control as unknown as AbstractControl)?.parent) {
       throw new Error(
         `Attempted to add AbstractControl to AbstractControlContainer, ` +
           `but AbstractControl already has a parent.`
@@ -215,7 +214,6 @@ export class FormGroup<
       key = name as ControlsKey<Controls>;
     }
 
-    if (!key) return [];
     if (!this._controlsStore.has(key)) return [];
 
     const controlsStore = new Map(this._controlsStore);

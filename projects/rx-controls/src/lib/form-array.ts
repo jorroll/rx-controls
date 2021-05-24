@@ -12,9 +12,8 @@ import type {
 } from './abstract-control-container/abstract-control-container';
 import { getSimpleStateChangeEventArgs } from './util';
 
-export type IFormArrayArgs<
-  Data = any
-> = IAbstractControlContainerBaseArgs<Data>;
+export type IFormArrayArgs<Data = any> =
+  IAbstractControlContainerBaseArgs<Data>;
 
 export class FormArray<
   Controls extends ReadonlyArray<AbstractControl> = ReadonlyArray<AbstractControl>,
@@ -23,7 +22,7 @@ export class FormArray<
   static id = 0;
 
   constructor(
-    controls: Controls = ([] as unknown) as Controls,
+    controls: Controls = [] as unknown as Controls,
     options: IFormArrayArgs<Data> = {}
   ) {
     super(
@@ -35,12 +34,12 @@ export class FormArray<
     // The constructor's call to "setControls" will only actually fire
     // if a non-default value is provided. In the case of a default value,
     // the following properties need be manually set.
-    if (!this._controls) this._controls = ([] as unknown) as Controls;
+    if (!this._controls) this._controls = [] as unknown as Controls;
     if (!this._rawValue) {
-      this._rawValue = ([] as unknown) as ControlsRawValue<Controls>;
+      this._rawValue = [] as unknown as ControlsRawValue<Controls>;
     }
     if (!this._value) {
-      this._value = ([] as unknown) as ControlsValue<Controls>;
+      this._value = [] as unknown as ControlsValue<Controls>;
     }
   }
 
@@ -98,10 +97,10 @@ export class FormArray<
       controlsStore.set(key, this._registerControl(key, control, normOptions));
     }
 
-    this._controls = (controls as unknown) as Controls;
+    this._controls = controls as unknown as Controls;
     // This is needed because the call to "registerControl" can clone
     // the provided control (returning a new one);
-    this._controlsStore = (controlsStore as unknown) as this['controlsStore'];
+    this._controlsStore = controlsStore as unknown as this['controlsStore'];
 
     const changedProps: Array<keyof this & string> = [
       'controls',
@@ -144,7 +143,7 @@ export class FormArray<
     control: Controls[N] | null,
     options?: IControlEventOptions
   ): Array<keyof this & string> {
-    if (((control as unknown) as AbstractControl)?.parent) {
+    if ((control as unknown as AbstractControl)?.parent) {
       throw new Error(
         `Attempted to add AbstractControl to FormArray, ` +
           `but AbstractControl already has a parent.`
@@ -176,7 +175,7 @@ export class FormArray<
     control: Controls[N],
     options?: IControlEventOptions
   ): Array<keyof this & string> {
-    if (((control as unknown) as AbstractControl)?.parent) {
+    if ((control as unknown as AbstractControl)?.parent) {
       throw new Error(
         `Attempted to add AbstractControl to FormArray, ` +
           `but AbstractControl already has a parent.`
@@ -226,7 +225,6 @@ export class FormArray<
       key = name as ControlsKey<Controls>;
     }
 
-    if (!key) return [];
     if (!this._controlsStore.has(key)) return [];
 
     const newControls = this.controls.slice();
@@ -243,7 +241,7 @@ export class FormArray<
    * Adds a control at the end of the FormArray.
    */
   push(control: Controls[number], options?: IControlEventOptions) {
-    if (((control as unknown) as AbstractControl)?.parent) {
+    if ((control as unknown as AbstractControl)?.parent) {
       throw new Error('AbstractControl can only have one parent');
     }
 
@@ -259,7 +257,7 @@ export class FormArray<
    * Adds a control at the beginning of the FormArray
    */
   unshift(control: Controls[number], options?: IControlEventOptions) {
-    if (((control as unknown) as AbstractControl)?.parent) {
+    if ((control as unknown as AbstractControl)?.parent) {
       throw new Error('AbstractControl can only have one parent');
     }
 
