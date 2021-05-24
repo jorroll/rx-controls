@@ -15,7 +15,7 @@ export type WithControlProps<
   Omit<T, "control"> & {
     control?: T["control"];
     controlContainer?: AbstractControlContainer;
-    controlName?: string;
+    controlName?: string | number;
   }
 >;
 
@@ -29,7 +29,7 @@ export interface WithControlOptions<
 const DEFAULT_OPTIONS = {
   controlFactory: <
     T extends { control: AbstractControl; ref?: HTMLElement }
-  >() => (new FormControl(null) as any) as T["control"],
+  >() => new FormControl(null) as any as T["control"],
 };
 
 export function withControl<

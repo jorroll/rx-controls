@@ -32,13 +32,12 @@ export function syncProvidedControl(
   props: {
     control?: AbstractControl;
     controlContainer?: AbstractControlContainer;
-    controlName?: string;
+    controlName?: string | number;
   }
 ) {
   createComputed(() => {
-    const providedContainer = useControl<
-      NonNullable<typeof props.controlContainer>
-    >();
+    const providedContainer =
+      useControl<NonNullable<typeof props.controlContainer>>();
 
     if (!props.control) {
       if (props.controlName && !(props.controlContainer || providedContainer)) {
