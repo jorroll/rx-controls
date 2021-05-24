@@ -14,6 +14,7 @@ import {
   map,
   startWith,
   switchMap,
+  tap,
 } from 'rxjs/operators';
 
 import { useControl } from './context';
@@ -23,12 +24,16 @@ import type { ElementOf } from 'ts-essentials';
 import { useCallback } from 'react';
 import { useObservable } from 'rxjs-hooks';
 
+function isValidControlName(val: unknown) {
+  return typeof val === 'string' || Number.isInteger(val);
+}
+
 export function syncProvidedControl(
   staticControl: AbstractControl,
   props: {
     control?: AbstractControl;
     controlContainer?: AbstractControlContainer;
-    controlName?: string;
+    controlName?: string | number;
   }
 ) {
   const providedContainer =
@@ -36,12 +41,15 @@ export function syncProvidedControl(
 
   useCallback(() => {
     if (!props.control) {
-      if (props.controlName && !(props.controlContainer || providedContainer)) {
+      if (
+        isValidControlName(props.controlName) &&
+        !(props.controlContainer || providedContainer)
+      ) {
         throw new Error(
           `A "controlName" was provided but no "controlContainer" was provided. ` +
             `When using "controlName", you must provide a controlContainer via props or context.`
         );
-      } else if (!props.controlName) {
+      } else if (!isValidControlName(props.controlName)) {
         return;
       }
     }
@@ -75,10 +83,18 @@ export function syncProvidedControl(
     } else {
       const container = props.controlContainer || providedContainer;
 
-      const dynamicControl$: Observable<AbstractControl> = container!.observe(
-        'controls',
-        props.controlName as keyof typeof container
-      );
+      const dynamicControl$: Observable<AbstractControl> = container!
+        .observe('controls', props.controlName as keyof typeof container)
+        .pipe(
+          tap((dynamicControl) => {
+            if (!dynamicControl) {
+              throw new Error(
+                `The resolved AbstractControlContainer (${container!.id.toString()}) ` +
+                  `does not have a control associated with ControlKey ${props.controlName}.`
+              );
+            }
+          })
+        );
 
       s = dynamicControl$
         .pipe(

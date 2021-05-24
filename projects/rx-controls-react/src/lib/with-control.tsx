@@ -16,7 +16,7 @@ export type WithControlProps<
   Omit<T, "control"> & {
     control?: T["control"];
     controlContainer?: AbstractControlContainer;
-    controlName?: string;
+    controlName?: string | number;
   }
 >;
 
