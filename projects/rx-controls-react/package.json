@@ -1,6 +1,6 @@
 {
   "name": "rx-controls-react",
-  "version": "0.7.8",
+  "version": "0.7.9",
   "main": "main.js",
   "module": "module.js",
   "types": "public-api.d.ts",
@@ -10,7 +10,7 @@
     "rxjs": "^6.0.0"
   },
   "dependencies": {
-    "rx-controls": "^0.7.8",
+    "rx-controls": "^0.7.9",
     "rxjs-hooks": "^0.7.0",
     "tslib": "^2.0.0"
   },
