@@ -9,8 +9,9 @@
   },
   "scripts": {
     "pubcanary": "yarn test && yarn lerna version --no-push --preid next && yarn build && yarn lerna publish from-git --yes --dist-tag next --contents build",
-    "pub": "yarn test && yarn lerna version --no-push && yarn build && yarn lerna publish from-git --yes --contents build",
-    "build": "lerna run build --stream",
+    "pub": "yarn test && yarn build && yarn lerna version --no-push && yarn copyPackageToBuild && yarn lerna publish from-git --yes --contents build",
+    "copyPackageToBuild": "lerna run copyPackageToBuild",
+    "build": "lerna run build --stream --since",
     "test": "lerna run test --stream --since"
   },
   "devDependencies": {
