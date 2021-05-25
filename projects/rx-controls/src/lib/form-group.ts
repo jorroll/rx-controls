@@ -75,9 +75,15 @@ export class FormGroup<
     // controls that need to be removed
     for (const [key, control] of this._controlsStore) {
       if (
-        controlsStore.get(key) === control ||
-        (normOptions[AbstractControl.NO_EVENT] &&
-          AbstractControl._isEqual(controlsStore.get(key), control))
+        controlsStore.get(key) === control
+        // Unfortunately, I don't remember why I needed to add this check in
+        // (should have documented it...) and it is causing an integration
+        // test to break. All tests seem to pass without this check, so I'm
+        // going to remove it. If something breaks in the future and this
+        // needs to be uncommented, make sure to document why...
+        // ||
+        // (normOptions[AbstractControl.NO_EVENT] &&
+        //   AbstractControl._isEqual(controlsStore.get(key), control))
       ) {
         continue;
       }
@@ -92,9 +98,15 @@ export class FormGroup<
       const control = _control as AbstractControl;
 
       if (
-        this._controlsStore.get(key) === control ||
-        (normOptions[AbstractControl.NO_EVENT] &&
-          AbstractControl._isEqual(this._controlsStore.get(key), control))
+        this._controlsStore.get(key) === control
+        // Unfortunately, I don't remember why I needed to add this check in
+        // (should have documented it...) and it is causing an integration
+        // test to break. All tests seem to pass without this check, so I'm
+        // going to remove it. If something breaks in the future and this
+        // needs to be uncommented, make sure to document why...
+        // ||
+        // (normOptions[AbstractControl.NO_EVENT] &&
+        //   AbstractControl._isEqual(this._controlsStore.get(key), control))
       ) {
         continue;
       }
