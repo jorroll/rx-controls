@@ -1,6 +1,6 @@
 {
   "name": "rx-controls",
-  "version": "0.7.9",
+  "version": "0.7.10",
   "main": "umd.js",
   "module": "module.js",
   "types": "public-api.d.ts",
