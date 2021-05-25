@@ -5,26 +5,26 @@ import {
   isFocusEvent,
   IControlEvent,
 } from 'rx-controls';
-
-import { concat, Observable, pipe, Subscription } from 'rxjs';
-
+import { concat, NEVER, Observable, pipe, Subscription } from 'rxjs';
 import {
   distinctUntilChanged,
   filter,
   map,
   startWith,
   switchMap,
-  tap,
 } from 'rxjs/operators';
-
 import { useControl } from './context';
-
 import type { ElementOf } from 'ts-essentials';
-
-import { useCallback } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+} from 'react';
 import { useObservable } from 'rxjs-hooks';
 
-function isValidControlName(val: unknown) {
+function isValidControlName(val: unknown): val is string | number {
   return typeof val === 'string' || Number.isInteger(val);
 }
 
@@ -39,7 +39,15 @@ export function syncProvidedControl(
   const providedContainer =
     useControl<NonNullable<typeof props.controlContainer>>();
 
-  useCallback(() => {
+  const sub = useRef<Subscription | null>(null);
+
+  // force subscriptions to be handled synchronously
+  useMemo(() => {
+    if (sub.current) {
+      sub.current.unsubscribe();
+      sub.current = null;
+    }
+
     if (!props.control) {
       if (
         isValidControlName(props.controlName) &&
@@ -68,7 +76,7 @@ export function syncProvidedControl(
       })
     );
 
-    let s: Subscription;
+    let s: Subscription | undefined;
 
     if (props.control) {
       const dynamicControl = props.control;
@@ -81,63 +89,70 @@ export function syncProvidedControl(
         staticControl.events.subscribe((e) => dynamicControl.processEvent(e))
       );
     } else {
-      const container = props.controlContainer || providedContainer;
+      const container = props.controlContainer || providedContainer!;
 
-      const dynamicControl$: Observable<AbstractControl> = container!
-        .observe('controls', props.controlName as keyof typeof container)
-        .pipe(
-          tap((dynamicControl) => {
-            if (!dynamicControl) {
-              throw new Error(
-                `The resolved AbstractControlContainer (${container!.id.toString()}) ` +
-                  `does not have a control associated with ControlKey ${props.controlName}.`
-              );
-            }
-          })
-        );
+      const dynamicControl$ = container.observe(
+        'controls',
+        props.controlName!
+      ) as Observable<AbstractControl>;
 
       s = dynamicControl$
         .pipe(
           switchMap((dynamicControl) =>
-            concat(dynamicControl.replayState(), dynamicControl.events)
+            !dynamicControl
+              ? NEVER
+              : concat(dynamicControl.replayState(), dynamicControl.events)
           ),
           mapFocusEvents
         )
-        .subscribe((dynamicControlEvent) =>
-          staticControl.processEvent(dynamicControlEvent)
-        );
+        .subscribe((dynamicControlEvent) => {
+          staticControl.processEvent(dynamicControlEvent);
+        });
 
       s.add(
         dynamicControl$
           .pipe(
             switchMap((dynamicControl) =>
-              staticControl.events.pipe(
-                map(
-                  (staticControlEvent) =>
-                    [dynamicControl, staticControlEvent] as const
-                )
-              )
+              !dynamicControl
+                ? NEVER
+                : staticControl.events.pipe(
+                    map(
+                      (staticControlEvent) =>
+                        [dynamicControl, staticControlEvent] as const
+                    )
+                  )
             )
           )
-          .subscribe(([dynamicControl, staticControlEvent]) =>
-            dynamicControl.processEvent(staticControlEvent)
-          )
+          .subscribe(([dynamicControl, staticControlEvent]) => {
+            dynamicControl.processEvent(staticControlEvent);
+          })
       );
     }
 
-    return () => s.unsubscribe();
-  }, [props.control, props.controlContainer, props.controlName])();
+    sub.current = s;
+  }, [props.control, props.controlContainer, props.controlName]);
+
+  useLayoutEffect(() => {
+    return () => sub.current?.unsubscribe();
+  }, []);
 }
 
 export function useFocusHandler(
   control: AbstractControl,
   setRef?: (node: HTMLElement) => void
 ) {
-  return useCallback((node) => {
+  const sub = useRef<Subscription | null>(null);
+
+  const callback = useCallback((node) => {
+    if (sub.current) {
+      sub.current.unsubscribe();
+      sub.current = null;
+    }
+
     if (!node) return;
     if (setRef) setRef(node);
 
-    const sub = control.events
+    sub.current = control.events
       .pipe(
         filter(isFocusEvent),
         map((e) => e.focus)
@@ -149,9 +164,13 @@ export function useFocusHandler(
           node.blur();
         }
       });
-
-    return () => sub.unsubscribe();
   }, []);
+
+  useEffect(() => {
+    return () => sub.current?.unsubscribe();
+  }, []);
+
+  return callback;
 }
 
 export function useControlClassList<
