@@ -9,10 +9,10 @@
   },
   "scripts": {
     "pubcanary": "yarn test && yarn lerna version --no-push --preid next && yarn build && yarn lerna publish from-git --yes --dist-tag next --contents build",
-    "pub": "yarn test && yarn build && yarn lerna version --no-push && yarn copyPackageToBuild && yarn lerna publish from-git --yes --contents build",
+    "pub": "yarn test --since && yarn build --since && yarn lerna version --no-push && yarn copyPackageToBuild && yarn lerna publish from-git --yes --contents build",
     "copyPackageToBuild": "lerna run copyPackageToBuild",
-    "build": "lerna run build --stream --since",
-    "test": "lerna run test --stream --since"
+    "build": "lerna run build --stream",
+    "test": "lerna run test --stream"
   },
   "devDependencies": {
     "@angular-builders/jest": "10.0.1",
@@ -50,6 +50,7 @@
     "lerna": "^3.22.1",
     "ncp": "^2.0.0",
     "ng-packagr": "^11.2.4",
+    "rxjs-hooks": "^0.7.0",
     "react": "^17.0.2",
     "react-dom": "^17.0.2",
     "react-hooks": "^1.0.1",
