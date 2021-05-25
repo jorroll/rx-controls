@@ -15,13 +15,7 @@ import {
 } from 'rxjs/operators';
 import { useControl } from './context';
 import type { ElementOf } from 'ts-essentials';
-import {
-  useCallback,
-  useEffect,
-  useLayoutEffect,
-  useMemo,
-  useRef,
-} from 'react';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { useObservable } from 'rxjs-hooks';
 
 function isValidControlName(val: unknown): val is string | number {
@@ -132,7 +126,7 @@ export function syncProvidedControl(
     sub.current = s;
   }, [props.control, props.controlContainer, props.controlName]);
 
-  useLayoutEffect(() => {
+  useEffect(() => {
     return () => sub.current?.unsubscribe();
   }, []);
 }
