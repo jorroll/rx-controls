@@ -54,6 +54,10 @@ export function useControlState<T extends AbstractControl, A extends keyof T>(
   control: T,
   a: A
 ): T[A];
+export function useControlState<T>(
+  control: AbstractControl,
+  ...props: Array<string | number>
+): T;
 export function useControlState<T extends AbstractControl>(
   control: T,
   ...keys: Array<string | number>
@@ -65,7 +69,7 @@ export function useControlState<T extends AbstractControl>(
 
   return useObservable(
     (_, inputs$) =>
-      inputs$.pipe(switchMap((k) => control.observeChanges(k as string[]))),
+      inputs$.pipe(switchMap((k) => control.observe(k as string[]))),
     init,
     keys
   );
