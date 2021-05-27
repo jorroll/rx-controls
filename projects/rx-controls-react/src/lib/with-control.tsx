@@ -1,64 +1,32 @@
-import {
-  AbstractControl,
-  AbstractControlContainer,
-  FormControl,
-} from "rx-controls";
-
+import { AbstractControl, AbstractControlContainer } from "rx-controls";
 import { ControlContext } from "./context";
-
 import { syncProvidedControl, useFocusHandler } from "./utils";
-
 import React, { PropsWithChildren, FunctionComponent, useMemo } from "react";
 
 export type WithControlProps<
-  T extends { control: AbstractControl; setRef?: (ref: HTMLElement) => void }
+  P extends { control: AbstractControl },
+  R extends HTMLElement = HTMLElement
 > = PropsWithChildren<
-  Omit<T, "control"> & {
-    control?: T["control"];
+  Omit<P, "control"> & {
+    control?: P["control"];
     controlContainer?: AbstractControlContainer;
     controlName?: string | number;
+    setRef?: (el: R) => void;
   }
 >;
 
 export interface WithControlOptions<
-  P extends { control: AbstractControl; setRef?: (ref: HTMLElement) => void }
+  P extends { control: AbstractControl },
+  R extends HTMLElement
 > {
+  controlFactory: (props: WithControlProps<P, R>) => P["control"];
   component: FunctionComponent<P>;
-  controlFactory?: (props: WithControlProps<P>) => P["control"];
 }
 
-const DEFAULT_OPTIONS = {
-  controlFactory: <
-    T extends { control: AbstractControl; setRef?: (ref: HTMLElement) => void }
-  >() => new FormControl(null) as any as T["control"],
-};
-
 export function withControl<
-  P extends {
-    control: FormControl;
-    setRef?: (ref: HTMLElement) => void;
-  } = {
-    control: FormControl;
-    setRef?: (ref: HTMLElement) => void;
-  }
->(Component: FunctionComponent<P>): FunctionComponent<WithControlProps<P>>;
-export function withControl<
-  P extends {
-    control: AbstractControl;
-    setRef?: (ref: HTMLElement) => void;
-  }
->(options: WithControlOptions<P>): FunctionComponent<WithControlProps<P>>;
-export function withControl<
-  P extends { control: AbstractControl; setRef?: (ref: HTMLElement) => void }
->(args: FunctionComponent<P> | WithControlOptions<P>) {
-  const options =
-    typeof args !== "function"
-      ? { ...DEFAULT_OPTIONS, ...args }
-      : {
-          ...DEFAULT_OPTIONS,
-          component: args,
-        };
-
+  P extends { control: AbstractControl },
+  R extends HTMLElement = HTMLElement
+>(options: WithControlOptions<P, R>) {
   return (props: WithControlProps<P>) => {
     const control = useMemo(
       () => options.controlFactory(props) as P["control"],

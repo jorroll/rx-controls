@@ -137,7 +137,7 @@ export function useFocusHandler(
 ) {
   const sub = useRef<Subscription | null>(null);
 
-  const callback = useCallback((node) => {
+  const callback = useCallback((node: HTMLElement | null) => {
     if (sub.current) {
       sub.current.unsubscribe();
       sub.current = null;
