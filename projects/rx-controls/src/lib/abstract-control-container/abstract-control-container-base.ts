@@ -45,9 +45,8 @@ export type DeepPartial<T> = {
   [P in keyof T]?: T[P] extends object ? DeepPartial<T[P]> : T[P];
 };
 
-export type IAbstractControlContainerBaseArgs<
-  Data
-> = IAbstractControlBaseArgs<Data>;
+export type IAbstractControlContainerBaseArgs<Data> =
+  IAbstractControlBaseArgs<Data>;
 
 const CONTROL_CONTAINER_WATCHED_CHILD_PROPS = [
   // 'enabled',
@@ -89,8 +88,10 @@ export abstract class AbstractControlContainerBase<
     Data,
     ControlsValue<Controls>
   >
-  implements PrivateAbstractControlContainer<Controls, Data> {
-  static readonly PUBLIC_PROPERTIES = AbstractControlContainer.PUBLIC_PROPERTIES as readonly string[];
+  implements PrivateAbstractControlContainer<Controls, Data>
+{
+  static readonly PUBLIC_PROPERTIES =
+    AbstractControlContainer.PUBLIC_PROPERTIES as readonly string[];
   static readonly PUBLIC_PROPERTIES_INDEX =
     AbstractControlContainer._PUBLIC_PROPERTIES_INDEX;
 
@@ -403,9 +404,9 @@ export abstract class AbstractControlContainerBase<
     const childOptions = this._normalizeChildOptions(normOptions);
 
     for (const [key, val] of Object.entries(value)) {
-      const c = (this.controls[
+      const c = this.controls[
         key as ControlsKey<Controls>
-      ] as unknown) as AbstractControl;
+      ] as unknown as AbstractControl;
 
       if (!c) {
         throw new Error(`Invalid ${methodName} value key "${key}".`);
@@ -413,7 +414,7 @@ export abstract class AbstractControlContainerBase<
 
       AbstractControlContainer.isControlContainer(c)
         ? c[methodName](val, childOptions)
-        : ((c as unknown) as AbstractControl).setValue(val, childOptions);
+        : (c as unknown as AbstractControl).setValue(val, childOptions);
     }
 
     return this._processChildResults(childOptions, normOptions);
@@ -531,22 +532,21 @@ export abstract class AbstractControlContainerBase<
 
     this.controlsStore.forEach((c, key) => {
       if (!options?.deep || !AbstractControlContainer.isControlContainer(c)) {
-        ((c as unknown) as any)[`mark${prop}`](value, childOptions);
+        (c as unknown as any)[`mark${prop}`](value, childOptions);
         return;
       }
 
-      const { results } = childOptions.meta[
-        CONTROL_CONTAINER_CHILD_STATE_CHANGE
-      ];
+      const { results } =
+        childOptions.meta[CONTROL_CONTAINER_CHILD_STATE_CHANGE];
 
       // first mark the child itself as X (e.g. disabled)
-      ((c as unknown) as any)[`mark${prop}`](value, childOptions);
+      (c as unknown as any)[`mark${prop}`](value, childOptions);
 
       // get the `event.changes` object that results from this
       const markChanges = results[key].changes;
 
       // next, deeply mark this child's children as X (e.g. disabled)
-      ((c as unknown) as any)[`markChildren${prop}`](value, childOptions);
+      (c as unknown as any)[`markChildren${prop}`](value, childOptions);
 
       // get the `event.changes` object that results from this
       const markChildrenChanges = results[key].changes;
@@ -664,10 +664,10 @@ export abstract class AbstractControlContainerBase<
     options?: IControlEventOptions
   ): IProcessedEvent<T> {
     if (isChildStateChangeEvent(event)) {
-      return (this._processEvent_ExternalChildStateChange(
+      return this._processEvent_ExternalChildStateChange(
         event,
         options
-      ) as unknown) as IProcessedEvent<T>;
+      ) as unknown as IProcessedEvent<T>;
     }
 
     return super.processEvent(event, options);
@@ -692,7 +692,7 @@ export abstract class AbstractControlContainerBase<
     control: Controls[ControlsKey<Controls>],
     options?: IControlEventOptions
   ) {
-    if (((control as unknown) as AbstractControl).parent === this) {
+    if ((control as unknown as AbstractControl).parent === this) {
       throw new Error(
         `You have tried to add a control to a ControlContainer but ` +
           `the control is already a child of the ControlContainer.`
@@ -701,31 +701,31 @@ export abstract class AbstractControlContainerBase<
 
     let focusSub: Subscription | undefined;
 
-    if (((control as unknown) as AbstractControl).parent) {
-      const _control = ((control as unknown) as AbstractControl).clone();
+    if ((control as unknown as AbstractControl).parent) {
+      const _control = (control as unknown as AbstractControl).clone();
 
       // Focus events are ordinarily ignored by linked controls. This would mean
       // that this clone control would not trigger a focus event when the original
       // triggers a focus event. To solve this, we subscribe the clone to the
       // original's focus events and we cause the clone to trigger it's own
       // focus event
-      focusSub = ((control as unknown) as AbstractControl).events
+      focusSub = (control as unknown as AbstractControl).events
         .pipe(
           filter(isFocusEvent),
           filter(
-            (e) => e.controlId === ((control as unknown) as AbstractControl).id
+            (e) => e.controlId === (control as unknown as AbstractControl).id
           )
         )
         .subscribe((e) =>
           _control.processEvent({ ...e, controlId: _control.id })
         );
 
-      control = (_control as unknown) as Controls[ControlsKey<Controls>];
+      control = _control as unknown as Controls[ControlsKey<Controls>];
     }
 
-    ((control as unknown) as AbstractControl)._setParent(this, options);
+    (control as unknown as AbstractControl)._setParent(this, options);
 
-    const sub = ((control as unknown) as AbstractControl).events
+    const sub = (control as unknown as AbstractControl).events
       .pipe(
         filter(isStateChangeEvent),
         filter((e) => {
@@ -783,7 +783,7 @@ export abstract class AbstractControlContainerBase<
 
     this._controlsSubscriptions.delete(control);
 
-    ((control as unknown) as AbstractControl)._setParent(null, options);
+    (control as unknown as AbstractControl)._setParent(null, options);
   }
 
   protected _processChildResults(
@@ -863,11 +863,9 @@ export abstract class AbstractControlContainerBase<
     const otherChangedProps: Array<keyof this & string> = getSortedChanges(
       (this.constructor as any).PUBLIC_PROPERTIES_INDEX,
       event.changes
-    ).flatMap(
-      ([prop, value]: [string, any]): Array<keyof this & string> => {
-        return this._processIndividualStateChange(_options, prop, value);
-      }
-    );
+    ).flatMap(([prop, value]: [string, any]): Array<keyof this & string> => {
+      return this._processIndividualStateChange(_options, prop, value);
+    });
 
     changedProps = Array.from(new Set([...changedProps, ...otherChangedProps]));
     // END PROCESSING `event.changes`
@@ -923,14 +921,18 @@ export abstract class AbstractControlContainerBase<
       const newValue = this._shallowCloneValue(this.value);
 
       normalizedChanges.get('value')!.forEach((key) => {
-        if (
-          ((this.controls[key] as unknown) as AbstractControl | undefined)
-            ?.disabled
-        ) {
+        const control = this.controls[key] as unknown as AbstractControl;
+
+        if (control.disabled) {
           delete newValue[key];
         } else {
-          newValue[key] = events[key].changes
-            .value as ControlsValue<Controls>[typeof key];
+          // A change to a child's `disabled` prop will cause a `value`
+          // change on the parent but it's possible that the child itself
+          // didn't experience a `value` change so the child's
+          // `IControlStateChangeEvent#changes` object will not have a
+          // `value` property. Because of this scenerio, we need to
+          // fetch the child control's value directly.
+          newValue[key] = control.value;
         }
       });
 
@@ -1070,15 +1072,8 @@ export abstract class AbstractControlContainerBase<
       childrenSubmitted.add(c.submitted);
     }
 
-    const {
-      invalid,
-      disabled,
-      readonly,
-      submitted,
-      touched,
-      dirty,
-      pending,
-    } = this;
+    const { invalid, disabled, readonly, submitted, touched, dirty, pending } =
+      this;
 
     // if (this._childEnabled !== childEnabled.value) {
     //   this._childEnabled = childEnabled.value;
@@ -1214,7 +1209,7 @@ export abstract class AbstractControlContainerBase<
 
     this._childrenErrors = Array.from(this.controlsStore).reduce(
       (prev, [key, control]) => {
-        const c = (control as unknown) as AbstractControl;
+        const c = control as unknown as AbstractControl;
 
         if (c.disabled) return prev;
 

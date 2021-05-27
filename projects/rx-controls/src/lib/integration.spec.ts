@@ -4,7 +4,7 @@ import { FormGroup } from './form-group';
 import { switchMap } from 'rxjs/operators';
 import { FormArray } from './form-array';
 import { combineLatest, concat } from 'rxjs';
-import { AbstractControlContainer } from 'projects/rx-controls-angular';
+import { AbstractControlContainer } from './abstract-control-container/abstract-control-container';
 import { wait } from './test-util';
 
 describe('Integration', () => {

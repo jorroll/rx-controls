@@ -1760,6 +1760,51 @@ describe('FormGroup', () => {
           'childrenEnabled'
         );
       });
+
+      // this tests a bug I uncovered in a react app
+      it('scenerio: value correctly updates when disabled child group is enabled', async () => {
+        const textControl = () =>
+          new FormControl<string>('', {
+            validators: (c) => (c.rawValue ? null : { required: true }),
+          });
+
+        const textGroupChildFactory = (disabled?: boolean) =>
+          new FormGroup(
+            {
+              text1: textControl(),
+              text2: textControl(),
+            },
+            { disabled }
+          );
+
+        const textGroupFactory = () =>
+          new FormGroup({
+            first: textGroupChildFactory(),
+            hasSecond: new FormControl(false),
+            second: textGroupChildFactory(true),
+          });
+
+        const textGroup = textGroupFactory();
+
+        textGroup.observe('rawValue', 'hasSecond').subscribe((value) => {
+          textGroup.get('second').markDisabled(!value);
+        });
+
+        expect(textGroup.value).toEqual({
+          first: { text1: '', text2: '' },
+          hasSecond: false,
+        });
+
+        textGroup.get('hasSecond').setValue(true);
+
+        await wait(0); // needed to surface some internal code errors
+
+        expect(textGroup.value).toEqual({
+          first: { text1: '', text2: '' },
+          hasSecond: true,
+          second: { text1: '', text2: '' },
+        });
+      });
     });
   });
 
