@@ -4,9 +4,7 @@ import type {
   IControlEventOptions,
   ValidationErrors,
 } from '../abstract-control/abstract-control';
-import {
-  AbstractControl,
-} from '../abstract-control/abstract-control';
+import { AbstractControl } from '../abstract-control/abstract-control';
 
 // UTILITY TYPES
 
@@ -32,13 +30,12 @@ type ObjectControlsRequiredRawValue<
   [P in Exclude<PickRequiredKeys<T>, undefined>]: NonNullable<T[P]>['rawValue'];
 };
 
-type ArrayControlsRawValue<
-  T extends ReadonlyArray<AbstractControl>
-> = T extends ReadonlyArray<infer C>
-  ? C extends AbstractControl
-    ? ReadonlyArray<C['rawValue']>
-    : never
-  : never;
+type ArrayControlsRawValue<T extends ReadonlyArray<AbstractControl>> =
+  T extends ReadonlyArray<infer C>
+    ? C extends AbstractControl
+      ? ReadonlyArray<C['rawValue']>
+      : never
+    : never;
 
 type ObjectControlsOptionalValue<
   T extends { [key: string]: AbstractControl | undefined }
@@ -52,13 +49,12 @@ type ObjectControlsRequiredValue<
   [P in Exclude<PickRequiredKeys<T>, undefined>]: NonNullable<T[P]>['value'];
 };
 
-type ArrayControlsValue<
-  T extends ReadonlyArray<AbstractControl>
-> = T extends ReadonlyArray<infer C>
-  ? C extends AbstractControl
-    ? ReadonlyArray<C['value']>
-    : never
-  : never;
+type ArrayControlsValue<T extends ReadonlyArray<AbstractControl>> =
+  T extends ReadonlyArray<infer C>
+    ? C extends AbstractControl
+      ? ReadonlyArray<C['value']>
+      : never
+    : never;
 
 // END UTILITY TYPES
 
@@ -72,37 +68,34 @@ export type GenericControlsObject =
 // `keyof ControlsValue<Controls>` as well as the `keyof Controls` etc
 // because typescript doesn't realize that all three are the same keys
 // and without all three, then ControlsKey can't be used to index all three
-export type ControlsKey<
-  Controls extends GenericControlsObject
-> = keyof ControlsRawValue<Controls> &
-  keyof ControlsValue<Controls> &
-  (Controls extends ReadonlyArray<any>
-    ? keyof Controls & number
-    : Controls extends object
-    ? // the `& string` is needed or else
-      // ControlsKey<{[key: string]: AbstractControl}> is type string | number
-      keyof Controls & string
-    : any);
+export type ControlsKey<Controls extends GenericControlsObject> =
+  keyof ControlsRawValue<Controls> &
+    keyof ControlsValue<Controls> &
+    (Controls extends ReadonlyArray<any>
+      ? keyof Controls & number
+      : Controls extends object
+      ? // the `& string` is needed or else
+        // ControlsKey<{[key: string]: AbstractControl}> is type string | number
+        keyof Controls & string
+      : any);
 
-export type ControlsRawValue<
-  Controls extends GenericControlsObject
-> = Controls extends ReadonlyArray<AbstractControl>
-  ? ArrayControlsRawValue<Controls>
-  : Controls extends { readonly [key: string]: AbstractControl | undefined }
-  ? ObjectControlsRequiredRawValue<Controls> &
-      ObjectControlsOptionalRawValue<Controls>
-  : never;
+export type ControlsRawValue<Controls extends GenericControlsObject> =
+  Controls extends ReadonlyArray<AbstractControl>
+    ? ArrayControlsRawValue<Controls>
+    : Controls extends { readonly [key: string]: AbstractControl | undefined }
+    ? ObjectControlsRequiredRawValue<Controls> &
+        ObjectControlsOptionalRawValue<Controls>
+    : never;
 
-export type ControlsValue<
-  Controls extends GenericControlsObject
-> = Controls extends ReadonlyArray<AbstractControl>
-  ? ArrayControlsValue<Controls>
-  : Controls extends { readonly [key: string]: AbstractControl | undefined }
-  ? Partial<
-      ObjectControlsRequiredValue<Controls> &
-        ObjectControlsOptionalValue<Controls>
-    >
-  : never;
+export type ControlsValue<Controls extends GenericControlsObject> =
+  Controls extends ReadonlyArray<AbstractControl>
+    ? ArrayControlsValue<Controls>
+    : Controls extends { readonly [key: string]: AbstractControl | undefined }
+    ? Partial<
+        ObjectControlsRequiredValue<Controls> &
+          ObjectControlsOptionalValue<Controls>
+      >
+    : never;
 
 export type ContainerControls<C> = C extends AbstractControlContainer<
   infer Controls

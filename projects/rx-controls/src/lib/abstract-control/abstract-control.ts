@@ -81,6 +81,11 @@ export interface IControlFocusEvent extends IControlEvent {
   readonly focus: boolean;
 }
 
+export interface IControlNonStateChangeChildEvent extends IControlEvent {
+  readonly type: 'ChildEvent';
+  readonly childEvents: { readonly [key: string]: IControlEvent };
+}
+
 export interface IProcessedEvent<T extends IControlEvent = IControlEvent> {
   readonly status: 'PROCESSED' | 'UNKNOWN';
   readonly result?: T;

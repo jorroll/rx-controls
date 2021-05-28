@@ -1,5 +1,7 @@
 import {
   AbstractControl,
+  IControlFocusEvent,
+  IControlNonStateChangeChildEvent,
   IControlStateChangeEvent,
   IControlValidationEvent,
   ValidationErrors,
@@ -17,9 +19,10 @@ import {
   subscribeToControlEventsUntilEnd,
 } from './test-util';
 import runSharedTestSuite from './shared-tests';
-import { map } from 'rxjs/operators';
+import { map, takeUntil } from 'rxjs/operators';
 import { isStateChangeEvent, transformRawValueStateChange } from './util';
 import { CONTROL_SELF_ID } from './abstract-control/abstract-control-base';
+import { concat, Subject } from 'rxjs';
 
 runAbstractControlContainerBaseTestSuite('FormGroup', (args = {}) => {
   const c = new FormGroup(undefined, args.options);
@@ -2267,6 +2270,107 @@ describe('FormGroup', () => {
         expect(b).toEqualControl(c, {
           skip: ['parent', '_rawValue', 'rawValue', '_value', 'value'],
         });
+      });
+    });
+  });
+});
+
+describe('FormGroup', () => {
+  describe('IControlNonStateChangeChildEvent', () => {
+    describe('Focus', () => {
+      it(`works`, async () => {
+        const end = new Subject<void>();
+
+        const a = new FormGroup({
+          one: new FormGroup({
+            two: new FormGroup({
+              a: new FormControl('a'),
+              b: new FormControl('b'),
+            }),
+          }),
+        });
+
+        const b = new FormGroup({
+          one: new FormGroup({
+            two: new FormGroup({
+              a: new FormControl(''),
+              b: new FormControl(''),
+            }),
+          }),
+        });
+
+        concat(a.replayState(), a.events)
+          .pipe(takeUntil(end))
+          .subscribe((e) => b.processEvent(e));
+
+        b.events.pipe(takeUntil(end)).subscribe((e) => a.processEvent(e));
+
+        expect(b).toEqualControl(a);
+
+        const [promise1] = getControlEventsUntilEnd(a, end);
+
+        const [promise2] = getControlEventsUntilEnd(
+          b.get('one', 'two', 'a')!,
+          end
+        );
+
+        a.get('one', 'two', 'a')!.focus();
+
+        end.next();
+        end.complete();
+
+        const events1 = await promise1;
+
+        expect(events1).toEqual<[IControlNonStateChangeChildEvent]>([
+          {
+            type: 'ChildEvent',
+            controlId: expect.any(Symbol),
+            debugPath: expect.any(String),
+            meta: {},
+            source: a.get('one', 'two', 'a')!.id,
+            childEvents: {
+              one: {
+                type: 'ChildEvent',
+                controlId: expect.any(Symbol),
+                debugPath: expect.any(String),
+                meta: {},
+                source: a.get('one', 'two', 'a')!.id,
+                childEvents: {
+                  two: {
+                    type: 'ChildEvent',
+                    controlId: expect.any(Symbol),
+                    debugPath: expect.any(String),
+                    meta: {},
+                    source: a.get('one', 'two', 'a')!.id,
+                    childEvents: {
+                      a: {
+                        type: 'Focus',
+                        controlId: expect.any(Symbol),
+                        focus: true,
+                        debugPath: expect.any(String),
+                        meta: {},
+                        source: a.get('one', 'two', 'a')!.id,
+                      } as IControlFocusEvent,
+                    },
+                  } as IControlNonStateChangeChildEvent,
+                },
+              } as IControlNonStateChangeChildEvent,
+            },
+          },
+        ]);
+
+        const events2 = await promise2;
+
+        expect(events2).toEqual<[IControlFocusEvent]>([
+          {
+            type: 'Focus',
+            controlId: expect.any(Symbol),
+            focus: true,
+            debugPath: expect.any(String),
+            meta: expect.any(Object),
+            source: a.get('one', 'two', 'a')!.id,
+          },
+        ]);
       });
     });
   });

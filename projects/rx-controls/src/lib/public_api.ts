@@ -6,6 +6,7 @@ export type {
   IControlEventOptions,
   IControlValidationEvent,
   IControlStateChangeEvent,
+  IControlNonStateChangeChildEvent,
   IControlFocusEvent,
 } from './abstract-control/abstract-control';
 
@@ -31,8 +32,10 @@ export { FormArray } from './form-array';
 export type { IFormArrayArgs } from './form-array';
 
 export {
-  isStateChangeEvent,
   isFocusEvent,
+  isStateChangeEvent,
+  isChildStateChangeEvent,
+  isChildNonStateChangeEvent,
   isValidationStartEvent,
   isAsyncValidationStartEvent,
 } from './util';
