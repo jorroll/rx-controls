@@ -3,6 +3,7 @@ import type {
   IControlFocusEvent,
   IControlStateChangeEvent,
   IControlValidationEvent,
+  IControlNonStateChangeChildEvent,
 } from './abstract-control/abstract-control';
 
 import { AbstractControl } from './abstract-control/abstract-control';
@@ -33,10 +34,22 @@ export function isTruthy<T>(value: T): value is NonNullable<T> {
   return !!value;
 }
 
+export function isChildNonStateChangeEvent<
+  T extends IControlNonStateChangeChildEvent = IControlNonStateChangeChildEvent
+>(event: IControlEvent): event is T {
+  return event.type === 'ChildEvent';
+}
+
 export function isStateChangeEvent<
   T extends IControlStateChangeEvent = IControlStateChangeEvent
 >(event: IControlEvent): event is T {
   return event.type === 'StateChange';
+}
+
+export function isChildStateChangeEvent(
+  event: IControlEvent
+): event is IControlStateChangeEvent {
+  return isStateChangeEvent(event) && !!event.childEvents;
 }
 
 export function isFocusEvent<T extends IControlFocusEvent = IControlFocusEvent>(

@@ -9,7 +9,7 @@ import type {
   ValidationErrors,
   IControlStateChangeEvent,
   IProcessedEvent,
-  IControlFocusEvent,
+  IControlNonStateChangeChildEvent,
 } from '../abstract-control/abstract-control';
 
 import { AbstractControl } from '../abstract-control/abstract-control';
@@ -39,6 +39,9 @@ import {
   getSimpleChildStateChangeEventArgs,
   getSortedChanges,
   isStateChangeEvent,
+  isChildStateChangeEvent,
+  isChildNonStateChangeEvent,
+  isFocusEvent,
 } from '../util';
 
 export type DeepPartial<T> = {
@@ -67,6 +70,14 @@ const CONTROL_CONTAINER_WATCHED_CHILD_PROPS = [
 
 const CONTROL_CONTAINER_CHILD_STATE_CHANGE = Symbol(
   'CONTROL_CONTAINER_CHILD_STATE_CHANGE'
+);
+
+/**
+ * This is a key for storing private, control event
+ * metadata. The data stored must be an object.
+ */
+const CONTROL_CONTAINER_PRIVATE_METADATA = Symbol(
+  'CONTROL_CONTAINER_PRIVATE_METADATA'
 );
 
 interface IControlContainerChildStateChangeMeta {
@@ -668,6 +679,11 @@ export abstract class AbstractControlContainerBase<
         event,
         options
       ) as unknown as IProcessedEvent<T>;
+    } else if (isChildNonStateChangeEvent(event)) {
+      return this._processEvent_ExternalChildNonStateChangeEvent(
+        event,
+        options
+      ) as unknown as IProcessedEvent<T>;
     }
 
     return super.processEvent(event, options);
@@ -704,18 +720,13 @@ export abstract class AbstractControlContainerBase<
     if ((control as unknown as AbstractControl).parent) {
       const _control = (control as unknown as AbstractControl).clone();
 
-      // Focus events are ordinarily ignored by linked controls. This would mean
+      // External Focus events are ordinarily ignored by controls. This would mean
       // that this clone control would not trigger a focus event when the original
       // triggers a focus event. To solve this, we subscribe the clone to the
       // original's focus events and we cause the clone to trigger it's own
       // focus event
       focusSub = (control as unknown as AbstractControl).events
-        .pipe(
-          filter(isFocusEvent),
-          filter(
-            (e) => e.controlId === (control as unknown as AbstractControl).id
-          )
-        )
+        .pipe(filter(isFocusEvent))
         .subscribe((e) =>
           _control.processEvent({ ...e, controlId: _control.id })
         );
@@ -725,6 +736,7 @@ export abstract class AbstractControlContainerBase<
 
     (control as unknown as AbstractControl)._setParent(this, options);
 
+    // handle child state change events
     const sub = (control as unknown as AbstractControl).events
       .pipe(
         filter(isStateChangeEvent),
@@ -761,6 +773,41 @@ export abstract class AbstractControlContainerBase<
           normOptions
         );
       });
+
+    // Handle child, non-state change events which should still bubble up.
+    // Currently this list includes
+    // - IControlNonStateChangeChildEvent
+    // - IControlFocusEvent
+    const sub1 = (control as unknown as AbstractControl).events
+      .pipe(
+        filter(
+          (e) =>
+            isChildNonStateChangeEvent(e) ||
+            (isFocusEvent(e) &&
+              // see the `_processEvent_ExternalChildNonStateChangeEvent`
+              // implementation for an explanation for why this is needed.
+              !(
+                (e.meta as any)[CONTROL_CONTAINER_PRIVATE_METADATA]
+                  ?.controlId === this.id &&
+                (e.meta as any)[CONTROL_CONTAINER_PRIVATE_METADATA].noFocus
+              ))
+        )
+      )
+      .subscribe((childEvent) => {
+        const normOptions = this._normalizeOptions(
+          '_registerControl#subscription',
+          childEvent
+        );
+
+        const childEvents = { [key]: childEvent };
+
+        this._emitEvent<IControlNonStateChangeChildEvent>(
+          { type: 'ChildEvent', childEvents },
+          normOptions
+        );
+      });
+
+    sub.add(sub1);
 
     if (focusSub) sub.add(focusSub);
 
@@ -894,6 +941,57 @@ export abstract class AbstractControlContainerBase<
     }
 
     return processedEvent;
+  }
+
+  /**
+   * This method passes child events down to the appropriate child
+   * to be handled. While
+   * it can process multiple child events as part of a single
+   * `IControlNonStateChangeChildEvent`, it won't bundle the resulting
+   * emissions together in any way. It's unclear if it should. At the
+   * moment I have no usecases for bundling multiple emissions together,
+   * and I expect all `IControlNonStateChangeChildEvent` objects to only
+   * contain a single child event. If anyone ever wants to bundle multiple
+   * `IControlNonStateChangeChildEvent` together, they should open an issue
+   * and we can discuss improving this method.
+   */
+  protected _processEvent_ExternalChildNonStateChangeEvent(
+    event: IControlNonStateChangeChildEvent,
+    options?: IControlEventOptions
+  ): IProcessedEvent<IControlNonStateChangeChildEvent> {
+    for (let [_key, e] of Object.entries(event.childEvents)) {
+      const key = this._coerceControlStringKey(_key);
+      const control = this.controlsStore.get(key);
+
+      if (control) {
+        if (isFocusEvent(e)) {
+          // We want focus events to be processed by child controls, but
+          // we don't want to re-process the focus event this spawns because
+          // that would cause an infinite loop. Basically, if you trigger a focus
+          // event it should only go 1-way.
+          //
+          // Here we change the focus event to cause the child control to
+          // emit a focus event of it's own, and we add a meta property to
+          // ensure that, when this child's focus event bubbles up to this
+          // parent again, we ignore it.
+          e = {
+            ...e,
+            controlId: (control as AbstractControl).id,
+            meta: {
+              ...e.meta,
+              [CONTROL_CONTAINER_PRIVATE_METADATA]: {
+                controlId: this.id,
+                noFocus: true,
+              },
+            },
+          };
+        }
+
+        (control as AbstractControl).processEvent(e, options);
+      }
+    }
+
+    return { status: 'PROCESSED' };
   }
 
   protected _processInternalChildrenStateChanges(
@@ -1344,21 +1442,6 @@ class AnyValue extends AllValues {
     if (this._value === true) return;
     this._value = value;
   }
-}
-
-function isFocusEvent<T extends IControlEvent>(
-  event: T
-): event is T & IControlFocusEvent {
-  return event.type === 'Focus';
-}
-
-function isChildStateChangeEvent(
-  event: IControlEvent
-): event is IControlStateChangeEvent {
-  return (
-    event.type === 'StateChange' &&
-    !!(event as IControlStateChangeEvent).childEvents
-  );
 }
 
 type IChildOptions = INormControlEventOptions & {
