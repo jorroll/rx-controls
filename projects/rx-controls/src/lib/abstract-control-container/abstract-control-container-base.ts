@@ -553,14 +553,17 @@ export abstract class AbstractControlContainerBase<
       // first mark the child itself as X (e.g. disabled)
       (c as unknown as any)[`mark${prop}`](value, childOptions);
 
-      // get the `event.changes` object that results from this
-      const markChanges = results[key].changes;
+      // if there were any changes, get the `event.changes` object that results from this
+      const markChanges = results[key]?.changes || {};
 
       // next, deeply mark this child's children as X (e.g. disabled)
       (c as unknown as any)[`markChildren${prop}`](value, childOptions);
 
-      // get the `event.changes` object that results from this
-      const markChildrenChanges = results[key].changes;
+      // if there were any changes, get the `event.changes` object that results from this
+      const markChildrenChanges = results[key]?.changes || {};
+
+      // stop if there were no changes
+      if (!results[key]) return;
 
       // Merge the two `event.changes` objects together, favoring the second
       // round of results in case of conflicts, and then overwrite the
