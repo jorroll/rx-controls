@@ -1,5 +1,7 @@
 # rx-controls
 
+_The canonical version of this repo is hosted on [Gitlab](https://gitlab.com/john.carroll.p/rx-controls), but there is also a [Github mirror](https://github.com/jorroll/rx-controls). Issues and merge requests should be created in the [Gitlab repo](https://gitlab.com/john.carroll.p/rx-controls)._
+
 RxControls provides several javascript `FormControl` objects to make dealing with forms easier. The library can be used stand-alone via `rx-controls` or via one of the framework specific options (Solidjs and Angular).
 
 Installation depends on if you want to just use the core library (vanillajs) or if you want to use the Solidjs or Angular versions.
