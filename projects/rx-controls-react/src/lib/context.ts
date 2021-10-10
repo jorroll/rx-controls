@@ -60,17 +60,21 @@ export function useControlState<T>(
 ): T;
 export function useControlState<T extends AbstractControl>(
   control: T,
-  ...keys: Array<string | number>
+  ..._keys: Array<string | number>
 ): any {
+  const keys = useMemo(() => _keys, [_keys.length, _keys.join()]);
+
   const init = useMemo(
     () => keys.reduce((prev: any, curr) => prev && prev[curr], control),
-    [control, ...keys]
+    [control, keys]
   );
 
   return useObservable(
     (_, inputs$) =>
-      inputs$.pipe(switchMap((k) => (k.shift() as T).observe(k as string[]))),
+      inputs$.pipe(
+        switchMap((k) => (k.shift() as T).observe(k as unknown as string[]))
+      ),
     init,
-    [control, ...keys]
+    [control, keys]
   );
 }

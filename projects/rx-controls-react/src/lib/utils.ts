@@ -174,7 +174,9 @@ export function useControlClassList<
   T extends AbstractControl,
   P extends ReadonlyArray<keyof T>,
   R extends string | { [key: string]: boolean }
->(control: T, props: P, fn: (props: Pick<T, ElementOf<P>>) => R) {
+>(control: T, _props: P, fn: (props: Pick<T, ElementOf<P>>) => R) {
+  const props = useMemo(() => _props, [_props.length, _props.join()]);
+
   return useObservable(
     () =>
       control.events.pipe(
