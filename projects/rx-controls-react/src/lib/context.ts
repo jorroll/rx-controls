@@ -63,14 +63,14 @@ export function useControlState<T extends AbstractControl>(
   ...keys: Array<string | number>
 ): any {
   const init = useMemo(
-    () => keys.reduce((prev: any, curr) => prev[curr], control),
-    []
+    () => keys.reduce((prev: any, curr) => prev && prev[curr], control),
+    [control, ...keys]
   );
 
   return useObservable(
     (_, inputs$) =>
-      inputs$.pipe(switchMap((k) => control.observe(k as string[]))),
+      inputs$.pipe(switchMap((k) => (k.shift() as T).observe(k as string[]))),
     init,
-    keys
+    [control, ...keys]
   );
 }

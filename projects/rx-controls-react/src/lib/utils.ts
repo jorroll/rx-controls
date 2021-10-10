@@ -124,11 +124,11 @@ export function syncProvidedControl(
     }
 
     sub.current = s;
-  }, [props.control, props.controlContainer, props.controlName]);
+  }, [staticControl, props.control, props.controlContainer, props.controlName]);
 
   useEffect(() => {
     return () => sub.current?.unsubscribe();
-  }, []);
+  }, [sub]);
 }
 
 export function useFocusHandler(
@@ -137,32 +137,35 @@ export function useFocusHandler(
 ) {
   const sub = useRef<Subscription | null>(null);
 
-  const callback = useCallback((node: HTMLElement | null) => {
-    if (sub.current) {
-      sub.current.unsubscribe();
-      sub.current = null;
-    }
+  const callback = useCallback(
+    (node: HTMLElement | null) => {
+      if (sub.current) {
+        sub.current.unsubscribe();
+        sub.current = null;
+      }
 
-    if (!node) return;
-    if (setRef) setRef(node);
+      if (!node) return;
+      if (setRef) setRef(node);
 
-    sub.current = control.events
-      .pipe(
-        filter(isFocusEvent),
-        map((e) => e.focus)
-      )
-      .subscribe((focus) => {
-        if (focus) {
-          node.focus();
-        } else {
-          node.blur();
-        }
-      });
-  }, []);
+      sub.current = control.events
+        .pipe(
+          filter(isFocusEvent),
+          map((e) => e.focus)
+        )
+        .subscribe((focus) => {
+          if (focus) {
+            node.focus();
+          } else {
+            node.blur();
+          }
+        });
+    },
+    [control, sub, setRef]
+  );
 
   useEffect(() => {
     return () => sub.current?.unsubscribe();
-  }, []);
+  }, [sub]);
 
   return callback;
 }
@@ -172,32 +175,35 @@ export function useControlClassList<
   P extends ReadonlyArray<keyof T>,
   R extends string | { [key: string]: boolean }
 >(control: T, props: P, fn: (props: Pick<T, ElementOf<P>>) => R) {
-  return useObservable(() =>
-    control.events.pipe(
-      filter(isStateChangeEvent),
-      filter((e) => props.some((p) => p in e.changes)),
-      startWith(null),
-      map(
-        () =>
-          Object.fromEntries(props.map((p) => [p, control[p]])) as Pick<
-            T,
-            ElementOf<P>
-          >
+  return useObservable(
+    () =>
+      control.events.pipe(
+        filter(isStateChangeEvent),
+        filter((e) => props.some((p) => p in e.changes)),
+        startWith(null),
+        map(
+          () =>
+            Object.fromEntries(props.map((p) => [p, control[p]])) as Pick<
+              T,
+              ElementOf<P>
+            >
+        ),
+        map(fn),
+        distinctUntilChanged((a, b) => {
+          if (typeof a === 'string' || typeof b === 'string') return a === b;
+
+          const x = Object.entries(a);
+
+          if (x.length !== Object.keys(b).length) return false;
+
+          for (const [k, v] of x) {
+            if ((b as { [key: string]: boolean })[k] !== v) return false;
+          }
+
+          return true;
+        })
       ),
-      map(fn),
-      distinctUntilChanged((a, b) => {
-        if (typeof a === 'string' || typeof b === 'string') return a === b;
-
-        const x = Object.entries(a);
-
-        if (x.length !== Object.keys(b).length) return false;
-
-        for (const [k, v] of x) {
-          if ((b as { [key: string]: boolean })[k] !== v) return false;
-        }
-
-        return true;
-      })
-    )
+    undefined,
+    [control, props, fn]
   ) as R;
 }
