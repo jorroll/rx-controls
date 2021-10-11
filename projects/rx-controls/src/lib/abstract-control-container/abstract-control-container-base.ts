@@ -924,15 +924,17 @@ export abstract class AbstractControlContainerBase<
 
     const processedEvent: IProcessedEvent<IControlStateChangeEvent> = {
       status: 'PROCESSED',
-      result: {
-        ...event,
-        ...getSimpleChildStateChangeEventArgs(
-          this,
-          childOptions.meta[CONTROL_CONTAINER_CHILD_STATE_CHANGE].results,
-          changedProps
-        ),
-        ...normOptions,
-      },
+      result: this._prepareEventForEmit<IControlStateChangeEvent>(
+        {
+          ...event,
+          ...getSimpleChildStateChangeEventArgs(
+            this,
+            childOptions.meta[CONTROL_CONTAINER_CHILD_STATE_CHANGE].results,
+            changedProps
+          ),
+        },
+        normOptions
+      ),
     };
 
     if (processedEvent.result && !normOptions[AbstractControl.NO_EVENT]) {

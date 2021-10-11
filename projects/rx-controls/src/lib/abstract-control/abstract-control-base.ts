@@ -1145,7 +1145,7 @@ export abstract class AbstractControlBase<RawValue, Data, Value>
             ? { status: 'PROCESSED' }
             : {
                 status: 'PROCESSED',
-                result: { ...event, ..._options },
+                result: this._prepareEventForEmit(event, _options),
               };
 
         break;
@@ -1216,6 +1216,26 @@ export abstract class AbstractControlBase<RawValue, Data, Value>
     );
   }
 
+  protected _prepareEventForEmit<T extends IControlEvent>(
+    event: Partial<
+      Pick<T, 'source' | 'noObserve' | 'meta' | 'debugPath' | 'controlId'>
+    > &
+      Omit<T, 'source' | 'noObserve' | 'meta' | 'debugPath' | 'controlId'> & {
+        type: string;
+      },
+    options: INormControlEventOptions
+  ): T {
+    const newEvent: IControlEvent = {
+      source: this.id,
+      meta: {},
+      ...event,
+      ...options,
+      controlId: this.id,
+    };
+
+    return newEvent as T;
+  }
+
   /**
    * A convenience method for emitting an arbitrary control event.
    */
@@ -1232,13 +1252,7 @@ export abstract class AbstractControlBase<RawValue, Data, Value>
       throw new Error('tried to emit NO_EVENT');
     }
 
-    const normEvent: IControlEvent = {
-      source: this.id,
-      meta: {},
-      ...event,
-      ...options,
-      controlId: this.id,
-    };
+    const normEvent = this._prepareEventForEmit(event, options);
 
     if (AbstractControl.debugCallback) {
       AbstractControl.debugCallback.call(this, normEvent);
@@ -1289,13 +1303,16 @@ export abstract class AbstractControlBase<RawValue, Data, Value>
 
     const processedEvent: IProcessedEvent<IControlStateChangeEvent> = {
       status: 'PROCESSED',
-      result: {
-        ...event,
-        type: 'StateChange',
-        changes: Object.fromEntries(
-          Array.from(new Set(changes)).map((p) => [p, this[p]])
-        ),
-      },
+      result: this._prepareEventForEmit<IControlStateChangeEvent>(
+        {
+          ...event,
+          type: 'StateChange',
+          changes: Object.fromEntries(
+            Array.from(new Set(changes)).map((p) => [p, this[p]])
+          ),
+        },
+        options
+      ),
     };
 
     if (
