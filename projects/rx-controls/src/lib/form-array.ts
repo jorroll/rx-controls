@@ -62,16 +62,24 @@ export class FormArray<
             )
           );
 
-    if (AbstractControl._isEqual(this._controlsStore, controlsStore)) return [];
+    // see if new controlStore is equal to the old one
+    if (AbstractControl._isEqual(this._controlsStore, controlsStore)) {
+      // if it is, do nothing
+      return [];
+    }
 
     const normOptions = this._normalizeOptions('setControls', options);
 
     // controls that need to be removed
     for (const [key, control] of this._controlsStore) {
+      // For each `key: control` pair in the old controlStore, see if
+      // the new controlStore has the same `key: control` pair.
       if (controlsStore.get(key) === control) {
+        // if the new controlStore does, do nothing
         continue;
       }
 
+      // if the new controlStore does not, unregister the old control
       this._unregisterControl(control, normOptions);
     }
 
@@ -80,21 +88,25 @@ export class FormArray<
     const newValue: Array<this['value'][ControlsKey<Controls>]> = [];
 
     // controls that need to be added
-    for (const [key, control] of controlsStore) {
+    for (const [key, _control] of controlsStore) {
+      // For each `key: control` pair in the new controlStore,
+
+      // If the control is new, register it.
+      // Because `_registerControl()` can clone the provided control (returning a new one),
+      // we need to use the return of `_registerControl()` as the new control.
+      const control =
+        this._controlsStore.get(key) === _control
+          ? _control
+          : this._registerControl(key, _control, normOptions);
+
+      // In case `_registerControl()` returned a new control, re-add it to the controlsStore
+      controlsStore.set(key, control);
       controls.push(control);
       newRawValue.push(control.rawValue);
 
       if (control.enabled) {
         newValue.push(control.value);
       }
-
-      if (this._controlsStore.get(key) === control) {
-        continue;
-      }
-
-      // This is needed because the call to "registerControl" can clone
-      // the provided control (returning a new one);
-      controlsStore.set(key, this._registerControl(key, control, normOptions));
     }
 
     this._controls = controls as unknown as Controls;
