@@ -174,15 +174,23 @@ export function useControlClassList<
   T extends AbstractControl,
   P extends ReadonlyArray<keyof T>,
   R extends string | { [key: string]: boolean }
->(control: T, _props: P, fn: (props: Pick<T, ElementOf<P>>) => R) {
-  const props = useMemo(() => _props, [_props.length, _props.join()]);
+>(control: T, props: P, fn: (props: Pick<T, ElementOf<P>>) => R) {
+  const init = useMemo(
+    () =>
+      fn(
+        Object.fromEntries(props.map((p) => [p, control[p]])) as Pick<
+          T,
+          ElementOf<P>
+        >
+      ),
+    []
+  );
 
   return useObservable(
     () =>
       control.events.pipe(
         filter(isStateChangeEvent),
         filter((e) => props.some((p) => p in e.changes)),
-        startWith(null),
         map(
           () =>
             Object.fromEntries(props.map((p) => [p, control[p]])) as Pick<
@@ -205,7 +213,7 @@ export function useControlClassList<
           return true;
         })
       ),
-    undefined,
-    [control, props, fn]
+    init,
+    [control, JSON.stringify(props), fn]
   ) as R;
 }
