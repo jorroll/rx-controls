@@ -17,6 +17,60 @@ export function useControlState<
   D extends keyof NonNullable<NonNullable<NonNullable<T[A]>[B]>[C]>,
   E extends keyof NonNullable<
     NonNullable<NonNullable<NonNullable<T[A]>[B]>[C]>[D]
+  >,
+  F extends keyof NonNullable<
+    NonNullable<NonNullable<NonNullable<NonNullable<T[A]>[B]>[C]>[D]>[E]
+  >,
+  G extends keyof NonNullable<
+    NonNullable<
+      NonNullable<NonNullable<NonNullable<NonNullable<T[A]>[B]>[C]>[D]>[E]
+    >[F]
+  >
+>(
+  control: T,
+  a: A,
+  b: B,
+  c: C,
+  d: D,
+  e: E,
+  f: F,
+  g: G
+): NonNullable<
+  NonNullable<
+    NonNullable<NonNullable<NonNullable<NonNullable<T[A]>[B]>[C]>[D]>[E]
+  >[F]
+>[G];
+export function useControlState<
+  T extends AbstractControl,
+  A extends keyof T,
+  B extends keyof NonNullable<T[A]>,
+  C extends keyof NonNullable<NonNullable<T[A]>[B]>,
+  D extends keyof NonNullable<NonNullable<NonNullable<T[A]>[B]>[C]>,
+  E extends keyof NonNullable<
+    NonNullable<NonNullable<NonNullable<T[A]>[B]>[C]>[D]
+  >,
+  F extends keyof NonNullable<
+    NonNullable<NonNullable<NonNullable<NonNullable<T[A]>[B]>[C]>[D]>[E]
+  >
+>(
+  control: T,
+  a: A,
+  b: B,
+  c: C,
+  d: D,
+  e: E,
+  f: F
+): NonNullable<
+  NonNullable<NonNullable<NonNullable<NonNullable<T[A]>[B]>[C]>[D]>[E]
+>[F];
+export function useControlState<
+  T extends AbstractControl,
+  A extends keyof T,
+  B extends keyof NonNullable<T[A]>,
+  C extends keyof NonNullable<NonNullable<T[A]>[B]>,
+  D extends keyof NonNullable<NonNullable<NonNullable<T[A]>[B]>[C]>,
+  E extends keyof NonNullable<
+    NonNullable<NonNullable<NonNullable<T[A]>[B]>[C]>[D]
   >
 >(
   control: T,
