@@ -16,7 +16,8 @@
     "mutantdino.resourcemonitor",
     "angular.ng-template",
     "ms-vscode.vscode-typescript-tslint-plugin",
-    "tyriar.sort-lines"
+    "tyriar.sort-lines",
+    "vsls-contrib.codetour"
   ],
 
   // Use 'forwardPorts' to make a list of ports inside the container available locally.
