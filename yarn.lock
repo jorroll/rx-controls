@@ -11414,10 +11414,10 @@ socks@~2.3.2:
     ip "1.1.5"
     smart-buffer "^4.1.0"
 
-solid-js@0.26.1:
-  version "0.26.1"
-  resolved "https://registry.yarnpkg.com/solid-js/-/solid-js-0.26.1.tgz#1bb6b06537f9a308f75ee4d800b2e1a45b8e6b0b"
-  integrity sha512-y3eiVBY+dF4r048rwrLJXUQuDtsimAVxtI57E5gtt0NbYbB3hzH7h7xXiCsaoBUoiZFxh9XI++Tm4VHIC+XwBw==
+solid-js@1.2.5:
+  version "1.2.5"
+  resolved "https://registry.yarnpkg.com/solid-js/-/solid-js-1.2.5.tgz#26175228ae562c95e92f476c73db744b6b36fc2c"
+  integrity sha512-XcPEULgqd/XbBu8LwtGWs5RGowvIpq88/ZNI/xgJ9PaxRJWwbVlSNsS+ywUWncxRdKsPoVe8vdcIsH4gBJjh3Q==
 
 sort-keys@^2.0.0:
   version "2.0.0"

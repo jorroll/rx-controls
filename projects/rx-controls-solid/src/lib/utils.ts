@@ -20,7 +20,7 @@ import type { ElementOf } from 'ts-essentials';
 export function toSignal<T>(input: Observable<T>, defaultValue?: T) {
   const [value, setValue] = createSignal(defaultValue as T);
 
-  const sub = input.subscribe(setValue);
+  const sub = input.subscribe(setValue as (v: T) => void);
 
   onCleanup(() => sub.unsubscribe());
 

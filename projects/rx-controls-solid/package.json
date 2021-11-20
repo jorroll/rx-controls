@@ -7,7 +7,7 @@
   "sideEffects": false,
   "peerDependencies": {
     "rxjs": "^6.0.0",
-    "solid-js": "^0.26.2"
+    "solid-js": "^1.0.0"
   },
   "dependencies": {
     "rx-controls": "^0.8.6",
